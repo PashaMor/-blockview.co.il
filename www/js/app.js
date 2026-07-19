@@ -164,7 +164,7 @@ function placeholder(seed, label, i) {
 const imagesFor = (l) => ROOM_LABELS.map((lbl, i) => placeholder(l.id, lbl, i));
 
 /* ---------------------------------------------------------------- map ---- */
-maplibregl.setRTLTextPlugin("https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js", null, true);
+maplibregl.setRTLTextPlugin("vendor/mapbox-gl-rtl-text.min.js", null, true);
 
 const map = new maplibregl.Map({
   container: "map", style: STYLES[mode],
