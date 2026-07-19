@@ -2,6 +2,9 @@
   "appId": "com.blockview.app",
   "appName": "BlockView",
   "webDir": "www",
+  "server": {
+    "url": "https://blockview-co-il.vercel.app"
+  },
   "android": {
     "allowMixedContent": false
   }
