@@ -107,7 +107,7 @@ function attrs(l) {
     age: h % 3 === 0 ? "new" : "old",
   };
 }
-function cityOf(l) { return (LISTING_INDEX[l.id]?.building.city) || DEFAULT_CITY; }
+function cityOf(l) { var e = LISTING_INDEX[l.id]; return (e && e.building.city) || DEFAULT_CITY; }
 
 function passes(l) {
   const a = attrs(l);

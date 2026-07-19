@@ -17,7 +17,7 @@
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
-body { font-family: var(--font); color: var(--text); overflow: hidden; }
+body { font-family: var(--font); color: var(--text); overflow: hidden; background: #eef1f4; }
 #map { position: absolute; inset: 0; }
 
 /* ---------- Brand ---------- */
