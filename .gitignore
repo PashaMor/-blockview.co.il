@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# Capacitor / Android build artifacts
+android/app/build/
+android/build/
+android/.gradle/
+android/captured/
+android/app/release/
+android/capacitor-cordova-android-plugins/
+.gradle/
+
+# built apps
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# local / temp
+build_*.txt
+server.log
+.DS_Store
+Thumbs.db
+.vercel
+
+# never commit secrets (publishable key is fine; secret key must NOT be here)
+.env
+.env.*

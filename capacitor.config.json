@@ -1,0 +1,8 @@
+{
+  "appId": "com.blockview.app",
+  "appName": "BlockView",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}

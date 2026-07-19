@@ -1,0 +1,22 @@
+{
+  "name": "3d-map",
+  "version": "1.0.0",
+  "description": "A 3D real-estate discovery map for Israel. Fly over the city, **tap a building, and see the apartments for sale or rent inside it.** The tappable 3D city is the differentiator over Yad2 / Madlan; listings are posted by owners and agents (no scraping).",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "sharp": "^0.35.3"
+  }
+}

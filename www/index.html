@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>BlockView — נדל"ן בתלת מימד</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+  <link rel="stylesheet" href="css/style.css?v=9" />
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- Brand -->
+  <header id="brand">
+    <img class="brand-logo" src="logo.png" alt="BlockView — גע בבניין. גלה מה בפנים." />
+  </header>
+
+  <!-- Day / night toggle -->
+  <button id="mode-toggle" title="יום / לילה">☾</button>
+  <!-- 2D / 3D toggle -->
+  <button id="view-toggle" title="2D / 3D">2D</button>
+  <!-- Account -->
+  <button id="account-btn" title="חשבון">👤</button>
+  <!-- Language -->
+  <button id="lang-btn" title="Language">🌐</button>
+
+  <!-- Bottom action bar -->
+  <nav id="bottombar">
+    <button class="bb-btn primary" id="open-filters"><span class="bb-ic">⚙︎</span> <span data-i18n="filter">סינון</span> <b id="fcount">0</b></button>
+    <button class="bb-btn" id="open-search" title="חיפוש"><span class="bb-ic">🔍</span></button>
+    <button class="bb-btn" id="open-favs" title="מועדפים"><span class="bb-ic heart">♥</span><b id="favcount">0</b></button>
+    <button class="bb-btn" id="open-alerts" title="התראות"><span class="bb-ic">🔔</span><b id="alertcount">0</b></button>
+    <button class="bb-btn" id="reset-view" title="אפס תצוגה">⟲</button>
+  </nav>
+
+  <!-- Filter bottom sheet -->
+  <div id="sheet-backdrop" hidden></div>
+  <section id="filter-sheet" class="sheet" aria-hidden="true">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head"><h2 data-i18n="filter">סינון</h2><button class="sheet-x" id="close-filters" aria-label="סגור">✕</button></div>
+    <div class="sheet-body">
+      <div class="fgroup">
+        <label data-i18n="deal_type">סוג עסקה</label>
+        <div class="seg" id="deal-seg">
+          <button class="seg-btn active" data-deal="all" data-i18n="all">הכל</button>
+          <button class="seg-btn" data-deal="sale" data-i18n="sale">מכירה</button>
+          <button class="seg-btn" data-deal="rent" data-i18n="rent">השכרה</button>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="prop_type">סוג נכס</label>
+        <div class="seg" id="type-seg">
+          <button class="seg-btn active" data-type="all" data-i18n="all">הכל</button>
+          <button class="seg-btn" data-type="flat" data-i18n="flat">דירה</button>
+          <button class="seg-btn" data-type="house" data-i18n="house">בית</button>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="city">עיר</label>
+        <select class="selectbox" id="city-select"></select>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="rooms">חדרים</label>
+        <div class="chips" id="rooms-chips">
+          <button class="chip on" data-r="0" data-i18n="all">הכל</button>
+          <button class="chip" data-r="1">1+</button>
+          <button class="chip" data-r="2">2+</button>
+          <button class="chip" data-r="3">3+</button>
+          <button class="chip" data-r="4">4+</button>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="floor_min">קומה (מינימום)</label>
+        <input id="floor-min" class="selectbox" type="number" inputmode="numeric" min="0" placeholder="כל קומה" data-i18n-ph="any_floor" />
+      </div>
+      <div class="fgroup">
+        <label data-i18n="price_range">טווח מחיר (₪)</label>
+        <div class="price-slider" id="price-slider">
+          <div class="ps-track"><div class="ps-fill" id="ps-fill"></div></div>
+          <input type="range" id="price-min" min="0" max="8000000" value="0" step="50000" aria-label="min price" />
+          <input type="range" id="price-max" min="0" max="8000000" value="8000000" step="50000" aria-label="max price" />
+        </div>
+        <div class="ps-labels"><span id="ps-min-lbl">₪0</span><span id="ps-max-lbl" data-i18n="no_limit">ללא הגבלה</span></div>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="building_age">גיל הבניין</label>
+        <div class="seg" id="age-seg">
+          <button class="seg-btn active" data-age="all" data-i18n="all">הכל</button>
+          <button class="seg-btn" data-age="new" data-i18n="new">חדש</button>
+          <button class="seg-btn" data-age="old" data-i18n="old">ישן</button>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="extras">נוספים</label>
+        <div class="chips" id="amenities">
+          <button class="chip" data-amen="furnished" data-i18n="furnished">🛋️ מרוהט</button>
+          <button class="chip" data-amen="pets" data-i18n="pets">🐾 חיות מחמד</button>
+          <button class="chip" data-amen="parking" data-i18n="parking">🅿️ חניה</button>
+          <button class="chip" data-amen="elevator" data-i18n="elevator">🛗 מעלית</button>
+        </div>
+      </div>
+    </div>
+    <div class="apply-row">
+      <button class="sheet-apply" id="apply-filters"><span data-i18n="show">הצג</span> <b id="apply-count">0</b> <span data-i18n="properties">נכסים</span></button>
+      <button class="save-filter-btn" id="save-filter" title="שמור סינון זה כברירת מחדל">💾</button>
+    </div>
+  </section>
+
+  <!-- Search bottom sheet -->
+  <section id="search-sheet" class="sheet" aria-hidden="true">
+    <div class="sheet-handle"></div>
+    <div class="search-bar">
+      <span class="search-ic">🔍</span>
+      <input id="search-input" type="search" placeholder="חפש כתובת, בניין, תחנת רכבת..." data-i18n-ph="search_ph" autocomplete="off" />
+      <button class="search-close2" id="search-close" aria-label="סגור">✕</button>
+    </div>
+    <div id="search-results" class="search-results"></div>
+  </section>
+
+  <!-- Listings bottom sheet (per building) -->
+  <section id="listings-sheet" class="sheet" aria-hidden="true">
+    <div class="sheet-handle"></div>
+    <button class="sheet-x" id="ls-close" aria-label="סגור">✕</button>
+    <div class="building-head">
+      <div class="bh-eyebrow" data-i18n="building">בניין</div>
+      <h2 id="b-name">—</h2>
+      <div id="b-address" class="b-address">—</div>
+      <div id="b-stats" class="b-stats"></div>
+      <button id="sub-btn" class="sub-btn" data-i18n="follow">🔔 עקוב אחר הבניין</button>
+    </div>
+    <div id="listings" class="listings"></div>
+    <div id="no-match" class="no-match" hidden data-i18n="no_match">אין נכסים התואמים לסינון בבניין זה.</div>
+  </section>
+
+  <!-- Favorites bottom sheet -->
+  <section id="favs-sheet" class="sheet" aria-hidden="true">
+    <div class="sheet-handle"></div>
+    <button class="sheet-x" id="favs-close" aria-label="סגור">✕</button>
+    <div class="building-head">
+      <div class="bh-eyebrow" data-i18n="saved">שמורים</div>
+      <h2 data-i18n="my_favs">המועדפים שלי</h2>
+      <div class="b-address" data-i18n="favs_sub">נכסים ששמרת לבדיקה מאוחר יותר</div>
+    </div>
+    <div id="favs-list" class="listings"></div>
+    <div id="favs-empty" class="no-match" hidden data-i18n="favs_empty">עדיין לא שמרת נכסים. גע ב־♥ על נכס כדי לשמור אותו כאן.</div>
+  </section>
+
+  <!-- Alerts / subscriptions bottom sheet -->
+  <section id="alerts-sheet" class="sheet" aria-hidden="true">
+    <div class="sheet-handle"></div>
+    <button class="sheet-x" id="alerts-close" aria-label="סגור">✕</button>
+    <div class="building-head">
+      <div class="bh-eyebrow" data-i18n="tracking">מעקב</div>
+      <h2 data-i18n="alerts_title">התראות ועדכונים</h2>
+      <div class="b-address" data-i18n="alerts_sub">שינויים בבניינים שאתה עוקב אחריהם</div>
+    </div>
+    <div id="alerts-list" class="alerts-list"></div>
+    <div id="alerts-empty" class="no-match" hidden data-i18n="alerts_empty">אינך עוקב אחר בניינים. פתח בניין וגע ב־🔔 כדי לקבל עדכונים על שינויים.</div>
+  </section>
+
+  <!-- Auth (sign in / up) bottom sheet -->
+  <section id="auth-sheet" class="sheet" aria-hidden="true">
+    <div class="sheet-handle"></div>
+    <button class="sheet-x" id="auth-close" aria-label="סגור">✕</button>
+    <div class="building-head">
+      <div class="bh-eyebrow" data-i18n="account">חשבון</div>
+      <h2 id="auth-title" data-i18n="sign_in">התחברות</h2>
+      <div class="b-address" data-i18n="auth_sub">התחבר כדי לשמור נכסים, לעקוב אחר בניינים ולהוסיף הערות</div>
+    </div>
+    <div class="auth-body">
+      <button class="oauth-btn" data-oauth="google"><span class="ob-ic">G</span> <span data-i18n="continue_google">המשך עם Google</span></button>
+      <button class="oauth-btn dark" data-oauth="apple"><span class="ob-ic"></span> <span data-i18n="continue_apple">המשך עם Apple</span></button>
+      <div class="auth-divider"><span data-i18n="or_email">או באמצעות אימייל</span></div>
+      <input id="auth-email" type="email" class="selectbox" placeholder="אימייל" data-i18n-ph="email" autocomplete="email" />
+      <input id="auth-pw" type="password" class="selectbox" placeholder="סיסמה" data-i18n-ph="password" autocomplete="current-password" />
+      <div id="auth-error" class="auth-error" hidden></div>
+      <button id="auth-submit" class="sheet-apply">התחבר</button>
+      <button id="auth-toggle" class="auth-link">אין לך חשבון? הירשם</button>
+    </div>
+  </section>
+
+  <!-- Account bottom sheet -->
+  <section id="account-sheet" class="sheet" aria-hidden="true">
+    <div class="sheet-handle"></div>
+    <button class="sheet-x" id="account-close" aria-label="סגור">✕</button>
+    <div class="building-head acc-head">
+      <button class="acc-avatar" id="acc-avatar-btn" aria-label="העלה תמונת פרופיל">
+        <img id="acc-avatar-img" alt="" hidden />
+        <span id="acc-avatar-initial">?</span>
+        <span class="acc-cam">📷</span>
+      </button>
+      <input type="file" id="acc-avatar-file" accept="image/*" hidden />
+      <div class="bh-eyebrow" data-i18n="account">חשבון</div>
+      <h2 id="acc-email">—</h2>
+      <div class="b-address"><span data-i18n="your_plan">התוכנית שלך:</span> <b id="acc-plan">חינם</b></div>
+    </div>
+    <div class="auth-body">
+      <div id="acc-usage" class="acc-usage"></div>
+      <div class="acc-row">
+        <span data-i18n="push_notif">התראות פוש</span>
+        <label class="switch"><input type="checkbox" id="acc-notif" /><span class="slider"></span></label>
+      </div>
+      <div class="acc-filter-row" id="acc-filter-row" hidden>
+        <div class="acc-filter-txt"><div class="acc-filter-title" data-i18n="saved_filter">סינון שמור</div><div id="acc-filter-summary" class="acc-filter-summary"></div></div>
+        <button id="acc-filter-clear" class="auth-link" data-i18n="clear">נקה</button>
+      </div>
+      <button id="acc-upgrade" class="sheet-apply" data-i18n="upgrade_pro">⭐ שדרג ל-Pro</button>
+      <button id="acc-signout" class="auth-link" data-i18n="sign_out">התנתק</button>
+    </div>
+  </section>
+
+  <!-- Upgrade to Pro modal -->
+  <div id="upgrade-modal" hidden>
+    <div class="dl-card">
+      <div class="dl-icon">⭐</div>
+      <h2>BlockView Pro</h2>
+      <p id="upgrade-sub">הגעת למגבלת התוכנית החינמית.</p>
+      <ul class="pro-feats">
+        <li data-i18n="feat1">שמירת נכסים ללא הגבלה</li>
+        <li data-i18n="feat2">מעקב אחר בניינים ללא הגבלה</li>
+        <li data-i18n="feat3">התראות מיידיות על שינויים</li>
+      </ul>
+      <div class="pro-plans">
+        <button class="pro-plan on" data-plan="year">
+          <span class="pp-badge" data-i18n="save42">חסכון 42%</span>
+          <span class="pp-name" data-i18n="yearly">שנתי</span>
+          <span class="pp-price">₪54.90<small>/שנה</small></span>
+        </button>
+        <button class="pro-plan" data-plan="month">
+          <span class="pp-name" data-i18n="monthly">חודשי</span>
+          <span class="pp-price">₪7.90<small>/חודש</small></span>
+        </button>
+      </div>
+      <button id="upgrade-go" class="sheet-apply" data-i18n="upgrade_now">שדרג עכשיו</button>
+      <button id="upgrade-close" class="dl-continue" data-i18n="maybe_later">אולי מאוחר יותר</button>
+    </div>
+  </div>
+
+  <!-- Language bottom sheet -->
+  <section id="lang-sheet" class="sheet" aria-hidden="true">
+    <div class="sheet-handle"></div>
+    <button class="sheet-x" id="lang-close" aria-label="close">✕</button>
+    <div class="building-head">
+      <div class="bh-eyebrow" data-i18n="language">שפה</div>
+      <h2 data-i18n="language">שפה</h2>
+    </div>
+    <div id="lang-list" class="lang-list"></div>
+  </section>
+
+  <!-- Full listing detail -->
+  <div id="detail" hidden></div>
+
+  <!-- Toast -->
+  <div id="toast" hidden></div>
+
+  <!-- App-download prompt (shown when opening a shared link) -->
+  <div id="dl-modal" hidden>
+    <div class="dl-card">
+      <div class="dl-icon">▚</div>
+      <h2 data-i18n="dl_title">פתח באפליקציית BlockView</h2>
+      <p id="dl-sub" data-i18n="dl_sub">צפה בנכס בתלת-מימד עם החוויה המלאה.</p>
+      <div class="dl-stores">
+        <a class="dl-store" href="#" aria-label="הורדה מ-App Store">
+          <span class="dls-ic"></span><span><small>הורד מ־</small><b>App Store</b></span>
+        </a>
+        <a class="dl-store" href="#" aria-label="הורדה מ-Google Play">
+          <span class="dls-ic">▶</span><span><small>זמין ב־</small><b>Google Play</b></span>
+        </a>
+      </div>
+      <button id="dl-continue" class="dl-continue" data-i18n="dl_continue">המשך בדפדפן</button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/config.js?v=9"></script>
+  <script src="js/i18n.js?v=9"></script>
+  <script src="js/data.js?v=9"></script>
+  <script src="js/app.js?v=9"></script>
+  <script src="js/auth.js?v=9"></script>
+</body>
+</html>
