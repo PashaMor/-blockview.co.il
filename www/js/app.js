@@ -209,7 +209,23 @@ function addCustomLayers() {
     layout: { "text-field": ["get", "label"], "text-size": 12, "text-offset": [0, -0.6], "text-anchor": "bottom", "text-font": ["Noto Sans Regular"] },
     paint: labelPaint() });
 
+  localizeMap();
   if (selectedId) setSelectedState(selectedId, true);
+}
+
+/* switch base-map street/place labels to the app language (falls back to Latin/local
+   since the tiles only carry a few name:<lang> fields) */
+function localizeMap() {
+  const lang = window.currentLang ? window.currentLang() : "he";
+  const nameExpr = (lang === "he" || lang === "ar")
+    ? ["coalesce", ["get", "name:" + lang], ["get", "name"], ["get", "name:latin"]]
+    : ["coalesce", ["get", "name:" + lang], ["get", "name:latin"], ["get", "name:en"], ["get", "name"]];
+  const layers = map.getStyle().layers || [];
+  for (const l of layers) {
+    if (l.type === "symbol" && l.id.indexOf("bv-") !== 0 && l.layout && l.layout["text-field"]) {
+      try { map.setLayoutProperty(l.id, "text-field", nameExpr); } catch (e) {}
+    }
+  }
 }
 
 function labelPaint() {
@@ -677,6 +693,7 @@ window.reRender = function () {
   if (favsSheet.classList.contains("open")) renderFavs();
   if (alertsSheet.classList.contains("open")) renderAlerts();
   updateSavedFilterRow();
+  try { if (map && map.isStyleLoaded()) localizeMap(); } catch (e) {}
   if (window.reRenderAuth) window.reRenderAuth();
   if (window.renderAccountIfOpen) window.renderAccountIfOpen();
 };
