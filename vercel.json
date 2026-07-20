@@ -1,8 +1,12 @@
 {
-  "version": 2,
-  "builds": [{ "src": "www/**", "use": "@vercel/static" }],
-  "routes": [
-    { "src": "/", "dest": "/www/index.html" },
-    { "src": "/(.*)", "dest": "/www/$1" }
+  "rewrites": [
+    { "source": "/", "has": [{ "type": "host", "value": "crm.blockview.co.il" }], "destination": "/www/crm/index.html" },
+    { "source": "/crm.css", "has": [{ "type": "host", "value": "crm.blockview.co.il" }], "destination": "/www/crm/crm.css" },
+    { "source": "/crm.js", "has": [{ "type": "host", "value": "crm.blockview.co.il" }], "destination": "/www/crm/crm.js" },
+
+    { "source": "/", "destination": "/www/index.html" },
+    { "source": "/crm", "destination": "/www/crm/index.html" },
+    { "source": "/crm/", "destination": "/www/crm/index.html" },
+    { "source": "/(.*)", "destination": "/www/$1" }
   ]
 }
