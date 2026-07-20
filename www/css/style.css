@@ -437,3 +437,8 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .contact-btns a.btn-primary, .contact-btns a.btn-ghost { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 .btn-primary.locked { letter-spacing: .3px; }
 .contact-hint { margin: 9px 0 0; font-size: 12.5px; color: var(--muted); }
+
+/* WhatsApp contact button */
+.btn-wa { font: inherit; font-weight: 700; font-size: 13.5px; cursor: pointer; padding: 10px 16px;
+  border-radius: 10px; border: 0; background: #25D366; color: #fff; }
+.btn-wa:hover { background: #1DA851; }

@@ -185,6 +185,13 @@ async function loadLiveData() {
       w: +b.w || 0.00028, h: +b.h || 0.00032, height: +b.height || 24,
     }));
 
+    // which listings have a WhatsApp-reachable contact (flag only — never the number)
+    const waSet = new Set();
+    try {
+      const C = await BVDB.from("listing_contacts_public").select("listing_id,whatsapp");
+      (C.data || []).forEach((c) => { if (c.whatsapp) waSet.add(c.listing_id); });
+    } catch (e) { /* view may not exist until 12_whatsapp.sql is run */ }
+
     const grouped = {};
     (L.data || []).forEach((r) => {
       const photos = (r.listing_photos || [])
@@ -195,6 +202,7 @@ async function loadLiveData() {
         title: r.title, description: r.description || "", tour: !!r.tour_url,
         type: r.type, age: r.age,
         furnished: !!r.furnished, pets: !!r.pets, parking: !!r.parking, elevator: !!r.elevator,
+        hasWhatsapp: waSet.has(r.id),
         photos,
       });
     });
@@ -575,7 +583,7 @@ function openDetail(lid) {
         <div class="note-saved" id="note-saved" hidden>נשמר ✓</div>
         <div class="contact">
           <div class="agent"><div class="agent-av">${AGENT.name.charAt(0)}</div><div><div class="agent-name">${AGENT.name}</div><div class="agent-office">${AGENT.office}</div></div></div>
-          <div class="contact-btns">${contactBlock()}<button class="btn-ghost fav-toggle ${isFav(l.id) ? "on" : ""}" data-fav="${l.id}">${t("save")}</button><button class="btn-ghost" data-share="${l.id}">${t("share")}</button></div>
+          <div class="contact-btns">${contactBlock()}<button class="btn-ghost fav-toggle ${isFav(l.id) ? "on" : ""}" data-fav="${l.id}">${t("save")}</button>${l.hasWhatsapp ? `<button class="btn-wa" data-wa="${l.id}">${t("wa_contact")}</button>` : ""}<button class="btn-ghost" data-share="${l.id}">${t("share")}</button></div>
           ${signedIn() ? "" : `<p class="contact-hint">${t("contact_locked")}</p>`}
         </div>
         <p class="disclaimer">נתונים לדוגמה — אב-טיפוס BlockView. התמונות להמחשה בלבד.</p>
@@ -935,3 +943,50 @@ function addEducationLayer() {
     if (window.bvToast) bvToast(eduVisible ? "מוסדות חינוך מוצגים" : "מוסדות חינוך מוסתרים");
   });
 })();
+
+/* ------------------------------------------------- WhatsApp contact ----
+ * Shown when the listing has a contact marked as WhatsApp-reachable.
+ * SECURITY: the wa.me link contains the full phone, so we only fetch the
+ * number for a signed-in user — guests get the same sign-in prompt as the
+ * masked phone. The flag itself is public; the number never is.
+ */
+function waNumber(raw) {
+  let d = String(raw || "").replace(/\D/g, "");
+  if (!d) return "";
+  if (d.startsWith("972")) return d;          // already international
+  if (d.startsWith("0")) return "972" + d.slice(1);  // Israeli local -> +972
+  return d;
+}
+function waMessage(l) {
+  const url = location.origin + "/?listing=" + encodeURIComponent(l.id);
+  const tpl = t("wa_msg");
+  return tpl
+    .replace("{title}", l.title)
+    .replace("{address}", (l.building && l.building.address) || "")
+    .replace("{url}", url);
+}
+async function openWhatsApp(lid) {
+  const l = LISTING_INDEX[lid]; if (!l) return;
+  if (!signedIn()) {                       // same gate as revealing the phone
+    if (window.bvToast) bvToast(t("contact_locked"));
+    if (window.BVAuth) BVAuth.openAuth();
+    return;
+  }
+  try {
+    const db = window.BVSupa || BVDB;      // authenticated client sees full details
+    const { data, error } = await db
+      .from("listing_contacts").select("phone,whatsapp").eq("listing_id", lid);
+    if (error) throw error;
+    const c = (data || []).find((x) => x.whatsapp && x.phone);
+    if (!c) { if (window.bvToast) bvToast(t("wa_none")); return; }
+    const num = waNumber(c.phone);
+    if (!num) { if (window.bvToast) bvToast(t("wa_none")); return; }
+    window.open(`https://wa.me/${num}?text=${encodeURIComponent(waMessage(l))}`, "_blank", "noopener");
+  } catch (e) {
+    if (window.bvToast) bvToast(t("wa_none"));
+  }
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-wa]");
+  if (b) { e.preventDefault(); openWhatsApp(b.dataset.wa); }
+});
