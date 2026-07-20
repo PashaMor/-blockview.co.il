@@ -495,3 +495,16 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .contact-person .contact-btns { display: flex; gap: 8px; flex-wrap: wrap; }
 /* agents may write multi-line descriptions */
 .d-desc li { white-space: pre-line; }
+
+/* ---- address lookup (publish) ---- */
+.addr-results { margin-top: 8px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; max-height: 260px; overflow-y: auto; background: var(--surface); }
+.ar-item { display: block; width: 100%; text-align: start; font: inherit; cursor: pointer; padding: 10px 12px; border: 0; border-bottom: 1px solid var(--line); background: var(--surface); }
+.ar-item:last-child { border-bottom: 0; }
+.ar-item:hover { background: var(--surface-2); }
+.ar-item b { display: block; font-size: 14.5px; color: var(--ink); }
+.ar-item small { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.ar-empty { padding: 12px; font-size: 13px; color: var(--muted); }
+.addr-picked { margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--blue); background: #EDF2FC; border-radius: 10px; padding: 9px 12px; }
+.hint-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.hint-row .field-hint { flex: 1; min-width: 180px; }
+.linkish { border: 0; background: transparent; color: var(--blue); font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; padding: 4px; }

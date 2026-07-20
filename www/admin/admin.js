@@ -425,12 +425,26 @@
           <div class="rtitle">${esc(b.name)}</div>
           <div class="rsub">${esc(b.address)} · ${esc(b.city)}</div>
           <div class="rmeta"><span>${esc(b.id)}</span><span>${esc(b.lng)}, ${esc(b.lat)}</span>
-            <span>${state.listings.filter((l) => l.building_id === b.id).length} נכסים</span></div>
+            <span>${state.listings.filter((l) => l.building_id === b.id).length} נכסים</span>
+            <span class="badge ${b.verified === false ? "pending" : "approved"}">${b.verified === false ? "לא מאומת" : "מאומת"}</span>
+            ${b.footprint ? `<span class="badge approved">מתאר אמיתי</span>` : `<span class="badge draft">ללא מתאר</span>`}
+            ${b.source && b.source !== "manual" ? `<span>${esc(b.source)}</span>` : ""}</div>
         </div>
-        <div class="ractions"><button class="btn-bad" data-delb="${esc(b.id)}">מחק</button></div>
+        <div class="ractions">
+          ${b.verified === false ? `<button class="btn-ok" data-verifyb="${esc(b.id)}">אמת</button>` : ""}
+          <button class="btn-bad" data-delb="${esc(b.id)}">מחק</button>
+        </div>
       </div>`).join("") || `<div class="empty">אין בניינים.</div>`;
   }
   document.addEventListener("click", async (e) => {
+    // buildings created from an address stay off the map until verified
+    const v = e.target.closest("[data-verifyb]");
+    if (v) {
+      const res = await supa.from("buildings").update({ verified: true }).eq("id", v.dataset.verifyb);
+      if (res.error) return toast("שגיאה: " + res.error.message);
+      toast("הבניין אומת"); loadAll();
+      return;
+    }
     const d = e.target.closest("[data-delb]");
     if (!d) return;
     if (!confirm("מחיקת בניין תמחק גם את כל הנכסים שבו. להמשיך?")) return;
