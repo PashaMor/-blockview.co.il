@@ -702,10 +702,122 @@
     $("tab-editor").hidden = name !== "editor";
     $("tab-leads").hidden = name !== "leads";
     $("tab-security").hidden = name !== "security";
+    $("tab-analytics").hidden = name !== "analytics";
     if (name === "security") refreshSecurity();
+    if (name === "analytics") loadAnalytics();
   }
   document.querySelectorAll(".tab").forEach((t) =>
     t.addEventListener("click", () => { if (t.dataset.tab === "editor") openEditor(null); else switchTab(t.dataset.tab); }));
+
+  /* -------------------------------------------------------- analytics ----
+   * Numbers come from agent_listing_stats(), a SECURITY DEFINER function that
+   * only ever returns aggregates for the caller's own listings — raw view rows
+   * are not readable from the browser at all (supabase/16_analytics.sql).
+   */
+  const iso = (d) => d.toISOString().slice(0, 10);
+  function analyticsRange() {
+    const sel = $("an-range").value;
+    if (sel === "custom") {
+      const from = $("an-from").value, to = $("an-to").value;
+      if (from && to && from <= to) return { from, to };
+    }
+    const days = parseInt(sel, 10) || 30;
+    const to = new Date();
+    const from = new Date(Date.now() - (days - 1) * 86400000);
+    return { from: iso(from), to: iso(to) };
+  }
+
+  function tile(n, label) { return `<div class="stat"><b>${esc(n)}</b><span>${esc(label)}</span></div>`; }
+
+  // hand-rolled SVG bars: no chart library, nothing loaded at runtime
+  function renderChart(daily, range) {
+    const box = $("an-chart");
+    const byDay = {};
+    daily.forEach((d) => (byDay[d.day] = d));
+    const days = [];
+    for (let t = new Date(range.from + "T00:00:00"); iso(t) <= range.to; t.setDate(t.getDate() + 1)) {
+      const key = iso(t);
+      days.push({ day: key, views: (byDay[key] || {}).views || 0 });
+    }
+    const max = Math.max(1, ...days.map((d) => d.views));
+    const W = Math.max(days.length * 14, 300), H = 120, pad = 18;
+    const bw = (W - pad) / days.length;
+    const bars = days.map((d, i) => {
+      const h = Math.round((d.views / max) * (H - pad - 14));
+      const x = pad + i * bw, y = H - 14 - h;
+      const label = new Date(d.day + "T00:00:00").toLocaleDateString("he-IL", { day: "numeric", month: "numeric" });
+      return `<rect x="${x.toFixed(1)}" y="${y}" width="${Math.max(2, bw - 3).toFixed(1)}" height="${Math.max(h, d.views ? 2 : 0)}"
+                rx="2" fill="#0038B8" opacity="${d.views ? 0.9 : 0.12}"><title>${esc(label)}: ${d.views}</title></rect>`;
+    }).join("");
+    const ticks = `<text x="2" y="12" font-size="10" fill="#8592A2">${max}</text>
+                   <text x="2" y="${H - 16}" font-size="10" fill="#8592A2">0</text>`;
+    box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"
+      aria-label="צפיות לפי יום">${ticks}${bars}</svg>`;
+  }
+
+  function renderAnalytics(stats, range) {
+    const tot = stats.totals || {};
+    $("an-stats").innerHTML =
+      tile(tot.views || 0, "צפיות בנכס") +
+      tile(tot.unique_viewers || 0, "מבקרים ייחודיים") +
+      tile(tot.impressions || 0, "הופעות ברשימה") +
+      tile(tot.contacts || 0, "פניות ויצירות קשר") +
+      tile((tot.web || 0) + " / " + (tot.app || 0), "אתר / אפליקציה");
+
+    renderChart(stats.daily || [], range);
+
+    const rows = (stats.listings || []).filter((l) => l.views || l.impressions);
+    $("an-empty").hidden = rows.length > 0;
+    $("an-list").innerHTML = rows.map((l) => {
+      const total = (l.web || 0) + (l.app || 0);
+      const webPct = total ? Math.round((l.web / total) * 100) : 0;
+      const rate = l.views ? Math.round((l.contacts / l.views) * 100) : 0;
+      return `<div class="an-row">
+        <div class="an-main">
+          <div class="an-title">${esc(l.title)} <span class="badge ${esc(l.status)}">${esc(STATUS_HE[l.status] || l.status)}</span></div>
+          <div class="an-split">
+            <div class="an-bar"><span style="width:${webPct}%"></span></div>
+            <span class="an-legend">אתר ${l.web || 0} · אפליקציה ${l.app || 0}</span>
+          </div>
+        </div>
+        <div class="an-nums">
+          <div><b>${l.views || 0}</b><span>צפיות</span></div>
+          <div><b>${l.unique_viewers || 0}</b><span>ייחודיים</span></div>
+          <div><b>${l.contacts || 0}</b><span>פניות</span></div>
+          <div><b>${rate}%</b><span>המרה</span></div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  async function loadAnalytics() {
+    const range = analyticsRange();
+    const surface = $("an-surface").value || null;
+    const { data, error } = await supa.rpc("agent_listing_stats", {
+      from_date: range.from, to_date: range.to, surface_filter: surface, listing: null,
+    });
+    if (error) {
+      $("an-list").innerHTML = "";
+      $("an-empty").hidden = false;
+      $("an-empty").textContent = /function/i.test(error.message)
+        ? "טבלת האנליטיקס לא הוגדרה עדיין — הרץ את supabase/16_analytics.sql."
+        : "שגיאה בטעינת הנתונים: " + error.message;
+      return;
+    }
+    $("an-empty").textContent = "אין עדיין צפיות בטווח הזה. הנתונים נאספים מרגע שהנכס מאושר ומופיע במפה.";
+    renderAnalytics(data || {}, range);
+  }
+
+  $("an-range").addEventListener("change", () => {
+    const custom = $("an-range").value === "custom";
+    $("an-from").hidden = !custom; $("an-to").hidden = !custom;
+    if (custom) {
+      if (!$("an-to").value) $("an-to").value = iso(new Date());
+      if (!$("an-from").value) $("an-from").value = iso(new Date(Date.now() - 29 * 86400000));
+    }
+    loadAnalytics();
+  });
+  ["an-from", "an-to", "an-surface"].forEach((id) => $(id).addEventListener("change", loadAnalytics));
 
   setGateMode("in");
 })();

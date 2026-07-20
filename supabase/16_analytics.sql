@@ -132,12 +132,12 @@ begin
           'id',             s.id,
           'title',          s.title,
           'status',         s.status,
-          'views',          count(e.*) filter (where e.event = 'detail'),
+          'views',          count(e.id) filter (where e.event = 'detail'),
           'unique_viewers', count(distinct e.viewer_key) filter (where e.event = 'detail'),
-          'impressions',    count(e.*) filter (where e.event = 'impression'),
-          'contacts',       count(e.*) filter (where e.event in ('contact','lead')),
-          'web',            count(e.*) filter (where e.event = 'detail' and e.surface = 'web'),
-          'app',            count(e.*) filter (where e.event = 'detail' and e.surface = 'app')
+          'impressions',    count(e.id) filter (where e.event = 'impression'),
+          'contacts',       count(e.id) filter (where e.event in ('contact','lead')),
+          'web',            count(e.id) filter (where e.event = 'detail' and e.surface = 'web'),
+          'app',            count(e.id) filter (where e.event = 'detail' and e.surface = 'app')
         ) as r
         from scope s left join ev e on e.listing_id = s.id
         group by s.id, s.title, s.status

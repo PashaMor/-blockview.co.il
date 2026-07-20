@@ -92,6 +92,8 @@ const fmtPrice = (n) => "₪" + n.toLocaleString("he-IL");
 
 /* ---- geometry & matching ---- */
 function footprint(b) {
+  // real OSM outline when we have one; otherwise the old box around the point
+  if (b.footprint && b.footprint.coordinates && b.footprint.coordinates.length) return b.footprint.coordinates;
   const x = b.lng, y = b.lat, w = b.w / 2, h = b.h / 2;
   return [[[x - w, y - h], [x + w, y - h], [x + w, y + h], [x - w, y + h], [x - w, y - h]]];
 }
@@ -172,7 +174,7 @@ const BVDB = window.supabase.createClient(
 async function loadLiveData() {
   try {
     const [B, L] = await Promise.all([
-      BVDB.from("buildings").select("*"),
+      BVDB.from("buildings_visible").select("*").then((r) => (r.error ? BVDB.from("buildings").select("*") : r)),
       BVDB.from("listings").select("*, listing_photos(path,sort)").eq("status", "approved"),
     ]);
     if (B.error) throw B.error;
@@ -183,6 +185,7 @@ async function loadLiveData() {
       id: b.id, name: b.name, address: b.address, city: b.city,
       lng: +b.lng, lat: +b.lat,
       w: +b.w || 0.00028, h: +b.h || 0.00032, height: +b.height || 24,
+      footprint: b.footprint || null,
     }));
 
     // which listings have a WhatsApp-reachable contact (flag only — never the number)
@@ -520,7 +523,10 @@ document.getElementById("search-results").addEventListener("click", (e) => {
 });
 
 /* --------------------------------------------------------- full detail ---- */
-const AGENT = { name: "ענבל לוי", office: "BlockView נדל\"ן", phone: "050-000-0000", email: "demo@blockview.co.il" };
+/* SECURITY: listing text is written by agents/owners, so every value that ends
+ * up in innerHTML must be escaped (stored XSS otherwise). */
+const escHtml = (s) => String(s == null ? "" : s).replace(/[&<>"']/g,
+  (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 /* Contact details follow the same rule as the database (supabase/10_listing_contacts.sql):
  * a guest sees a masked phone/email, a signed-in user sees them in full. The masks
@@ -536,11 +542,40 @@ function maskEmail(e) {
   return e.slice(0, 2) + "•••@" + e.slice(at + 1);
 }
 const signedIn = () => !!(window.BVAuth && BVAuth.isLoggedIn());
-function contactBlock() {
-  if (signedIn())
-    return `<a class="btn-primary" href="tel:${AGENT.phone}">📞 <bdi class="ltr">${AGENT.phone}</bdi></a>` +
-           `<a class="btn-ghost" href="mailto:${AGENT.email}">✉ <bdi class="ltr">${AGENT.email}</bdi></a>`;
-  return `<button class="btn-primary locked" id="reveal-contact">📞 <bdi class="ltr">${maskPhone(AGENT.phone)}</bdi> · ${t("show_contact")}</button>`;
+/* Real contact people for a listing. Signed-in users get the full row from
+ * listing_contacts; guests only ever see the masked public view. */
+async function renderContacts(lid) {
+  const box = document.getElementById("contact-area");
+  if (!box) return;
+  try {
+    let rows = [];
+    if (signedIn() && window.BVSupa) {
+      const r = await window.BVSupa.from("listing_contacts")
+        .select("name,role,phone,email,sort").eq("listing_id", lid).order("sort");
+      rows = r.data || [];
+    } else {
+      const r = await BVDB.from("listing_contacts_public")
+        .select("name,role,phone_mask,email_mask,sort").eq("listing_id", lid).order("sort");
+      rows = (r.data || []).map((c) => ({ name: c.name, role: c.role, sort: c.sort,
+                                          phone: c.phone_mask, email: c.email_mask, masked: true }));
+    }
+    if (!rows.length) { box.innerHTML = ""; return; }
+    box.innerHTML = rows.map((c) => {
+      const nm = escHtml(c.name), role = c.role ? escHtml(c.role) : "";
+      const ph = escHtml(c.phone || ""), em = escHtml(c.email || "");
+      const actions = c.masked
+        ? `<button class="btn-primary locked reveal-contact">📞 <bdi class="ltr">${ph}</bdi> · ${t("show_contact")}</button>`
+        : (ph ? `<a class="btn-primary" href="tel:${ph}">📞 <bdi class="ltr">${ph}</bdi></a>` : "") +
+          (em ? `<a class="btn-ghost" href="mailto:${em}">✉ <bdi class="ltr">${em}</bdi></a>` : "");
+      return `<div class="contact-person">
+        <div class="agent"><div class="agent-av">${escHtml(String(c.name || "?").charAt(0))}</div>
+          <div><div class="agent-name">${nm}</div><div class="agent-office">${role}</div></div></div>
+        <div class="contact-btns">${actions}</div>
+      </div>`;
+    }).join("");
+    box.querySelectorAll(".reveal-contact").forEach((b) =>
+      b.addEventListener("click", (ev) => { ev.stopPropagation(); if (window.BVAuth) BVAuth.openAuth(); }));
+  } catch (e) { box.innerHTML = ""; }
 }
 function specRows(l) {
   const a = attrs(l);
@@ -550,10 +585,12 @@ function specRows(l) {
     ["חדרים", l.rooms], ['שטח (מ"ר)', l.size], ["קומה", l.floor],
     ["מעלית", a.elevator ? "יש" : "אין"], ["חניה", a.parking ? "יש" : "אין"],
     ["ריהוט", a.furnished ? "מרוהט" : "לא מרוהט"], ["חיות מחמד", a.pets ? "מותר" : "לא"],
-    ["גיל בניין", a.age === "new" ? "חדש" : "ישן"], ["מצב", "משופצת"],
+    ["גיל בניין", a.age === "new" ? "חדש" : "ישן"],
   ];
 }
 function descFor(l) {
+  if (l.description && String(l.description).trim())
+    return String(l.description).split(/\n+/).map((x) => x.trim()).filter(Boolean);
   return [`דירת ${l.rooms} חדרים בשטח ${l.size} מ"ר בקומה ${l.floor}.`, "מרווחת, מוארת ומאווררת עם כיווני אוויר טובים.",
     "קרובה לתחבורה ציבורית, בתי קפה ומרכזי קניות.", l.tour ? "כולל סיור וירטואלי תלת-מימדי." : "ניתן לתאם ביקור בתיאום מראש."];
 }
@@ -567,27 +604,27 @@ function openDetail(lid) {
     <div class="detail-card" role="dialog" aria-modal="true">
       <button id="detail-close" aria-label="חזרה">→ חזרה</button>
       <div class="gallery">
-        <img id="hero" src="${imgs[0]}" alt="${l.title}" />
+        <img id="hero" src="${imgs[0]}" alt="${escHtml(l.title)}" />
         <div class="thumbs">${imgs.map((s, i) => `<img class="thumb${i === 0 ? " on" : ""}" data-i="${i}" src="${s}" alt="" />`).join("")}</div>
       </div>
       <div class="detail-body">
         <div class="detail-head">
           <div>
             <div class="badges-row">${badge}${l.tour ? '<span class="badge tour">🎥 סיור תלת-מימד</span>' : ""}</div>
-            <h2>${l.title}</h2><div class="d-address">${l.building.address}</div>
+            <h2>${escHtml(l.title)}</h2><div class="d-address">${escHtml(l.building.address)}</div>
           </div>
           <div class="d-price">${fmtPrice(l.price)}${per}</div>
         </div>
         <div class="spec-grid">${specRows(l).map(([k, v]) => `<div class="spec"><span class="sk">${k}</span><span class="sv">${v}</span></div>`).join("")}</div>
         <h3 class="d-sec">${t("descr")}</h3>
-        <ul class="d-desc">${descFor(l).map((d) => `<li>${d}</li>`).join("")}</ul>
+        <ul class="d-desc">${descFor(l).map((d) => `<li>${escHtml(d)}</li>`).join("")}</ul>
         <div id="nearby-box"></div>
         <h3 class="d-sec">${t("my_note")}</h3>
         <textarea id="note-input" class="note-input" placeholder="${t("note_ph")}"></textarea>
         <div class="note-saved" id="note-saved" hidden>נשמר ✓</div>
         <div class="contact">
-          <div class="agent"><div class="agent-av">${AGENT.name.charAt(0)}</div><div><div class="agent-name">${AGENT.name}</div><div class="agent-office">${AGENT.office}</div></div></div>
-          <div class="contact-btns">${contactBlock()}${isDbListing(l.id) ? `<button class="btn-lead" data-lead="${l.id}">${t("lead_send")}</button>` : ""}<button class="btn-ghost fav-toggle ${isFav(l.id) ? "on" : ""}" data-fav="${l.id}">${t("save")}</button>${l.hasWhatsapp ? `<button class="btn-wa" data-wa="${l.id}">${t("wa_contact")}</button>` : ""}<button class="btn-ghost" data-share="${l.id}">${t("share")}</button></div>
+          <div id="contact-area" class="contact-area"></div>
+          <div class="contact-btns">${isDbListing(l.id) ? `<button class="btn-lead" data-lead="${l.id}">${t("lead_send")}</button>` : ""}<button class="btn-ghost fav-toggle ${isFav(l.id) ? "on" : ""}" data-fav="${l.id}">${t("save")}</button>${l.hasWhatsapp ? `<button class="btn-wa" data-wa="${l.id}">${t("wa_contact")}</button>` : ""}<button class="btn-ghost" data-share="${l.id}">${t("share")}</button></div>
           ${signedIn() ? "" : `<p class="contact-hint">${t("contact_locked")}</p>`}
         </div>
         <p class="disclaimer">נתונים לדוגמה — אב-טיפוס BlockView. התמונות להמחשה בלבד.</p>
@@ -596,12 +633,19 @@ function openDetail(lid) {
   el.hidden = false;
   if (window.BVTrack) BVTrack.detail(l.id);        // the listing was actually opened
   renderNearby(l.building.id);
+  renderContacts(l.id);
   const reveal = el.querySelector("#reveal-contact");
   if (reveal) reveal.onclick = (ev) => { ev.stopPropagation(); if (window.BVAuth) BVAuth.openAuth(); };
+  // A visitor tapping the real phone / email is a genuine contact. Delegated,
+  // because the contact rows are rendered asynchronously by renderContacts().
+  el.addEventListener("click", (ev) => {
+    if (ev.target.closest('a[href^="tel:"], a[href^="mailto:"], .btn-wa') && window.BVTrack)
+      BVTrack.contact(l.id);
+  }, true);
   el.querySelectorAll("[data-fav]").forEach((b) => (b.onclick = (ev) => {
     ev.stopPropagation(); toggleFav(b.dataset.fav); b.classList.toggle("on", isFav(b.dataset.fav));
   }));
-  el.querySelectorAll("[data-share]").forEach((b) => (b.onclick = (ev) => { ev.stopPropagation(); shareListing(b.dataset.share); }));
+  el.querySelectorAll("[data-share]").forEach((b) => (b.onclick = (ev) => { ev.stopPropagation(); if (window.BVTrack) BVTrack.share(b.dataset.share); shareListing(b.dataset.share); }));
   el.querySelectorAll("[data-lead]").forEach((b) => (b.onclick = (ev) => { ev.stopPropagation(); openLead(b.dataset.lead); }));
   const ta = el.querySelector("#note-input");
   if (window.BVAuth && BVAuth.isLoggedIn()) {
@@ -784,6 +828,7 @@ document.getElementById("lead-form").addEventListener("submit", async (e) => {
   if (res.error) {
     return fail(/TOO_MANY_LEADS/.test(res.error.message) ? t("lead_too_many") : t("lead_error"));
   }
+  if (window.BVTrack) BVTrack.lead(leadFor);
   closeLead();
   toast(t("lead_ok"));
 });
@@ -1209,3 +1254,4 @@ document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-wa]");
   if (b) { e.preventDefault(); openWhatsApp(b.dataset.wa); }
 });
+
