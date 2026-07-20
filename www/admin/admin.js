@@ -135,7 +135,7 @@
   /* --------------------------------------------------------------- data */
   async function loadAll() {
     const [L, P, B, Lead, A] = await Promise.all([
-      supa.from("listings").select("*, buildings(name,address), listing_photos(path,sort)").order("created_at", { ascending: false }),
+      supa.from("listings").select("*, buildings(name,address), listing_photos(path,sort), listing_contacts(name,phone,email,sort)").order("created_at", { ascending: false }),
       supa.from("profiles").select("id,email,role,plan,created_at").order("created_at", { ascending: false }),
       supa.from("buildings").select("*").order("name"),
       supa.from("leads").select("id"),
@@ -244,6 +244,17 @@
     ).join("") + `<span class="gcount">${ps.length} תמונות</span></div>`;
   }
 
+  /* contact people — admins always see the full details (RLS lets them) */
+  function contactList(l) {
+    const cs = (l.listing_contacts || []).slice().sort((a, b) => a.sort - b.sort);
+    if (!cs.length) return "";
+    return `<div class="contacts">` + cs.map((c) =>
+      `<span class="ct"><b>${esc(c.name)}</b>` +
+      `<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>` +
+      (c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : "") +
+      `</span>`).join("") + `</div>`;
+  }
+
   function listingRow(l, withActions) {
     const ph = sortedPhotos(l)[0];
     const b = l.buildings || {};
@@ -268,6 +279,7 @@
           <span>${esc(when(l.created_at))}</span>
           <span class="badge ${esc(l.status)}">${esc(ST[l.status] || l.status)}</span>
         </div>
+        ${contactList(l)}
         ${more}
         ${l.description ? `<div class="rsub">${esc(String(l.description).slice(0, 160))}</div>` : ""}
       </div>

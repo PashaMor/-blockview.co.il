@@ -80,24 +80,38 @@
 
       <form id="ap-form" class="form">
         <div class="grid2">
-          <label class="field"><span>שם מלא *</span>
-            <input id="ap-name" class="input" required maxlength="80" autocomplete="name" />
+          <label class="field"><span>שם פרטי *</span>
+            <input id="ap-first" class="input" required maxlength="40" autocomplete="given-name" />
           </label>
-          <label class="field"><span>טלפון *</span>
-            <input id="ap-phone" class="input" required maxlength="20" inputmode="tel" autocomplete="tel" placeholder="050-0000000" />
+          <label class="field"><span>שם משפחה *</span>
+            <input id="ap-last" class="input" required maxlength="40" autocomplete="family-name" />
           </label>
         </div>
         <div class="grid2">
-          <label class="field"><span>משרד / סוכנות</span>
-            <input id="ap-agency" class="input" maxlength="80" />
+          <label class="field"><span>שם המשרד / הסוכנות *</span>
+            <input id="ap-agency" class="input" required maxlength="80" />
           </label>
-          <label class="field"><span>מספר רישיון תיווך</span>
-            <input id="ap-license" class="input" maxlength="30" placeholder="לפי רשם המתווכים" />
+          <label class="field"><span>מספר רישיון תיווך *</span>
+            <input id="ap-license" class="input" required maxlength="30" placeholder="לפי רשם המתווכים" />
           </label>
         </div>
-        <label class="field"><span>עיר פעילות</span>
-          <input id="ap-city" class="input" maxlength="60" placeholder="תל אביב-יפו" />
-        </label>
+        <div class="grid2">
+          <label class="field"><span>טלפון *</span>
+            <input id="ap-phone" class="input" required maxlength="20" inputmode="tel" autocomplete="tel" placeholder="050-0000000" />
+          </label>
+          <label class="field"><span>עיר פעילות</span>
+            <input id="ap-city" class="input" maxlength="60" placeholder="תל אביב-יפו" />
+          </label>
+        </div>
+        <div class="field"><span>לוגו המשרד *</span>
+          <div class="logo-row">
+            <div class="logo-preview" id="ap-logo-preview"><span>🏢</span></div>
+            <div>
+              <input id="ap-logo" type="file" accept="image/*" class="input" />
+              <div class="hint">יופיע על הנכסים שתפרסם. PNG/JPG, נדחס אוטומטית.</div>
+            </div>
+          </div>
+        </div>
         <label class="field"><span>הערה למנהל</span>
           <textarea id="ap-note" class="input" rows="3" maxlength="500" placeholder="ספר בקצרה על הפעילות שלך..."></textarea>
         </label>

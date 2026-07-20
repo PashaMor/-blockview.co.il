@@ -48,6 +48,13 @@
     document.querySelectorAll("#p-deal-seg .seg-btn").forEach((b) => b.classList.toggle("active", b.dataset.pdeal === "sale"));
     $("pub-form").reset();
     $("p-floor").value = 0;
+    // first contact row starts prefilled with the account's own address
+    let myEmail = "";
+    try {
+      const u = await supa().auth.getUser();
+      myEmail = u && u.data && u.data.user ? u.data.user.email || "" : "";
+    } catch (e) {}
+    resetContacts(myEmail);
     renderStrip();
     await loadBuildings();
     sheet().classList.add("open");
@@ -79,6 +86,56 @@
     c.addEventListener("click", () => {
       c.classList.toggle("on"); state.amen[c.dataset.pamen] = c.classList.contains("on");
     }));
+
+  /* -------------------------------------------------------- contacts ---- */
+  // One or more people a buyer can call. Up to 5 (the DB refuses more).
+  const MAX_CONTACTS = 5;
+  function contactRow(i, email) {
+    const d = document.createElement("div");
+    d.className = "contact-row";
+    d.innerHTML =
+      '<input class="selectbox c-name" maxlength="80" placeholder="' + T("contact_name", "שם איש קשר") + '" autocomplete="name" />' +
+      '<div class="grid-2">' +
+        '<input class="selectbox c-phone" type="tel" maxlength="20" placeholder="' + T("contact_phone", "טלפון") + '" autocomplete="tel" />' +
+        '<input class="selectbox c-email" type="email" maxlength="120" placeholder="' + T("contact_email", "אימייל (לא חובה)") + '" />' +
+      "</div>" +
+      (i === 0 ? "" : '<button type="button" class="c-remove" aria-label="' + T("remove_contact", "הסר איש קשר") + '">✕</button>');
+    if (email) d.querySelector(".c-email").value = email;
+    return d;
+  }
+  function addContactRow(email) {
+    const box = $("p-contacts");
+    if (box.children.length >= MAX_CONTACTS) return;
+    box.appendChild(contactRow(box.children.length, email));
+    $("p-add-contact").hidden = box.children.length >= MAX_CONTACTS;
+  }
+  function resetContacts(email) {
+    $("p-contacts").innerHTML = "";
+    $("p-add-contact").hidden = false;
+    addContactRow(email);
+  }
+  $("p-add-contact").addEventListener("click", () => addContactRow(""));
+  $("p-contacts").addEventListener("click", (e) => {
+    const b = e.target.closest(".c-remove");
+    if (!b) return;
+    b.parentNode.remove();
+    $("p-add-contact").hidden = $("p-contacts").children.length >= MAX_CONTACTS;
+  });
+  // reads + validates the rows; throws on the first bad one
+  function readContacts() {
+    const out = [];
+    const rows = $("p-contacts").querySelectorAll(".contact-row");
+    Array.prototype.forEach.call(rows, (r) => {
+      const name = r.querySelector(".c-name").value.trim();
+      const phone = r.querySelector(".c-phone").value.trim();
+      const email = r.querySelector(".c-email").value.trim();
+      if (!name && !phone && !email) return;                 // empty extra row: ignore
+      if (name.length < 2) throw new Error(T("contact_name_bad", "נא למלא שם איש קשר"));
+      if (phone.replace(/\D/g, "").length < 6) throw new Error(T("contact_phone_bad", "נא למלא מספר טלפון תקין"));
+      out.push({ name: name, phone: phone, email: email || null });
+    });
+    return out;
+  }
 
   /* ---------------------------------------------------------- photos ---- */
   function compress(file) {
@@ -142,8 +199,17 @@
         elevator: !!state.amen.elevator,
         status: "pending",
       };
+      const contacts = readContacts();
+      if (!contacts.length) throw new Error(T("contact_name_bad", "נא למלא שם איש קשר"));
+
       const { data, error } = await supa().from("listings").insert(row).select("id").single();
       if (error) throw error;
+
+      // full details go to listing_contacts (RLS: signed-in users only); guests get
+      // the masked view listing_contacts_public
+      const cres = await supa().from("listing_contacts")
+        .insert(contacts.map((c, i) => ({ listing_id: data.id, name: c.name, phone: c.phone, email: c.email, sort: i })));
+      if (cres.error) throw cres.error;
 
       for (let i = 0; i < state.pending.length; i++) {
         const path = `${user.id}/${data.id}/${Date.now()}_${i}.jpg`;

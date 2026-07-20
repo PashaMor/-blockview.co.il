@@ -25,8 +25,8 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=20" />
-  <link rel="stylesheet" href="css/style.css?v=20" />
+  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=21" />
+  <link rel="stylesheet" href="css/style.css?v=21" />
 </head>
 <body>
   <div id="map"></div>
@@ -363,6 +363,12 @@
         <input id="p-photos" type="file" accept="image/*" multiple class="selectbox" />
         <div id="p-strip" class="photo-strip"></div>
       </div>
+      <div class="fgroup">
+        <label data-i18n="contact_lbl">פרטי יצירת קשר</label>
+        <div id="p-contacts"></div>
+        <button type="button" id="p-add-contact" class="add-row" data-i18n="add_contact">＋ הוסף איש קשר</button>
+        <p class="field-hint" data-i18n="contact_hint">גולשים שאינם מחוברים יראו את הפרטים באופן חלקי בלבד. משתמשים מחוברים יראו את הפרטים המלאים.</p>
+      </div>
       <div id="p-err" class="auth-error" hidden></div>
       <button type="submit" id="p-submit" class="sheet-apply" data-i18n="submit_listing">שלח לאישור</button>
     </form>
@@ -392,14 +398,14 @@
     </div>
   </div>
 
-  <script src="vendor/maplibre-gl.js?v=20"></script>
-  <script src="vendor/supabase.min.js?v=20"></script>
-  <script src="js/config.js?v=20"></script>
-  <script src="js/oauth.js?v=20"></script>
-  <script src="js/i18n.js?v=20"></script>
-  <script src="js/data.js?v=20"></script>
-  <script src="js/app.js?v=20"></script>
-  <script src="js/auth.js?v=20"></script>
-  <script src="js/publish.js?v=20"></script>
+  <script src="vendor/maplibre-gl.js?v=21"></script>
+  <script src="vendor/supabase.min.js?v=21"></script>
+  <script src="js/config.js?v=21"></script>
+  <script src="js/oauth.js?v=21"></script>
+  <script src="js/i18n.js?v=21"></script>
+  <script src="js/data.js?v=21"></script>
+  <script src="js/app.js?v=21"></script>
+  <script src="js/auth.js?v=21"></script>
+  <script src="js/publish.js?v=21"></script>
 </body>
 </html>

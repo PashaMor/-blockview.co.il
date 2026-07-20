@@ -15,7 +15,8 @@
   const nis = (n) => "₪" + Number(n || 0).toLocaleString("he-IL");
   const STATUS_HE = { pending: "ממתין לאישור", approved: "מאושר", rejected: "נדחה", sold: "נמכר", draft: "טיוטה" };
 
-  const state = { user: null, role: "user", application: null, buildings: [], listings: [], leads: [], photos: [], pending: [] };
+  const state = { user: null, role: "user", application: null, buildings: [], listings: [], leads: [], photos: [], pending: [],
+                  logoPath: null, logoBlob: null, logoPreview: null };
 
   /* consent to the terms & privacy policy — the DB trigger stamps the real time,
      so this can be recorded but never back-dated (supabase/08_terms_consent.sql) */
@@ -258,15 +259,67 @@
     $("ap-signout2").hidden = showForm;
 
     if (a) {
-      $("ap-name").value = a.full_name || "";
+      $("ap-first").value = a.first_name || (a.full_name || "").split(" ")[0] || "";
+      $("ap-last").value = a.last_name || (a.full_name || "").split(" ").slice(1).join(" ");
       $("ap-phone").value = a.phone || "";
       $("ap-agency").value = a.agency || "";
       $("ap-license").value = a.license_no || "";
       $("ap-city").value = a.city || "";
       $("ap-note").value = a.note || "";
+      state.logoPath = a.logo_path || null;
     }
+    renderLogo();
     $("ap-submit").textContent = a ? "שלח שוב לבדיקה" : "שלח בקשה";
   }
+
+  /* ---- firm logo: compressed in the browser, uploaded to the agent's folder ---- */
+  const LOGO_BUCKET = "agent-logos";
+  const logoUrl = (p) => supa.storage.from(LOGO_BUCKET).getPublicUrl(p).data.publicUrl;
+
+  function renderLogo() {
+    const box = $("ap-logo-preview");
+    const src = state.logoPreview || (state.logoPath ? logoUrl(state.logoPath) : null);
+    box.textContent = "";
+    if (src) {
+      const img = document.createElement("img");
+      img.src = src; img.alt = "";
+      box.appendChild(img);
+    } else {
+      const s = document.createElement("span");
+      s.textContent = "🏢";
+      box.appendChild(s);
+    }
+  }
+
+  function compressLogo(file) {
+    return new Promise((resolve) => {
+      const rd = new FileReader();
+      rd.onload = (ev) => {
+        const im = new Image();
+        im.onload = () => {
+          const max = 512, sc = Math.min(1, max / Math.max(im.width, im.height));
+          const c = document.createElement("canvas");
+          c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+          c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+          // PNG keeps a transparent background, which most firm logos rely on
+          c.toBlob((blob) => resolve({ blob, preview: c.toDataURL("image/png") }), "image/png");
+        };
+        im.src = ev.target.result;
+      };
+      rd.readAsDataURL(file);
+    });
+  }
+
+  $("ap-logo").addEventListener("change", async (e) => {
+    const f = (e.target.files || [])[0];
+    e.target.value = "";
+    if (!f || !/^image\//.test(f.type)) return;
+    if (f.size > 5 * 1024 * 1024) return showErr("ap-err", "הקובץ גדול מדי (עד 5MB)");
+    const out = await compressLogo(f);
+    state.logoBlob = out.blob;
+    state.logoPreview = out.preview;
+    renderLogo();
+  });
 
   $("ap-edit").addEventListener("click", () => renderApply(true));
   $("ap-signout").addEventListener("click", () => supa.auth.signOut());
@@ -277,12 +330,31 @@
     $("ap-err").hidden = true;
     const btn = $("ap-submit"); btn.disabled = true;
     try {
+      const first = $("ap-first").value.trim(), last = $("ap-last").value.trim();
+      if (!state.logoBlob && !state.logoPath) throw new Error("נא להעלות את לוגו המשרד");
+
+      // upload the logo first: RLS allows writing only inside a folder named
+      // after the user's own uid
+      if (state.logoBlob) {
+        const path = `${state.user.id}/logo_${Date.now()}.png`;
+        const up = await supa.storage.from(LOGO_BUCKET)
+          .upload(path, state.logoBlob, { contentType: "image/png", upsert: true });
+        if (up.error) throw up.error;
+        const old = state.logoPath;
+        state.logoPath = path;
+        state.logoBlob = null;
+        if (old && old !== path) { try { await supa.storage.from(LOGO_BUCKET).remove([old]); } catch (e) {} }
+      }
+
       const row = {
         user_id: state.user.id,
-        full_name: $("ap-name").value.trim(),
+        first_name: first,
+        last_name: last,
+        full_name: (first + " " + last).trim(),
         phone: $("ap-phone").value.trim(),
         agency: $("ap-agency").value.trim(),
         license_no: $("ap-license").value.trim(),
+        logo_path: state.logoPath,
         city: $("ap-city").value.trim(),
         note: $("ap-note").value.trim(),
         status: "pending",       // the DB trigger forces this anyway

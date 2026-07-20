@@ -143,3 +143,11 @@ main { max-width: 1140px; margin: 0 auto; padding: 20px; }
 #lightbox { position: fixed; inset: 0; z-index: 60; background: rgba(10,15,25,.86);
   display: flex; align-items: center; justify-content: center; padding: 24px; cursor: zoom-out; }
 #lightbox img { max-width: 100%; max-height: 100%; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+
+/* ---- contact people on a listing ---- */
+.contacts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+.ct { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: 20px; padding: 5px 11px; }
+.ct b { color: var(--ink); }
+.ct a { color: var(--blue); text-decoration: none; }
+.ct a:hover { text-decoration: underline; }
