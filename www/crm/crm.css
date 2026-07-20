@@ -203,3 +203,6 @@ main { max-width: 1080px; margin: 0 auto; padding: 20px; }
 
 /* phone / email inside RTL text must stay left-to-right */
 .ltr { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+
+.btn-ghost.danger { color: var(--bad); }
+.btn-ghost.danger:hover { border-color: var(--bad); color: var(--bad); }

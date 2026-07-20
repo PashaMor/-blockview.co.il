@@ -606,12 +606,21 @@
             l.status === "new" ? "חדש" : l.status === "contacted" ? "נוצר קשר" : "סגור"}</span>
           ${l.status !== "contacted" ? `<button class="btn-ghost" data-lead="${esc(l.id)}" data-to="contacted">סמן כנוצר קשר</button>` : ""}
           ${l.status !== "closed" ? `<button class="btn-ghost" data-lead="${esc(l.id)}" data-to="closed">סגור</button>` : ""}
+          <button class="btn-ghost danger" data-dellead="${esc(l.id)}">מחק</button>
         </div>
       </div>`;
     }).join("");
   }
 
   $("leads-list").addEventListener("click", async (e) => {
+    const d = e.target.closest("[data-dellead]");
+    if (d) {
+      if (!confirm("למחוק את הפנייה לצמיתות?")) return;
+      const res = await supa.from("leads").delete().eq("id", d.dataset.dellead);
+      if (res.error) return toast("שגיאה במחיקה");
+      toast("הפנייה נמחקה"); await loadLeads();
+      return;
+    }
     const b = e.target.closest("[data-lead]");
     if (!b) return;
     const { error } = await supa.from("leads").update({ status: b.dataset.to }).eq("id", b.dataset.lead);
