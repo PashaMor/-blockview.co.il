@@ -808,3 +808,15 @@ document.querySelectorAll(".dl-store").forEach((a) => a.addEventListener("click"
   const lid = new URLSearchParams(location.search).get("listing");
   if (lid && LISTING_INDEX[lid]) showDownload(lid);
 })();
+
+/* ---- legal links (terms / privacy) ----
+   In the native app there is no browser plugin, so target="_blank" is a dead tap.
+   Inside the app we navigate in the same WebView; the legal page's "back to site"
+   link brings the user back to the map. */
+(function initLegalLinks() {
+  const isNativeApp = !!window.Capacitor || /BlockViewApp/i.test(navigator.userAgent);
+  if (!isNativeApp) return;
+  document.querySelectorAll('.legal-consent a[target="_blank"]').forEach((a) => {
+    a.removeAttribute("target");
+  });
+})();

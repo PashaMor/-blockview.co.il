@@ -16,6 +16,9 @@
     { "source": "/admin.css", "has": [{ "type": "host", "value": "admin.blockview.co.il" }], "destination": "/www/admin/admin.css" },
     { "source": "/admin.js", "has": [{ "type": "host", "value": "admin.blockview.co.il" }], "destination": "/www/admin/admin.js" },
 
+    { "source": "/terms", "destination": "/www/legal/terms.html" },
+    { "source": "/privacy", "destination": "/www/legal/privacy.html" },
+
     { "source": "/", "destination": "/www/index.html" },
     { "source": "/(.*)", "destination": "/www/$1" }
   ]

@@ -95,6 +95,9 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .auth-error { color: #B0322A; font-size: 13px; background: #FBE9E7; padding: 9px 12px; border-radius: 10px; }
 .auth-error[hidden] { display: none; }
 .auth-link { border: 0; background: transparent; color: var(--blue); font: inherit; font-weight: 700; font-size: 13.5px; cursor: pointer; padding: 4px; }
+.legal-consent { margin: 10px 0 0; font-size: 12.5px; line-height: 1.7; color: var(--muted, #8592A2); text-align: center; }
+.legal-consent a { color: var(--blue); font-weight: 700; text-decoration: none; }
+.legal-consent a:hover { text-decoration: underline; }
 .acc-usage { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
 .acc-usage .row { display: flex; justify-content: space-between; font-size: 14px; color: var(--text-soft); }
 .acc-usage .row b { color: var(--ink); }

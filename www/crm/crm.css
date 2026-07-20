@@ -58,6 +58,9 @@ textarea.input { resize: vertical; }
 .linkish { font: inherit; font-size: 13.5px; font-weight: 700; color: var(--blue); background: none;
   border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
 .ok-box { background: var(--ok-bg); color: var(--ok); font-size: 13.5px; padding: 10px 12px; border-radius: 9px; }
+.legal-consent { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); text-align: center; }
+.legal-consent a { color: var(--text-soft); text-decoration: none; }
+.legal-consent a:hover { color: var(--blue); text-decoration: underline; }
 
 /* ---------- agent application ---------- */
 .ap-status { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--surface-2);

@@ -39,6 +39,7 @@
       descr: "תיאור", my_note: "הערה אישית", note_ph: "כתוב לעצמך הערה על הנכס...",
       save: "♥ שמור", share: "🔗 שתף", send_msg: "שליחת הודעה", language: "שפה", for_sale: "למכירה", for_rent: "להשכרה",
       publish: "פרסם נכס", who_q: "מי אתה?", who_sub: "בחר כדי להמשיך לפרסום הנכס", owner: "בעל נכס", owner_desc: "פרסם את הנכס שלך בעצמך", realtor: "מתווך / סוכן", realtor_desc: "מעבר למערכת הסוכנים", publish_title: "פרסום נכס", publish_sub: "הנכס יישלח לאישור ויופיע במפה לאחר אישור.", pub_title_lbl: "כותרת", price_lbl: "מחיר (₪)", size_lbl: "מ\"ר", floor_lbl: "קומה", photos_lbl: "תמונות", submit_listing: "שלח לאישור", login_to_publish: "התחבר כדי לפרסם נכס", pub_ok: "הנכס נשלח לאישור ✓", forgot_pw: "שכחת סיסמה?", change_pw: "🔑 שינוי סיסמה",
+      legal_agree: "בהמשך אתה מאשר את", terms_link: "תנאי השימוש", privacy_link: "מדיניות הפרטיות", and: "ו",
     },
     en: {
       filter: "Filter", deal_type: "Deal type", all: "All", sale: "Sale", rent: "Rent",
@@ -68,6 +69,7 @@
       descr: "Description", my_note: "Personal note", note_ph: "Write yourself a note about this property...",
       save: "♥ Save", share: "🔗 Share", send_msg: "Send message", language: "Language", for_sale: "For sale", for_rent: "For rent",
       publish: "List a property", who_q: "Who are you?", who_sub: "Choose how to continue", owner: "Property owner", owner_desc: "Post your own property", realtor: "Realtor / agent", realtor_desc: "Go to the agent CRM", publish_title: "Publish a property", publish_sub: "Your listing is reviewed, then appears on the map.", pub_title_lbl: "Title", price_lbl: "Price (₪)", size_lbl: "m²", floor_lbl: "Floor", photos_lbl: "Photos", submit_listing: "Submit for approval", login_to_publish: "Sign in to publish", pub_ok: "Submitted for approval ✓", forgot_pw: "Forgot password?", change_pw: "🔑 Change password",
+      legal_agree: "By continuing you accept the", terms_link: "Terms of Service", privacy_link: "Privacy Policy", and: "and ",
     },
     ar: {
       filter: "تصفية", deal_type: "نوع الصفقة", all: "الكل", sale: "بيع", rent: "إيجار",
@@ -97,6 +99,7 @@
       descr: "الوصف", my_note: "ملاحظة شخصية", note_ph: "اكتب ملاحظة لنفسك عن هذا العقار...",
       save: "♥ حفظ", share: "🔗 مشاركة", send_msg: "إرسال رسالة", language: "اللغة", for_sale: "للبيع", for_rent: "للإيجار",
       publish: "أضف عقارًا", who_q: "من أنت؟", who_sub: "اختر لمتابعة النشر", owner: "مالك العقار", owner_desc: "انشر عقارك بنفسك", realtor: "وسيط عقاري", realtor_desc: "الانتقال إلى نظام الوسطاء", publish_title: "نشر عقار", publish_sub: "سيُراجع العقار ثم يظهر على الخريطة.", pub_title_lbl: "العنوان", price_lbl: "السعر (₪)", size_lbl: "م²", floor_lbl: "الطابق", photos_lbl: "الصور", submit_listing: "إرسال للموافقة", login_to_publish: "سجّل الدخول للنشر", pub_ok: "تم الإرسال للموافقة ✓", forgot_pw: "نسيت كلمة المرور؟", change_pw: "🔑 تغيير كلمة المرور",
+      legal_agree: "بالمتابعة فإنك توافق على", terms_link: "شروط الاستخدام", privacy_link: "سياسة الخصوصية", and: "و",
     },
     fr: {
       filter: "Filtres", deal_type: "Type de transaction", all: "Tous", sale: "Vente", rent: "Location",
@@ -126,6 +129,7 @@
       descr: "Description", my_note: "Note personnelle", note_ph: "Écrivez-vous une note sur ce bien...",
       save: "♥ Enregistrer", share: "🔗 Partager", send_msg: "Envoyer un message", language: "Langue", for_sale: "À vendre", for_rent: "À louer",
       publish: "Publier un bien", who_q: "Qui êtes-vous ?", who_sub: "Choisissez pour continuer", owner: "Propriétaire", owner_desc: "Publiez votre propre bien", realtor: "Agent immobilier", realtor_desc: "Accéder au CRM agents", publish_title: "Publier un bien", publish_sub: "Votre annonce est validée puis affichée sur la carte.", pub_title_lbl: "Titre", price_lbl: "Prix (₪)", size_lbl: "m²", floor_lbl: "Étage", photos_lbl: "Photos", submit_listing: "Envoyer pour validation", login_to_publish: "Connectez-vous pour publier", pub_ok: "Envoyé pour validation ✓", forgot_pw: "Mot de passe oublié ?", change_pw: "🔑 Changer le mot de passe",
+      legal_agree: "En continuant, vous acceptez les", terms_link: "Conditions d’utilisation", privacy_link: "Politique de confidentialité", and: "et ",
     },
     ru: {
       filter: "Фильтр", deal_type: "Тип сделки", all: "Все", sale: "Продажа", rent: "Аренда",
@@ -155,6 +159,7 @@
       descr: "Описание", my_note: "Личная заметка", note_ph: "Напишите себе заметку об объекте...",
       save: "♥ Сохранить", share: "🔗 Поделиться", send_msg: "Отправить сообщение", language: "Язык", for_sale: "Продажа", for_rent: "Аренда",
       publish: "Разместить объект", who_q: "Кто вы?", who_sub: "Выберите, как продолжить", owner: "Собственник", owner_desc: "Разместите свой объект сами", realtor: "Риелтор / агент", realtor_desc: "Перейти в CRM для агентов", publish_title: "Размещение объекта", publish_sub: "Объявление проходит модерацию и появляется на карте.", pub_title_lbl: "Заголовок", price_lbl: "Цена (₪)", size_lbl: "м²", floor_lbl: "Этаж", photos_lbl: "Фото", submit_listing: "Отправить на модерацию", login_to_publish: "Войдите, чтобы разместить", pub_ok: "Отправлено на модерацию ✓", forgot_pw: "Забыли пароль?", change_pw: "🔑 Сменить пароль",
+      legal_agree: "Продолжая, вы принимаете", terms_link: "Условия использования", privacy_link: "Политику конфиденциальности", and: "и ",
     },
     es: {
       filter: "Filtros", deal_type: "Tipo de operación", all: "Todos", sale: "Venta", rent: "Alquiler",
@@ -184,6 +189,7 @@
       descr: "Descripción", my_note: "Nota personal", note_ph: "Escríbete una nota sobre esta propiedad...",
       save: "♥ Guardar", share: "🔗 Compartir", send_msg: "Enviar mensaje", language: "Idioma", for_sale: "En venta", for_rent: "En alquiler",
       publish: "Publicar propiedad", who_q: "¿Quién eres?", who_sub: "Elige cómo continuar", owner: "Propietario", owner_desc: "Publica tu propia propiedad", realtor: "Agente inmobiliario", realtor_desc: "Ir al CRM de agentes", publish_title: "Publicar propiedad", publish_sub: "Tu anuncio se revisa y luego aparece en el mapa.", pub_title_lbl: "Título", price_lbl: "Precio (₪)", size_lbl: "m²", floor_lbl: "Piso", photos_lbl: "Fotos", submit_listing: "Enviar a aprobación", login_to_publish: "Inicia sesión para publicar", pub_ok: "Enviado a aprobación ✓", forgot_pw: "¿Olvidaste tu contraseña?", change_pw: "🔑 Cambiar contraseña",
+      legal_agree: "Al continuar aceptas los", terms_link: "Términos de servicio", privacy_link: "Política de privacidad", and: "y ",
     },
   };
 
