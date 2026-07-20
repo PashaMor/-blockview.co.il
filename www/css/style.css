@@ -40,6 +40,42 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 #view-toggle { top: 70px; font-weight: 800; font-size: 15px; color: var(--ink); }
 #account-btn { top: 124px; font-size: 19px; overflow: hidden; background-size: cover; background-position: center; }
 #lang-btn { top: 178px; font-size: 20px; }
+
+/* ---------- publish (website only) ---------- */
+#publish-btn {
+  position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 6;
+  display: inline-flex; align-items: center; gap: 7px;
+  font: inherit; font-weight: 800; font-size: 14.5px; cursor: pointer;
+  background: var(--blue); color: #fff; border: 0; border-radius: 26px;
+  height: 46px; padding: 0 22px; box-shadow: 0 6px 22px rgba(0,56,184,.32);
+  transition: transform .15s ease;
+}
+#publish-btn:hover { transform: translateX(-50%) translateY(-1px); }
+#publish-btn span:first-child { font-size: 18px; line-height: 1; }
+@media (max-width: 560px) { #publish-btn { top: 78px; height: 42px; padding: 0 16px; font-size: 13.5px; } }
+
+/* owner / realtor chooser */
+#who-modal { position: fixed; inset: 0; z-index: 24; background: rgba(20,30,45,.55); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 24px; }
+#who-modal[hidden] { display: none; }
+.who-card { position: relative; background: var(--surface); width: min(420px, 100%); border-radius: 20px; padding: 28px 24px; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+.who-card h2 { margin: 0 0 4px; font-size: 22px; color: var(--ink); font-weight: 800; text-align: center; }
+.who-sub { margin: 0 0 20px; font-size: 14px; color: var(--text-soft); text-align: center; }
+.who-x { position: absolute; top: 14px; left: 16px; width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text-soft); cursor: pointer; }
+.who-opt { display: flex; align-items: center; gap: 14px; width: 100%; text-align: start; cursor: pointer;
+  border: 1.5px solid var(--line); background: var(--surface); border-radius: 14px; padding: 15px; margin-bottom: 10px; font: inherit; }
+.who-opt:hover { border-color: var(--blue); background: #EDF2FC; }
+.who-ic { font-size: 26px; }
+.who-tx b { display: block; font-size: 16px; color: var(--ink); }
+.who-tx small { font-size: 12.5px; color: var(--text-soft); }
+
+/* owner publish form */
+#publish-sheet .fgroup label { display: block; font-size: 13px; color: var(--text-soft); margin-bottom: 7px; font-weight: 600; }
+#publish-sheet .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+#publish-sheet textarea.selectbox { resize: vertical; }
+#p-strip .ph { position: relative; width: 84px; height: 64px; border-radius: 9px; overflow: hidden; border: 1px solid var(--line); }
+#p-strip .ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+#p-strip .ph button { position: absolute; top: 3px; inset-inline-end: 3px; border: 0; background: rgba(0,0,0,.6); color: #fff; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; font-size: 11px; line-height: 1; }
+.photo-strip { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .lang-list { padding: 8px 16px 22px; display: flex; flex-direction: column; gap: 7px; }
 .lang-opt { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; cursor: pointer; font: inherit; font-size: 15px; font-weight: 600; color: var(--ink); }
 .lang-opt:hover { border-color: var(--blue); }

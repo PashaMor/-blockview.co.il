@@ -25,8 +25,8 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=13" />
-  <link rel="stylesheet" href="css/style.css?v=13" />
+  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=14" />
+  <link rel="stylesheet" href="css/style.css?v=14" />
 </head>
 <body>
   <div id="map"></div>
@@ -35,6 +35,9 @@
   <header id="brand">
     <img class="brand-logo" src="logo.png" alt="BlockView — גע בבניין. גלה מה בפנים." />
   </header>
+
+  <!-- Publish (website only — removed inside the native app) -->
+  <button id="publish-btn"><span>＋</span> <span data-i18n="publish">פרסם נכס</span></button>
 
   <!-- Day / night toggle -->
   <button id="mode-toggle" title="יום / לילה">☾</button>
@@ -268,6 +271,83 @@
     <div id="lang-list" class="lang-list"></div>
   </section>
 
+  <!-- Owner / realtor chooser -->
+  <div id="who-modal" hidden>
+    <div class="who-card">
+      <button class="who-x" id="who-close" aria-label="close">✕</button>
+      <h2 data-i18n="who_q">מי אתה?</h2>
+      <p class="who-sub" data-i18n="who_sub">בחר כדי להמשיך לפרסום הנכס</p>
+      <button class="who-opt" id="who-owner">
+        <span class="who-ic">🏠</span>
+        <span class="who-tx"><b data-i18n="owner">בעל נכס</b><small data-i18n="owner_desc">פרסם את הנכס שלך בעצמך</small></span>
+      </button>
+      <button class="who-opt" id="who-realtor">
+        <span class="who-ic">🧑‍💼</span>
+        <span class="who-tx"><b data-i18n="realtor">מתווך / סוכן</b><small data-i18n="realtor_desc">מעבר למערכת הסוכנים</small></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Owner: publish a property -->
+  <section id="publish-sheet" class="sheet" aria-hidden="true">
+    <div class="sheet-handle"></div>
+    <button class="sheet-x" id="pub-close" aria-label="close">✕</button>
+    <div class="building-head">
+      <div class="bh-eyebrow" data-i18n="owner">בעל נכס</div>
+      <h2 data-i18n="publish_title">פרסום נכס</h2>
+      <div class="b-address" data-i18n="publish_sub">הנכס יישלח לאישור ויופיע במפה לאחר אישור.</div>
+    </div>
+    <form id="pub-form" class="sheet-body">
+      <div class="fgroup">
+        <label data-i18n="building">בניין</label>
+        <select id="p-building" class="selectbox" required></select>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="deal_type">סוג עסקה</label>
+        <div class="seg" id="p-deal-seg">
+          <button type="button" class="seg-btn active" data-pdeal="sale" data-i18n="sale">מכירה</button>
+          <button type="button" class="seg-btn" data-pdeal="rent" data-i18n="rent">השכרה</button>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="pub_title_lbl">כותרת</label>
+        <input id="p-title" class="selectbox" required maxlength="120" />
+      </div>
+      <div class="fgroup grid-3">
+        <div><label data-i18n="price_lbl">מחיר (₪)</label><input id="p-price" class="selectbox" type="number" min="0" required /></div>
+        <div><label data-i18n="rooms">חדרים</label><input id="p-rooms" class="selectbox" type="number" min="0.5" step="0.5" required /></div>
+        <div><label data-i18n="size_lbl">מ"ר</label><input id="p-size" class="selectbox" type="number" min="1" required /></div>
+      </div>
+      <div class="fgroup grid-3">
+        <div><label data-i18n="floor_lbl">קומה</label><input id="p-floor" class="selectbox" type="number" min="0" value="0" /></div>
+        <div><label data-i18n="prop_type">סוג נכס</label>
+          <select id="p-type" class="selectbox"><option value="flat" data-i18n="flat">דירה</option><option value="house" data-i18n="house">בית</option></select></div>
+        <div><label data-i18n="building_age">גיל</label>
+          <select id="p-age" class="selectbox"><option value="old" data-i18n="old">ישן</option><option value="new" data-i18n="new">חדש</option></select></div>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="descr">תיאור</label>
+        <textarea id="p-desc" class="selectbox" rows="3" maxlength="2000"></textarea>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="extras">נוספים</label>
+        <div class="chips" id="p-amen">
+          <button type="button" class="chip" data-pamen="furnished" data-i18n="furnished">🛋️ מרוהט</button>
+          <button type="button" class="chip" data-pamen="pets" data-i18n="pets">🐾 חיות מחמד</button>
+          <button type="button" class="chip" data-pamen="parking" data-i18n="parking">🅿️ חניה</button>
+          <button type="button" class="chip" data-pamen="elevator" data-i18n="elevator">🛗 מעלית</button>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="photos_lbl">תמונות</label>
+        <input id="p-photos" type="file" accept="image/*" multiple class="selectbox" />
+        <div id="p-strip" class="photo-strip"></div>
+      </div>
+      <div id="p-err" class="auth-error" hidden></div>
+      <button type="submit" id="p-submit" class="sheet-apply" data-i18n="submit_listing">שלח לאישור</button>
+    </form>
+  </section>
+
   <!-- Full listing detail -->
   <div id="detail" hidden></div>
 
@@ -292,12 +372,13 @@
     </div>
   </div>
 
-  <script src="vendor/maplibre-gl.js?v=13"></script>
-  <script src="vendor/supabase.min.js?v=13"></script>
-  <script src="js/config.js?v=13"></script>
-  <script src="js/i18n.js?v=13"></script>
-  <script src="js/data.js?v=13"></script>
-  <script src="js/app.js?v=13"></script>
-  <script src="js/auth.js?v=13"></script>
+  <script src="vendor/maplibre-gl.js?v=14"></script>
+  <script src="vendor/supabase.min.js?v=14"></script>
+  <script src="js/config.js?v=14"></script>
+  <script src="js/i18n.js?v=14"></script>
+  <script src="js/data.js?v=14"></script>
+  <script src="js/app.js?v=14"></script>
+  <script src="js/auth.js?v=14"></script>
+  <script src="js/publish.js?v=14"></script>
 </body>
 </html>

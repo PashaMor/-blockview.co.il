@@ -6,6 +6,7 @@
 (function () {
   const cfg = window.BLOCKVIEW_CONFIG;
   const supa = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  window.BVSupa = supa; // shared client (publish.js reuses it)
   const limits = cfg.LIMITS;
   const state = { user: null, plan: "free", avatar: null, notifications: false };
   const $ = (id) => document.getElementById(id);
