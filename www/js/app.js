@@ -876,7 +876,7 @@ function addEducationLayer() {
           "kindergarten", "bv-edu-kg",
           "school", "bv-edu-school",
           "bv-edu-college"],
-        "icon-size": 0.5,
+        "icon-size": 0.72,
         "icon-allow-overlap": false,
         "text-field": ["coalesce", ["get", "name:" + (window.currentLang ? window.currentLang() : "he")], ["get", "name"]],
         "text-font": ["Noto Sans Regular"],
