@@ -421,3 +421,14 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .add-row { font: inherit; font-weight: 700; font-size: 13.5px; color: var(--blue); background: transparent;
   border: 1px dashed var(--line); border-radius: 10px; padding: 9px 14px; cursor: pointer; width: 100%; }
 .add-row:hover { border-color: var(--blue); }
+
+/* ---------- education POI toggle ---------- */
+#edu-toggle {
+  position: absolute; right: 16px; top: 232px; z-index: 5;
+  width: 46px; height: 46px; border-radius: 50%;
+  border: 1px solid var(--line); background: rgba(255,255,255,.92); backdrop-filter: blur(8px);
+  cursor: pointer; box-shadow: var(--shadow-sm); font-size: 20px; line-height: 1;
+  filter: grayscale(1); opacity: .6; transition: all .15s ease;
+}
+#edu-toggle.on { filter: none; opacity: 1; border-color: var(--blue); }
+#edu-toggle:hover { transform: scale(1.06); }

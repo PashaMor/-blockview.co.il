@@ -280,6 +280,7 @@ function addCustomLayers() {
     layout: { "text-field": ["get", "label"], "text-size": 12, "text-offset": [0, -0.6], "text-anchor": "bottom", "text-font": ["Noto Sans Regular"] },
     paint: labelPaint() });
 
+  addEducationLayer();
   localizeMap();
   if (selectedId) setSelectedState(selectedId, true);
 }
@@ -826,4 +827,85 @@ document.querySelectorAll(".dl-store").forEach((a) => a.addEventListener("click"
   const zi = document.getElementById("zoom-in"), zo = document.getElementById("zoom-out");
   if (zi) zi.addEventListener("click", () => map.easeTo({ zoom: map.getZoom() + 1, duration: 300 }));
   if (zo) zo.addEventListener("click", () => map.easeTo({ zoom: map.getZoom() - 1, duration: 300 }));
+})();
+
+/* ---------------------------------------- education POIs on the map ----
+ * Kindergartens, schools and colleges/universities straight from the map
+ * tiles (OpenMapTiles `poi` layer). Icons are drawn on a canvas so we don't
+ * depend on the base style's sprite. Re-added on every style switch.
+ */
+const EDU_KINDS = [
+  { img: "bv-edu-kg",      emoji: "🧸", color: "#E08A2E", match: ["kindergarten"] },
+  { img: "bv-edu-school",  emoji: "🎒", color: "#2C8874", match: ["school"] },
+  { img: "bv-edu-college", emoji: "🎓", color: "#6B4FD8", match: ["college", "university"] },
+];
+let eduVisible = true;
+try { eduVisible = localStorage.getItem("blockview_edu") !== "0"; } catch (e) {}
+
+function eduIcon(emoji, color) {
+  const s = 48, c = document.createElement("canvas");
+  c.width = c.height = s;
+  const x = c.getContext("2d");
+  x.beginPath(); x.arc(s / 2, s / 2, s / 2 - 4, 0, Math.PI * 2);
+  x.fillStyle = "#fff"; x.fill();
+  x.lineWidth = 3.5; x.strokeStyle = color; x.stroke();
+  x.font = '22px "Segoe UI Emoji", "Noto Color Emoji", system-ui, sans-serif';
+  x.textAlign = "center"; x.textBaseline = "middle";
+  x.fillText(emoji, s / 2, s / 2 + 1);
+  return x.getImageData(0, 0, s, s);
+}
+
+function addEducationLayer() {
+  try {
+    if (!map.getSource("openmaptiles")) return;      // base style not ready
+    EDU_KINDS.forEach((k) => {
+      if (!map.hasImage(k.img)) map.addImage(k.img, eduIcon(k.emoji, k.color), { pixelRatio: 2 });
+    });
+    if (map.getLayer("poi-edu")) map.removeLayer("poi-edu");
+    const all = EDU_KINDS.flatMap((k) => k.match);
+    map.addLayer({
+      id: "poi-edu",
+      type: "symbol",
+      source: "openmaptiles",
+      "source-layer": "poi",
+      minzoom: 13,
+      filter: ["in", ["get", "subclass"], ["literal", all]],
+      layout: {
+        "visibility": eduVisible ? "visible" : "none",
+        "icon-image": ["match", ["get", "subclass"],
+          "kindergarten", "bv-edu-kg",
+          "school", "bv-edu-school",
+          "bv-edu-college"],
+        "icon-size": 0.5,
+        "icon-allow-overlap": false,
+        "text-field": ["coalesce", ["get", "name:" + (window.currentLang ? window.currentLang() : "he")], ["get", "name"]],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": 11,
+        "text-offset": [0, 1.2],
+        "text-anchor": "top",
+        "text-optional": true,
+        "symbol-sort-key": 1,
+      },
+      paint: {
+        "text-color": mode === "dark" ? "#E7ECF5" : "#2B3A55",
+        "text-halo-color": mode === "dark" ? "#0b1220" : "#ffffff",
+        "text-halo-width": 1.5,
+      },
+    });
+  } catch (e) { console.warn("[BlockView] education layer:", e.message); }
+}
+
+/* toggle button */
+(function () {
+  const btn = document.getElementById("edu-toggle");
+  if (!btn) return;
+  const paint = () => { btn.classList.toggle("on", eduVisible); btn.title = eduVisible ? "הסתר מוסדות חינוך" : "הצג מוסדות חינוך"; };
+  paint();
+  btn.addEventListener("click", () => {
+    eduVisible = !eduVisible;
+    try { localStorage.setItem("blockview_edu", eduVisible ? "1" : "0"); } catch (e) {}
+    if (map.getLayer("poi-edu")) map.setLayoutProperty("poi-edu", "visibility", eduVisible ? "visible" : "none");
+    paint();
+    if (window.bvToast) bvToast(eduVisible ? "מוסדות חינוך מוצגים" : "מוסדות חינוך מוסתרים");
+  });
 })();
