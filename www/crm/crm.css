@@ -16,6 +16,8 @@
   --font: "Segoe UI", system-ui, -apple-system, "Assistant", Arial, sans-serif;
 }
 * { box-sizing: border-box; }
+/* the hidden attribute must beat any author display rule (.gate uses display:grid) */
+[hidden] { display: none !important; }
 body { margin: 0; background: var(--surface-2); color: var(--text); font-family: var(--font); }
 
 /* ---------- top bar ---------- */
