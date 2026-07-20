@@ -17,6 +17,23 @@
 
   const state = { user: null, role: "user", application: null, buildings: [], listings: [], leads: [], photos: [], pending: [] };
 
+  /* consent to the terms & privacy policy — the DB trigger stamps the real time,
+     so this can be recorded but never back-dated (supabase/08_terms_consent.sql) */
+  const CONSENT_KEY = "blockview_consent";
+  function savedConsent() { try { return localStorage.getItem(CONSENT_KEY); } catch (e) { return null; } }
+  function rememberConsent() { try { localStorage.setItem(CONSENT_KEY, cfg.LEGAL_VERSION); } catch (e) {} }
+  function isSocial(session) {
+    const p = session && session.user && session.user.app_metadata && session.user.app_metadata.provider;
+    return !!p && p !== "email";
+  }
+  async function recordConsent() {
+    const { error } = await supa.from("profiles")
+      .update({ terms_accepted_at: new Date().toISOString(), terms_version: cfg.LEGAL_VERSION })
+      .eq("id", state.user.id);
+    if (error) return console.warn("[BlockView] consent not saved:", error.message);
+    try { localStorage.removeItem(CONSENT_KEY); } catch (e) {}
+  }
+
   let toastTimer;
   function toast(msg) {
     const t = $("toast"); t.textContent = msg; t.hidden = false;
@@ -27,8 +44,10 @@
   supa.auth.onAuthStateChange(async (_e, session) => {
     state.user = session ? session.user : null;
     if (!state.user) return showGate();
-    const { data } = await supa.from("profiles").select("role").eq("id", state.user.id).single();
+    const { data } = await supa.from("profiles").select("role, terms_accepted_at").eq("id", state.user.id).single();
     state.role = (data && data.role) || "user";
+    // record the sign-up consent; with email verification on it lands at first sign-in
+    if (data && !data.terms_accepted_at && (savedConsent() || isSocial(session))) await recordConsent();
     const roleHe = state.role === "admin" ? "מנהל מערכת" : state.role === "agent" ? "סוכן נדל\"ן" : "משתמש";
     $("who").textContent = state.user.email + " · " + roleHe;
     $("settings-btn").hidden = false;
@@ -162,6 +181,8 @@
       : "התחבר כדי לנהל את הנכסים והלידים שלך.";
     $("g-signin").hidden = up;
     $("g-signup").hidden = !up;
+    $("g-consent").hidden = !up;
+    $("g-consent-cb").checked = false;
     $("g-alt-tx").textContent = up ? "כבר יש לך חשבון?" : "עוד לא רשום כסוכן?";
     $("g-toggle").textContent = up ? "התחברות" : "הרשמה כסוכן";
     $("g-pw").setAttribute("autocomplete", up ? "new-password" : "current-password");
@@ -180,7 +201,9 @@
     const email = $("g-email").value.trim(), password = $("g-pw").value;
     if (!email || !password) return showErr("g-err", "נא למלא אימייל וסיסמה");
     if (password.length < 8) return showErr("g-err", "הסיסמה חייבת להיות באורך 8 תווים לפחות");
+    if (!$("g-consent-cb").checked) return showErr("g-err", "יש לאשר את תנאי השימוש ומדיניות הפרטיות");
     const { data, error } = await supa.auth.signUp({ email, password });
+    if (!error) rememberConsent();   // recorded once the session exists (see below)
     if (error) return showErr("g-err", error.message);
     if (data && !data.session) {
       const ok = $("g-ok");

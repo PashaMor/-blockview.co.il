@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BlockView CRM — ניהול נכסים</title>
-  <link rel="stylesheet" href="crm.css?v=7" />
+  <link rel="stylesheet" href="crm.css?v=8" />
 </head>
 <body>
 
@@ -47,6 +47,11 @@
       <div id="g-ok" class="ok-box" hidden></div>
       <button id="g-signin" class="btn-primary">התחבר</button>
       <button id="g-forgot" class="btn-ghost" style="border:0;color:var(--blue)">שכחת סיסמה?</button>
+      <label class="consent-row" id="g-consent" hidden>
+        <input type="checkbox" id="g-consent-cb" />
+        <span>קראתי ואני מסכים ל<a href="https://blockview.co.il/terms" target="_blank" rel="noopener">תנאי השימוש</a>
+        ו<a href="https://blockview.co.il/privacy" target="_blank" rel="noopener">מדיניות הפרטיות</a></span>
+      </label>
       <button id="g-signup" class="btn-primary" hidden>צור חשבון סוכן</button>
       <div class="gate-alt">
         <span id="g-alt-tx">עוד לא רשום כסוכן?</span>
@@ -259,8 +264,8 @@
   <div id="toast" hidden></div>
 
   <script src="../vendor/supabase.min.js?v=1"></script>
-  <script src="../js/config.js?v=17"></script>
+  <script src="../js/config.js?v=20"></script>
   <script src="../js/oauth.js?v=17"></script>
-  <script src="crm.js?v=6"></script>
+  <script src="crm.js?v=7"></script>
 </body>
 </html>

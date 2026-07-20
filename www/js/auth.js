@@ -9,7 +9,8 @@
     window.BVOAuth ? BVOAuth.clientOptions() : undefined);
   window.BVSupa = supa; // shared client (publish.js reuses it)
   const limits = cfg.LIMITS;
-  const state = { user: null, plan: "free", avatar: null, notifications: false };
+  const state = { user: null, plan: "free", avatar: null, notifications: false, termsAcceptedAt: null };
+  let consentPending = false;   // set when the user ticks the box on sign-up
   const $ = (id) => document.getElementById(id);
 
   /* ---------- load this user's data ---------- */
@@ -27,6 +28,7 @@
     state.plan = p.plan || "free";
     state.avatar = p.avatar_url || null;
     state.notifications = !!p.notifications;
+    state.termsAcceptedAt = p.terms_accepted_at || null;
     const notesObj = {};
     (nt.data || []).forEach((r) => (notesObj[r.listing_id] = r.body));
     if (window.onUserData)
@@ -38,6 +40,13 @@
   supa.auth.onAuthStateChange(async (_evt, session) => {
     state.user = session ? session.user : null;
     await loadUserData();
+    // Stamp the consent as soon as a session exists. With email verification on,
+    // sign-up returns no session, so the tick is remembered across the verification
+    // link (localStorage) and recorded at first sign-in. A social sign-in counts as
+    // consent through the notice shown next to the buttons.
+    if (state.user && !state.termsAcceptedAt && (consentPending || savedConsent() || isSocial(session))) {
+      await recordConsent();
+    }
     updateAccountUI();
     closeAuth();
   });
@@ -84,6 +93,11 @@
     $("auth-title").textContent = t(m === "in" ? "sign_in" : "sign_up");
     $("auth-submit").textContent = t(m === "in" ? "do_sign_in" : "do_sign_up");
     $("auth-toggle").textContent = t(m === "in" ? "sign_up" : "sign_in");
+    // signing up requires ticking the consent box; signing in only shows the note
+    const up = m === "up";
+    $("auth-consent").hidden = !up;
+    $("auth-legal-note").hidden = up;
+    $("auth-consent-cb").checked = false;
   }
   function showError(msg) { const e = $("auth-error"); e.textContent = msg; e.hidden = false; }
 
@@ -94,12 +108,40 @@
   $("auth-submit").addEventListener("click", async () => {
     const email = $("auth-email").value.trim(), pw = $("auth-pw").value;
     if (!email || !pw) { showError("נא למלא אימייל וסיסמה"); return; }
+    if (signMode === "up" && !$("auth-consent-cb").checked) { showError(t("must_agree")); return; }
     const { data, error } = signMode === "in"
       ? await supa.auth.signInWithPassword({ email, password: pw })
       : await supa.auth.signUp({ email, password: pw });
     if (error) { showError(error.message); return; }
-    if (signMode === "up" && data && !data.session) showError("נשלח אימייל אימות — אשר אותו כדי להתחבר.");
+    if (signMode === "up") {
+      consentPending = true;
+      rememberConsent();                           // survives the email-verification gap
+      if (data && data.session) await recordConsent();
+      else showError(t("verify_email"));
+    }
   });
+
+  /* ---------- terms & privacy consent (recorded in the DB) ----------
+   * The trigger in supabase/08_terms_consent.sql overwrites the timestamp with
+   * now(), so the client can record consent but can neither back-date nor erase it. */
+  const CONSENT_KEY = "blockview_consent";
+  function savedConsent() { try { return localStorage.getItem(CONSENT_KEY); } catch (e) { return null; } }
+  function rememberConsent() { try { localStorage.setItem(CONSENT_KEY, cfg.LEGAL_VERSION); } catch (e) {} }
+  function forgetConsent() { try { localStorage.removeItem(CONSENT_KEY); } catch (e) {} }
+  function isSocial(session) {
+    const p = session && session.user && session.user.app_metadata && session.user.app_metadata.provider;
+    return !!p && p !== "email";
+  }
+  async function recordConsent() {
+    if (!state.user) return;                       // retried from onAuthStateChange
+    const { error } = await supa.from("profiles")
+      .update({ terms_accepted_at: new Date().toISOString(), terms_version: cfg.LEGAL_VERSION })
+      .eq("id", state.user.id);
+    if (error) { console.warn("[BlockView] consent not saved:", error.message); return; }
+    consentPending = false;
+    forgetConsent();
+    state.termsAcceptedAt = new Date().toISOString();
+  }
 
   /* ---------- account sheet ---------- */
   const accountSheet = $("account-sheet");

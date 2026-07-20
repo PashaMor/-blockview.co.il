@@ -95,6 +95,10 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .auth-error { color: #B0322A; font-size: 13px; background: #FBE9E7; padding: 9px 12px; border-radius: 10px; }
 .auth-error[hidden] { display: none; }
 .auth-link { border: 0; background: transparent; color: var(--blue); font: inherit; font-weight: 700; font-size: 13.5px; cursor: pointer; padding: 4px; }
+.consent-row { display: flex; align-items: flex-start; gap: 9px; margin: 4px 0 10px; font-size: 13px;
+  line-height: 1.6; color: var(--text, #263140); cursor: pointer; text-align: start; }
+.consent-row input { width: 18px; height: 18px; margin: 2px 0 0; flex: none; accent-color: var(--blue); cursor: pointer; }
+.consent-row a { color: var(--blue); font-weight: 700; }
 .legal-consent { margin: 10px 0 0; font-size: 12.5px; line-height: 1.7; color: var(--muted, #8592A2); text-align: center; }
 .legal-consent a { color: var(--blue); font-weight: 700; text-decoration: none; }
 .legal-consent a:hover { text-decoration: underline; }

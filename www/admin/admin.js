@@ -231,12 +231,31 @@
 
   function agentLabel(id) { const p = state.pmap[id]; return p ? p.email : "—"; }
 
+  const sortedPhotos = (l) => (l.listing_photos || []).slice().sort((a, b) => a.sort - b.sort);
+
+  /* Moderation needs to SEE the property: every photo, big enough to judge, and
+     clickable for the full-size version. "no photos" is stated explicitly so it
+     can't be mistaken for images that failed to load. */
+  function photoGallery(l) {
+    const ps = sortedPhotos(l);
+    if (!ps.length) return `<div class="nophotos">אין תמונות לנכס הזה</div>`;
+    return `<div class="gallery">` + ps.map((p) =>
+      `<img class="gph" src="${esc(photoUrl(p.path))}" data-full="${esc(photoUrl(p.path))}" alt="" loading="lazy" />`
+    ).join("") + `<span class="gcount">${ps.length} תמונות</span></div>`;
+  }
+
   function listingRow(l, withActions) {
-    const ph = (l.listing_photos || []).sort((a, b) => a.sort - b.sort)[0];
+    const ph = sortedPhotos(l)[0];
     const b = l.buildings || {};
-    const thumb = ph ? `<img class="rthumb" src="${esc(photoUrl(ph.path))}" alt="" />` : `<div class="rthumb">🏠</div>`;
-    const more = (l.listing_photos || []).slice(1, 5)
-      .map((p) => `<img src="${esc(photoUrl(p.path))}" alt="" />`).join("");
+    const thumb = ph ? `<img class="rthumb gph" src="${esc(photoUrl(ph.path))}" data-full="${esc(photoUrl(ph.path))}" alt="" />` : `<div class="rthumb">🏠</div>`;
+    // pending listings get the full gallery; elsewhere a compact strip is enough
+    const more = withActions
+      ? photoGallery(l)
+      : (() => {
+          const rest = sortedPhotos(l).slice(1, 5)
+            .map((p) => `<img class="gph" src="${esc(photoUrl(p.path))}" data-full="${esc(photoUrl(p.path))}" alt="" />`).join("");
+          return rest ? `<div class="thumbs-mini">${rest}</div>` : "";
+        })();
     return `<div class="row" data-id="${esc(l.id)}">
       ${thumb}
       <div class="rmain">
@@ -249,7 +268,7 @@
           <span>${esc(when(l.created_at))}</span>
           <span class="badge ${esc(l.status)}">${esc(ST[l.status] || l.status)}</span>
         </div>
-        ${more ? `<div class="thumbs-mini">${more}</div>` : ""}
+        ${more}
         ${l.description ? `<div class="rsub">${esc(String(l.description).slice(0, 160))}</div>` : ""}
       </div>
       <div class="rprice">${nis(l.price)}${l.deal === "rent" ? " / לחודש" : ""}</div>
@@ -263,6 +282,21 @@
       </div>
     </div>`;
   }
+
+  /* full-size viewer — src comes from our own storage bucket, never user HTML */
+  document.addEventListener("click", (e) => {
+    const img = e.target.closest(".gph");
+    if (!img) return;
+    const box = $("lightbox");
+    $("lightbox-img").src = img.dataset.full;
+    box.hidden = false;
+  });
+  $("lightbox").addEventListener("click", () => {
+    $("lightbox").hidden = true; $("lightbox-img").src = "";
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !$("lightbox").hidden) { $("lightbox").hidden = true; $("lightbox-img").src = ""; }
+  });
 
   function renderQueue() {
     const rows = state.listings.filter((l) => l.status === "pending");

@@ -16,6 +16,11 @@ window.BLOCKVIEW_CONFIG = {
   OAUTH: { google: true, apple: false },
   NATIVE_REDIRECT: "com.blockview.app://auth/callback",
 
+  /* Version of the Terms / Privacy Policy the user is asked to accept. Keep it
+   * equal to the "last updated" date in www/legal/lang/*.js — bumping it here is
+   * what marks older acceptances as out of date. */
+  LEGAL_VERSION: "2026-07-20",
+
   // Free-tier limits (keep in sync with supabase/schema.sql).
   LIMITS: {
     free: { favorites: 3, follows: 0 },
