@@ -1,12 +1,15 @@
 {
+  "redirects": [
+    { "source": "/crm", "destination": "https://crm.blockview.co.il", "permanent": true },
+    { "source": "/crm/", "destination": "https://crm.blockview.co.il", "permanent": true },
+    { "source": "/crm/(.*)", "destination": "https://crm.blockview.co.il/$1", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/", "has": [{ "type": "host", "value": "crm.blockview.co.il" }], "destination": "/www/crm/index.html" },
     { "source": "/crm.css", "has": [{ "type": "host", "value": "crm.blockview.co.il" }], "destination": "/www/crm/crm.css" },
     { "source": "/crm.js", "has": [{ "type": "host", "value": "crm.blockview.co.il" }], "destination": "/www/crm/crm.js" },
 
     { "source": "/", "destination": "/www/index.html" },
-    { "source": "/crm", "destination": "/www/crm/index.html" },
-    { "source": "/crm/", "destination": "/www/crm/index.html" },
     { "source": "/(.*)", "destination": "/www/$1" }
   ]
 }
