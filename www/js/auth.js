@@ -14,11 +14,13 @@
   async function loadUserData() {
     if (!state.user) { if (window.onUserData) window.onUserData([], [], {}, "free"); return; }
     const [prof, fav, fol, nt] = await Promise.all([
-      supa.from("profiles").select("plan, avatar_url, notifications, saved_filter, theme").eq("id", state.user.id).single(),
+      // select * so a missing/new column can never break the whole profile load
+      supa.from("profiles").select("*").eq("id", state.user.id).single(),
       supa.from("favorites").select("listing_id"),
       supa.from("follows").select("building_id"),
       supa.from("notes").select("listing_id, body"),
     ]);
+    if (prof.error) console.warn("[BlockView] profile load failed:", prof.error.message);
     const p = prof.data || {};
     state.plan = p.plan || "free";
     state.avatar = p.avatar_url || null;
@@ -154,8 +156,13 @@
         const sc = Math.max(s / im.width, s / im.height), w = im.width * sc, h = im.height * sc;
         ctx.drawImage(im, (s - w) / 2, (s - h) / 2, w, h);
         const dataUrl = c.toDataURL("image/jpeg", 0.82);
+        const { error } = await supa.from("profiles").update({ avatar_url: dataUrl }).eq("id", state.user.id);
+        if (error) {
+          console.warn("[BlockView] avatar save failed:", error.message);
+          if (window.bvToast) window.bvToast("שמירת התמונה נכשלה");
+          return;
+        }
         state.avatar = dataUrl;
-        await supa.from("profiles").update({ avatar_url: dataUrl }).eq("id", state.user.id);
         renderAccount(); updateAccountUI();
         if (window.bvToast) window.bvToast("תמונת הפרופיל עודכנה");
       };
