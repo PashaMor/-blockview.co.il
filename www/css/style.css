@@ -444,3 +444,8 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .btn-wa:hover { background: #1DA851; }
 /* phone / email inside RTL text must stay left-to-right */
 .ltr { direction: ltr; unicode-bidi: isolate; }
+
+/* WhatsApp checkbox in the contact rows */
+.wa-check { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px;
+  color: var(--text-soft); cursor: pointer; }
+.wa-check input { width: 17px; height: 17px; accent-color: #25D366; cursor: pointer; flex: none; }

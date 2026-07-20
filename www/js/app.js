@@ -578,6 +578,7 @@ function openDetail(lid) {
         <div class="spec-grid">${specRows(l).map(([k, v]) => `<div class="spec"><span class="sk">${k}</span><span class="sv">${v}</span></div>`).join("")}</div>
         <h3 class="d-sec">${t("descr")}</h3>
         <ul class="d-desc">${descFor(l).map((d) => `<li>${d}</li>`).join("")}</ul>
+        <div id="nearby-box"></div>
         <h3 class="d-sec">${t("my_note")}</h3>
         <textarea id="note-input" class="note-input" placeholder="${t("note_ph")}"></textarea>
         <div class="note-saved" id="note-saved" hidden>נשמר ✓</div>
@@ -590,6 +591,7 @@ function openDetail(lid) {
       </div>
     </div>`;
   el.hidden = false;
+  renderNearby(l.building.id);
   const reveal = el.querySelector("#reveal-contact");
   if (reveal) reveal.onclick = (ev) => { ev.stopPropagation(); if (window.BVAuth) BVAuth.openAuth(); };
   el.querySelectorAll("[data-fav]").forEach((b) => (b.onclick = (ev) => {
@@ -616,6 +618,111 @@ function openDetail(lid) {
   });
 }
 function closeDetail() { const el = document.getElementById("detail"); el.hidden = true; el.innerHTML = ""; }
+
+/* ------------------------------------------------------ what's nearby ----
+ * Places around the building with an estimated walking time. Everything is
+ * precomputed in the DB (supabase/12_nearby_places.sql + scripts/nearby-import.mjs),
+ * so this is one indexed read and no third-party call at runtime — it behaves
+ * identically on the website and inside the app.
+ */
+const NEARBY_CATS = [
+  { key: "education", icon: "🎒" },
+  { key: "transit",   icon: "🚌" },
+  { key: "errands",   icon: "🛒" },
+  { key: "leisure",   icon: "🌳" },
+];
+const KIND_ICONS = {
+  kindergarten: "🧸", school: "🎒",
+  bus_stop: "🚌", tram_stop: "🚊", station: "🚉", halt: "🚉",
+  supermarket: "🛒", convenience: "🏪", pharmacy: "💊", clinic: "🩺", doctors: "🩺", bank: "🏦",
+  park: "🌳", playground: "🛝", fitness_centre: "🏋️", cafe: "☕",
+};
+const nearbyCache = {};
+
+// place names come from OpenStreetMap, i.e. text we did not write — escape it
+function escapeHtml(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function placeName(p) {
+  const lang = window.currentLang ? window.currentLang() : "he";
+  const n = p.names || {};
+  return n[lang] || n.default || n.he || n.en || "";
+}
+function fmtDistance(m) {
+  if (m < 100) return t("under_100m");
+  if (m < 1000) return m + " " + t("meters");
+  return (m / 1000).toFixed(1) + " " + t("km");
+}
+
+async function loadNearby(bid) {
+  if (nearbyCache[bid]) return nearbyCache[bid];
+  try {
+    const { data, error } = await BVDB
+      .from("building_places")
+      .select("category, meters, walk_minutes, rank, places(kind, names)")
+      .eq("building_id", bid)
+      .order("rank");
+    if (error) throw error;
+    nearbyCache[bid] = data || [];
+  } catch (e) {
+    console.warn("[BlockView] nearby load failed:", e.message);
+    nearbyCache[bid] = [];
+  }
+  return nearbyCache[bid];
+}
+
+async function renderNearby(bid) {
+  const box = document.getElementById("nearby-box");
+  if (!box) return;
+  const rows = await loadNearby(bid);
+  if (!rows.length) return;                       // no data -> no empty section
+  if (!document.getElementById("nearby-box")) return;  // detail closed meanwhile
+
+  const byCat = {};
+  rows.forEach((r) => {
+    const p = r.places || {};
+    (byCat[r.category] = byCat[r.category] || []).push({
+      name: placeName(p), kind: p.kind, meters: r.meters, minutes: r.walk_minutes,
+    });
+  });
+
+  const cats = NEARBY_CATS.filter((c) => (byCat[c.key] || []).length);
+  const summary = cats.map((c) => {
+    const best = byCat[c.key][0];
+    return `<span class="nb-chip">${c.icon} ${best.minutes} ${t("min_short")}</span>`;
+  }).join("");
+
+  const groups = cats.map((c) => {
+    const list = byCat[c.key];
+    const items = list.map((p, i) => `
+      <li class="nb-item${i >= 3 ? " extra" : ""}">
+        <span class="nb-ic">${KIND_ICONS[p.kind] || c.icon}</span>
+        <span class="nb-name">${escapeHtml(p.name)}</span>
+        <span class="nb-dist">${fmtDistance(p.meters)} · ≈ ${p.minutes} ${t("walk_min")}</span>
+      </li>`).join("");
+    const more = list.length > 3
+      ? `<button class="nb-more" data-cat="${c.key}">${t("show_more")}</button>` : "";
+    return `<div class="nb-group" data-group="${c.key}">
+      <div class="nb-head">${c.icon} ${t("cat_" + c.key)}</div>
+      <ul class="nb-list">${items}</ul>${more}
+    </div>`;
+  }).join("");
+
+  document.getElementById("nearby-box").innerHTML =
+    `<h3 class="d-sec">${t("nearby")}</h3>
+     <div class="nb-summary">${summary}</div>
+     <div class="nb-groups">${groups}</div>
+     <p class="nb-note">${t("nearby_note")}</p>`;
+
+  document.querySelectorAll(".nb-more").forEach((b) => (b.onclick = (ev) => {
+    ev.stopPropagation();
+    const g = document.querySelector(`.nb-group[data-group="${b.dataset.cat}"]`);
+    g.classList.add("open");
+    b.remove();
+  }));
+}
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeDetail(); closeSheet(); closeSearch(); } });
 
 /* -------------------------------------------------------- filter wiring ---- */

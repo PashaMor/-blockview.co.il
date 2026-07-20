@@ -99,6 +99,7 @@
         '<input class="selectbox c-phone" type="tel" maxlength="20" placeholder="' + T("contact_phone", "טלפון") + '" autocomplete="tel" />' +
         '<input class="selectbox c-email" type="email" maxlength="120" placeholder="' + T("contact_email", "אימייל (לא חובה)") + '" />' +
       "</div>" +
+      '<label class="wa-check"><input type="checkbox" class="c-wa" /> ' + T("wa_has", "💬 המספר זמין בוואטסאפ") + '</label>' +
       (i === 0 ? "" : '<button type="button" class="c-remove" aria-label="' + T("remove_contact", "הסר איש קשר") + '">✕</button>');
     if (email) d.querySelector(".c-email").value = email;
     return d;
@@ -132,7 +133,7 @@
       if (!name && !phone && !email) return;                 // empty extra row: ignore
       if (name.length < 2) throw new Error(T("contact_name_bad", "נא למלא שם איש קשר"));
       if (phone.replace(/\D/g, "").length < 6) throw new Error(T("contact_phone_bad", "נא למלא מספר טלפון תקין"));
-      out.push({ name: name, phone: phone, email: email || null });
+      out.push({ name: name, phone: phone, email: email || null, whatsapp: !!r.querySelector(".c-wa").checked });
     });
     return out;
   }
@@ -208,7 +209,7 @@
       // full details go to listing_contacts (RLS: signed-in users only); guests get
       // the masked view listing_contacts_public
       const cres = await supa().from("listing_contacts")
-        .insert(contacts.map((c, i) => ({ listing_id: data.id, name: c.name, phone: c.phone, email: c.email, sort: i })));
+        .insert(contacts.map((c, i) => ({ listing_id: data.id, name: c.name, phone: c.phone, email: c.email, whatsapp: !!c.whatsapp, sort: i })));
       if (cres.error) throw cres.error;
 
       for (let i = 0; i < state.pending.length; i++) {
