@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BlockView CRM — ניהול נכסים</title>
+  <link rel="stylesheet" href="crm.css?v=1" />
+</head>
+<body>
+
+  <!-- ===== Top bar ===== -->
+  <header class="topbar">
+    <a class="brand" href="/"><img src="../logo.png" alt="BlockView" /></a>
+    <div class="top-right">
+      <span id="who" class="who"></span>
+      <button id="signout" class="btn-ghost" hidden>התנתק</button>
+    </div>
+  </header>
+
+  <!-- ===== Sign in ===== -->
+  <section id="gate" class="gate" hidden>
+    <div class="gate-card">
+      <h1>CRM לסוכנים</h1>
+      <p class="muted">התחבר כדי לנהל את הנכסים והלידים שלך.</p>
+      <input id="g-email" type="email" placeholder="אימייל" autocomplete="email" />
+      <input id="g-pw" type="password" placeholder="סיסמה" autocomplete="current-password" />
+      <div id="g-err" class="err" hidden></div>
+      <button id="g-signin" class="btn-primary">התחבר</button>
+    </div>
+  </section>
+
+  <!-- ===== No access ===== -->
+  <section id="noaccess" class="gate" hidden>
+    <div class="gate-card">
+      <div class="big">🔒</div>
+      <h1>אין לך הרשאת סוכן</h1>
+      <p class="muted">החשבון שלך אינו מסומן כסוכן. פנה למנהל המערכת כדי לקבל גישה.</p>
+      <button id="na-signout" class="btn-ghost">התנתק</button>
+    </div>
+  </section>
+
+  <!-- ===== App ===== -->
+  <main id="app" hidden>
+    <nav class="tabs">
+      <button class="tab active" data-tab="listings">הנכסים שלי</button>
+      <button class="tab" data-tab="editor">➕ נכס חדש</button>
+      <button class="tab" data-tab="leads">לידים <b id="leads-badge">0</b></button>
+    </nav>
+
+    <!-- stats -->
+    <div class="stats" id="stats"></div>
+
+    <!-- ---- my listings ---- -->
+    <section class="panel" id="tab-listings">
+      <div class="panel-head">
+        <h2>הנכסים שלי</h2>
+        <div class="filters">
+          <select id="status-filter" class="input">
+            <option value="all">כל הסטטוסים</option>
+            <option value="pending">ממתין לאישור</option>
+            <option value="approved">מאושר</option>
+            <option value="rejected">נדחה</option>
+            <option value="sold">נמכר</option>
+            <option value="draft">טיוטה</option>
+          </select>
+        </div>
+      </div>
+      <div id="listings-list" class="cards"></div>
+      <div id="listings-empty" class="empty" hidden>עדיין אין לך נכסים. לחץ על "נכס חדש" כדי להוסיף.</div>
+    </section>
+
+    <!-- ---- editor ---- -->
+    <section class="panel" id="tab-editor" hidden>
+      <div class="panel-head"><h2 id="editor-title">נכס חדש</h2></div>
+      <form id="listing-form" class="form">
+        <input type="hidden" id="f-id" />
+
+        <div class="grid2">
+          <label class="field"><span>בניין *</span>
+            <select id="f-building" class="input" required></select>
+          </label>
+          <label class="field"><span>סוג עסקה *</span>
+            <select id="f-deal" class="input" required>
+              <option value="sale">מכירה</option>
+              <option value="rent">השכרה</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="field"><span>כותרת *</span>
+          <input id="f-title" class="input" required maxlength="120" placeholder="לדוגמה: דירת 3 חדרים משופצת" />
+        </label>
+
+        <div class="grid4">
+          <label class="field"><span>מחיר (₪) *</span><input id="f-price" class="input" type="number" min="0" required /></label>
+          <label class="field"><span>חדרים *</span><input id="f-rooms" class="input" type="number" min="0.5" step="0.5" required /></label>
+          <label class="field"><span>שטח (מ"ר) *</span><input id="f-size" class="input" type="number" min="1" required /></label>
+          <label class="field"><span>קומה</span><input id="f-floor" class="input" type="number" min="0" value="0" /></label>
+        </div>
+
+        <div class="grid4">
+          <label class="field"><span>סוג נכס</span>
+            <select id="f-type" class="input"><option value="flat">דירה</option><option value="house">בית</option></select>
+          </label>
+          <label class="field"><span>גיל הבניין</span>
+            <select id="f-age" class="input"><option value="old">ישן</option><option value="new">חדש</option></select>
+          </label>
+          <label class="field"><span>סטטוס</span>
+            <select id="f-status" class="input">
+              <option value="pending">ממתין לאישור</option>
+              <option value="draft">טיוטה</option>
+              <option value="sold">נמכר</option>
+            </select>
+          </label>
+          <label class="field"><span>קישור לסיור וירטואלי</span><input id="f-tour" class="input" type="url" placeholder="https://..." /></label>
+        </div>
+
+        <label class="field"><span>תיאור</span>
+          <textarea id="f-desc" class="input" rows="4" maxlength="2000" placeholder="תיאור הנכס..."></textarea>
+        </label>
+
+        <div class="field"><span>מאפיינים</span>
+          <div class="checks">
+            <label><input type="checkbox" id="f-furnished" /> 🛋️ מרוהט</label>
+            <label><input type="checkbox" id="f-pets" /> 🐾 חיות מחמד</label>
+            <label><input type="checkbox" id="f-parking" /> 🅿️ חניה</label>
+            <label><input type="checkbox" id="f-elevator" /> 🛗 מעלית</label>
+          </div>
+        </div>
+
+        <div class="field"><span>תמונות</span>
+          <input id="f-photos" type="file" accept="image/*" multiple class="input" />
+          <div id="photo-strip" class="photo-strip"></div>
+          <div class="hint">התמונות נדחסות אוטומטית לפני העלאה.</div>
+        </div>
+
+        <div id="f-err" class="err" hidden></div>
+        <div class="form-actions">
+          <button type="submit" id="f-save" class="btn-primary">שמור נכס</button>
+          <button type="button" id="f-cancel" class="btn-ghost">ביטול</button>
+          <button type="button" id="f-delete" class="btn-danger" hidden>מחק נכס</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ---- leads ---- -->
+    <section class="panel" id="tab-leads" hidden>
+      <div class="panel-head"><h2>לידים</h2></div>
+      <div id="leads-list" class="leads"></div>
+      <div id="leads-empty" class="empty" hidden>אין לידים עדיין. כשגולשים ייצרו קשר על נכס שלך, הם יופיעו כאן.</div>
+    </section>
+  </main>
+
+  <div id="toast" hidden></div>
+
+  <script src="../vendor/supabase.min.js?v=1"></script>
+  <script src="../js/config.js?v=12"></script>
+  <script src="crm.js?v=1"></script>
+</body>
+</html>
