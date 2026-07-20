@@ -837,7 +837,8 @@ document.querySelectorAll(".dl-store").forEach((a) => a.addEventListener("click"
 const EDU_KINDS = [
   { img: "bv-edu-kg",      emoji: "🧸", color: "#E08A2E", match: ["kindergarten"] },
   { img: "bv-edu-school",  emoji: "🎒", color: "#2C8874", match: ["school"] },
-  { img: "bv-edu-college", emoji: "🎓", color: "#6B4FD8", match: ["college", "university"] },
+  { img: "bv-edu-college", emoji: "🎓", color: "#6B4FD8", match: ["college"] },
+  { img: "bv-edu-uni",     emoji: "🏛️", color: "#B3261E", match: ["university"] },
 ];
 let eduVisible = true;
 try { eduVisible = localStorage.getItem("blockview_edu") !== "0"; } catch (e) {}
@@ -875,8 +876,9 @@ function addEducationLayer() {
         "icon-image": ["match", ["get", "subclass"],
           "kindergarten", "bv-edu-kg",
           "school", "bv-edu-school",
+          "university", "bv-edu-uni",
           "bv-edu-college"],
-        "icon-size": 0.72,
+        "icon-size": 0.85,
         "icon-allow-overlap": false,
         "text-field": ["coalesce", ["get", "name:" + (window.currentLang ? window.currentLang() : "he")], ["get", "name"]],
         "text-font": ["Noto Sans Regular"],
