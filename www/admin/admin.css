@@ -83,6 +83,7 @@ main { max-width: 1140px; margin: 0 auto; padding: 20px; }
 .badge.pro { color: #241700; background: #F5D98B; }
 
 .uavatar { width: 38px; height: 38px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; font-weight: 800; flex: none; }
+.alogo { width: 44px; height: 44px; border-radius: 9px; object-fit: contain; background: #fff; border: 1px solid var(--line); flex: none; }
 .bform { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
 @media (max-width: 900px) { .bform { grid-template-columns: repeat(2, 1fr); } }
 .bform button { grid-column: 1 / -1; }

@@ -169,17 +169,24 @@
   /* ------------------------------------------------- agent applications */
   const APP_ST = { pending: "ממתין", approved: "אושר", rejected: "נדחה" };
 
+  const logoUrl = (p) => supa.storage.from("agent-logos").getPublicUrl(p).data.publicUrl;
+
   function appRow(a) {
     const p = state.pmap[a.user_id] || {};
     const acted = a.status === "pending";
+    const name = ((a.first_name || "") + " " + (a.last_name || "")).trim() || a.full_name || "";
+    const badge = a.logo_path
+      ? `<img class="alogo" src="${esc(logoUrl(a.logo_path))}" alt="" />`
+      : `<div class="uavatar">${esc(String(name || p.email || "?").charAt(0).toUpperCase())}</div>`;
     return `<div class="row">
-      <div class="uavatar">${esc(String(a.full_name || p.email || "?").charAt(0).toUpperCase())}</div>
+      ${badge}
       <div class="rmain">
-        <div class="rtitle">${esc(a.full_name)} <span class="badge ${esc(a.status)}">${esc(APP_ST[a.status] || a.status)}</span></div>
+        <div class="rtitle">${esc(name)} <span class="badge ${esc(a.status)}">${esc(APP_ST[a.status] || a.status)}</span></div>
         <div class="rsub">${esc(p.email || "—")} · ${esc(a.phone)}</div>
         <div class="rmeta">
           ${a.agency ? `<span>משרד: ${esc(a.agency)}</span>` : ""}
           ${a.license_no ? `<span>רישיון: ${esc(a.license_no)}</span>` : ""}
+          ${a.logo_path ? "" : "<span>⚠️ ללא לוגו</span>"}
           ${a.city ? `<span>${esc(a.city)}</span>` : ""}
           <span>הוגש ${esc(when(a.created_at))}</span>
           <span class="badge ${esc(p.role || "user")}">${esc(p.role || "user")}</span>
