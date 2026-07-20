@@ -488,3 +488,10 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
   border-radius: 12px; border: 0; background: var(--ink); color: #fff; }
 .btn-lead:hover { opacity: .92; }
 #poi-panel { max-height: 60vh; overflow-y: auto; }
+
+/* real contacts on a listing */
+.contact-area { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+.contact-person { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.contact-person .contact-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+/* agents may write multi-line descriptions */
+.d-desc li { white-space: pre-line; }

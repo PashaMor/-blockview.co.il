@@ -17,7 +17,7 @@
   const supa = () => window.BVSupa;
   const T = (k, fb) => (window.t ? window.t(k) : fb) || fb;
 
-  const state = { deal: "sale", amen: {}, pending: [], buildings: [] };
+  const state = { deal: "sale", amen: {}, pending: [], buildings: [], address: null, footprint: null };
 
   /* ---------------------------------------------------- chooser modal ---- */
   btn.addEventListener("click", () => { $("who-modal").hidden = false; });
@@ -54,6 +54,9 @@
       const u = await supa().auth.getUser();
       myEmail = u && u.data && u.data.user ? u.data.user.email || "" : "";
     } catch (e) {}
+    clearAddress();
+    $("p-address").value = "";
+    $("p-building").hidden = true;
     resetContacts(myEmail);
     renderStrip();
     await loadBuildings();
@@ -74,6 +77,89 @@
       (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     $("p-building").innerHTML = state.buildings
       .map((b) => `<option value="${esc(b.id)}">${esc(b.name)} — ${esc(b.address)}</option>`).join("");
+  }
+
+  /* --------------------------------------------------------- address ----
+   * The publisher searches an address (OSM/Nominatim); we look up the real
+   * building outline (Overpass) and hand both to ensure_building(), which
+   * dedupes and creates the building server-side. The dropdown of existing
+   * buildings stays available as a fallback when the lookup is unavailable. */
+  let addrTimer = null;
+  function escq(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g,
+      (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+  function clearAddress() {
+    state.address = null; state.footprint = null;
+    $("p-addr-picked").hidden = true;
+    $("p-addr-picked").textContent = "";
+    $("p-addr-results").hidden = true;
+    $("p-addr-results").innerHTML = "";
+  }
+  function showResults(items) {
+    const box = $("p-addr-results");
+    box._items = items;
+    box.innerHTML = items.length
+      ? items.map((it, i) => `<button type="button" class="ar-item" data-i="${i}"><b>${escq(it.short)}</b><small>${escq(it.label)}</small></button>`).join("")
+      : `<div class="ar-empty">${T("address_none", "לא נמצאה כתובת. נסה ניסוח אחר.")}</div>`;
+    box.hidden = false;
+  }
+  $("p-address").addEventListener("input", (e) => {
+    clearAddress();
+    const q = e.target.value;
+    clearTimeout(addrTimer);
+    if (q.trim().length < 3) { $("p-addr-results").hidden = true; return; }
+    // debounce: Nominatim is a shared service, one request per pause is plenty
+    addrTimer = setTimeout(async () => {
+      if (!window.BVGeo) return;
+      showResults(await BVGeo.searchAddress(q));
+    }, 600);
+  });
+  $("p-addr-results").addEventListener("click", async (e) => {
+    const b = e.target.closest(".ar-item");
+    if (!b) return;
+    const it = $("p-addr-results")._items[+b.dataset.i];
+    $("p-addr-results").hidden = true;
+    $("p-address").value = it.short + (it.city ? ", " + it.city : "");
+    state.address = it;
+    const picked = $("p-addr-picked");
+    picked.textContent = T("address_checking", "מאתר את מתאר הבניין…");
+    picked.hidden = false;
+    // a real outline is a bonus, not a requirement — Overpass is flaky by nature
+    const fp = await BVGeo.fetchFootprint(it.lat, it.lng);
+    state.footprint = fp;
+    picked.textContent = "📍 " + it.short + " — " +
+      (fp ? T("address_ok", "נמצא מתאר בניין אמיתי") : T("address_nofp", "ללא מתאר מדויק, ימוקם לפי הכתובת"));
+  });
+  // escape hatch: attach to one of the buildings already on the map
+  $("p-pick-existing").addEventListener("click", () => {
+    const sel = $("p-building");
+    sel.hidden = !sel.hidden;
+    if (!sel.hidden) { clearAddress(); $("p-address").value = ""; }
+  });
+
+  // the building id this listing will attach to (created on demand)
+  async function resolveBuilding() {
+    const sel = $("p-building");
+    if (!sel.hidden && sel.value) return sel.value;
+    const a = state.address;
+    if (!a) throw new Error(T("address_required", "נא לבחור את כתובת הנכס"));
+    const fp = state.footprint;
+    const { data, error } = await supa().rpc("ensure_building", {
+      p_name: a.short,
+      p_address: a.label,
+      p_city: a.city || null,
+      p_lat: fp && fp.center ? fp.center[1] : a.lat,
+      p_lng: fp && fp.center ? fp.center[0] : a.lng,
+      p_osm_id: (fp && fp.osmId) || a.osmId || null,
+      p_footprint: fp ? fp.polygon : null,
+      p_height: fp ? fp.height : null,
+    });
+    if (error) {
+      if (/TOO_MANY_BUILDINGS/.test(error.message)) throw new Error(T("address_toomany", "נוצרו יותר מדי בניינים. נסה שוב בעוד שעה."));
+      throw error;
+    }
+    return data;
   }
 
   document.querySelectorAll("#p-deal-seg .seg-btn").forEach((b) =>
@@ -182,7 +268,7 @@
       if (!user) throw new Error(T("login_to_publish", "התחבר כדי לפרסם נכס"));
 
       const row = {
-        building_id: $("p-building").value,
+        building_id: await resolveBuilding(),
         agent_id: user.id,
         poster_type: "owner",
         deal: state.deal,
