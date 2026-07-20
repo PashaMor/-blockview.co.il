@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BlockView — ניהול מערכת</title>
-  <link rel="stylesheet" href="admin.css?v=2" />
+  <link rel="stylesheet" href="admin.css?v=3" />
 </head>
 <body>
 
@@ -13,7 +13,24 @@
     <div class="top-right">
       <span class="chip-admin">ניהול מערכת</span>
       <span id="who" class="who"></span>
-      <button id="signout" class="btn-ghost" hidden>התנתק</button>
+      <div class="settings-wrap">
+        <button id="settings-btn" class="icon-gear" title="הגדרות" hidden>⚙️</button>
+        <div id="settings-menu" class="settings-menu" hidden>
+          <div class="sm-head">
+            <div class="sm-avatar" id="sm-avatar">?</div>
+            <div class="sm-id">
+              <div class="sm-email" id="sm-email"></div>
+              <div class="sm-role">מנהל מערכת</div>
+            </div>
+          </div>
+          <div class="sm-item static">🔐 אימות דו-שלבי <span class="sm-tag on" id="sm-2fa">מופעל</span></div>
+          <button class="sm-item" id="sm-reset2fa">📱 החלף מכשיר 2FA</button>
+          <button class="sm-item" id="sm-crm">🧑‍💼 מעבר ל-CRM</button>
+          <button class="sm-item" id="sm-site">🌍 מעבר לאתר</button>
+          <button class="sm-item danger" id="sm-signout">↩ התנתק</button>
+        </div>
+      </div>
+      <button id="signout" hidden></button>
     </div>
   </header>
 
@@ -132,6 +149,6 @@
 
   <script src="../vendor/supabase.min.js?v=1"></script>
   <script src="../js/config.js?v=14"></script>
-  <script src="admin.js?v=2"></script>
+  <script src="admin.js?v=3"></script>
 </body>
 </html>

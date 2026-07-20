@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BlockView CRM — ניהול נכסים</title>
-  <link rel="stylesheet" href="crm.css?v=3" />
+  <link rel="stylesheet" href="crm.css?v=4" />
 </head>
 <body>
 
@@ -13,7 +13,22 @@
     <a class="brand" href="https://blockview.co.il"><img src="../logo.png" alt="BlockView" /></a>
     <div class="top-right">
       <span id="who" class="who"></span>
-      <button id="signout" class="btn-ghost" hidden>התנתק</button>
+      <div class="settings-wrap">
+        <button id="settings-btn" class="icon-gear" title="הגדרות" hidden>⚙️</button>
+        <div id="settings-menu" class="settings-menu" hidden>
+          <div class="sm-head">
+            <div class="sm-avatar" id="sm-avatar">?</div>
+            <div class="sm-id">
+              <div class="sm-email" id="sm-email"></div>
+              <div class="sm-role" id="sm-role"></div>
+            </div>
+          </div>
+          <button class="sm-item" id="sm-security">🔐 אבטחה ואימות דו-שלבי <span class="sm-tag" id="sm-2fa"></span></button>
+          <button class="sm-item" id="sm-site">🌍 מעבר לאתר</button>
+          <button class="sm-item danger" id="sm-signout">↩ התנתק</button>
+        </div>
+      </div>
+      <button id="signout" hidden></button>
     </div>
   </header>
 
@@ -191,6 +206,6 @@
 
   <script src="../vendor/supabase.min.js?v=1"></script>
   <script src="../js/config.js?v=12"></script>
-  <script src="crm.js?v=3"></script>
+  <script src="crm.js?v=4"></script>
 </body>
 </html>

@@ -29,7 +29,10 @@
     const { data } = await supa.from("profiles").select("role").eq("id", state.user.id).single();
     state.role = (data && data.role) || "user";
     $("who").textContent = state.user.email + (state.role === "admin" ? " · מנהל" : " · סוכן");
-    $("signout").hidden = false;
+    $("settings-btn").hidden = false;
+    $("sm-email").textContent = state.user.email;
+    $("sm-role").textContent = state.role === "admin" ? "מנהל מערכת" : "סוכן נדל\"ן";
+    $("sm-avatar").textContent = String(state.user.email || "?").charAt(0).toUpperCase();
     if (state.role !== "agent" && state.role !== "admin") return showNoAccess();
     if (!(await mfaLoginGate())) return;   // only blocks if the agent enabled 2FA
     showApp();
@@ -38,7 +41,21 @@
   });
 
   function hideAll() { ["gate", "noaccess", "mfa", "app"].forEach((n) => ($(n).hidden = true)); }
-  function showGate() { hideAll(); $("gate").hidden = false; $("signout").hidden = true; $("who").textContent = ""; }
+  function showGate() { hideAll(); $("gate").hidden = false; $("settings-btn").hidden = true; $("settings-menu").hidden = true; $("who").textContent = ""; }
+
+  /* ------------------------------------------------------ settings menu ---- */
+  $("settings-btn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const m = $("settings-menu");
+    m.hidden = !m.hidden;
+    if (!m.hidden) refreshSecurity();
+  });
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".settings-wrap")) $("settings-menu").hidden = true;
+  });
+  $("sm-security").addEventListener("click", () => { $("settings-menu").hidden = true; switchTab("security"); });
+  $("sm-site").addEventListener("click", () => { window.location.href = "https://blockview.co.il"; });
+  $("sm-signout").addEventListener("click", () => supa.auth.signOut());
   function showNoAccess() { hideAll(); $("noaccess").hidden = false; }
   function showApp() { hideAll(); $("app").hidden = false; }
   function showMfa() { hideAll(); $("mfa").hidden = false; }
@@ -123,6 +140,8 @@
     el.className = "sec-state " + (on ? "on" : "off");
     $("sec-enable").hidden = on;
     $("sec-disable").hidden = !on;
+    const tag = $("sm-2fa");
+    if (tag) { tag.textContent = on ? "מופעל" : "כבוי"; tag.className = "sm-tag" + (on ? " on" : ""); }
   }
   $("sec-enable").addEventListener("click", startEnroll);
   $("sec-disable").addEventListener("click", async () => {

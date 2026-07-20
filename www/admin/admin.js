@@ -26,15 +26,37 @@
     // own row is readable at aal1 (profiles_self_select), so the role check works pre-2FA
     const { data } = await supa.from("profiles").select("role").eq("id", state.user.id).single();
     $("who").textContent = state.user.email;
-    $("signout").hidden = false;
+    $("settings-btn").hidden = false;
+    $("sm-email").textContent = state.user.email;
+    $("sm-avatar").textContent = String(state.user.email || "?").charAt(0).toUpperCase();
     if (!data || data.role !== "admin") return show("noaccess");
     if (!(await mfaGate())) return;        // 2FA is mandatory for admins
     show("app"); loadAll();
   });
   function show(which) {
     ["gate", "noaccess", "mfa", "app"].forEach((n) => ($(n).hidden = n !== which));
-    if (which === "gate") { $("signout").hidden = true; $("who").textContent = ""; }
+    if (which === "gate") { $("settings-btn").hidden = true; $("settings-menu").hidden = true; $("who").textContent = ""; }
   }
+
+  /* ---------------------------------------------------- settings menu */
+  $("settings-btn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const m = $("settings-menu"); m.hidden = !m.hidden;
+  });
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".settings-wrap")) $("settings-menu").hidden = true;
+  });
+  $("sm-crm").addEventListener("click", () => (window.location.href = "https://crm.blockview.co.il"));
+  $("sm-site").addEventListener("click", () => (window.location.href = "https://blockview.co.il"));
+  $("sm-signout").addEventListener("click", () => supa.auth.signOut());
+  // replace the authenticator device: drop existing factors, then re-enroll
+  $("sm-reset2fa").addEventListener("click", async () => {
+    if (!confirm("להחליף מכשיר 2FA? תתבקש לסרוק קוד חדש כעת.")) return;
+    $("settings-menu").hidden = true;
+    const { data } = await supa.auth.mfa.listFactors();
+    for (const f of ((data && data.totp) || [])) { try { await supa.auth.mfa.unenroll({ factorId: f.id }); } catch (e) {} }
+    await startEnroll([]);
+  });
 
   /* ---------------------------------------------------------------- 2FA */
   const mfa = { factorId: null, challengeId: null, mode: null };
@@ -130,6 +152,7 @@
       `<div class="stat"><b>${byStatus("pending")}</b><span>ממתינים לאישור</span></div>` +
       `<div class="stat"><b>${byStatus("approved")}</b><span>מאושרים (במפה)</span></div>` +
       `<div class="stat"><b>${state.profiles.length}</b><span>משתמשים</span></div>` +
+      `<div class="stat"><b>${state.profiles.filter((p) => p.plan === "pro").length}</b><span>מנויי Pro</span></div>` +
       `<div class="stat"><b>${state.leadCount}</b><span>לידים</span></div>`;
     $("queue-badge").textContent = byStatus("pending");
   }
@@ -214,6 +237,8 @@
     if (s) setStatus(s.dataset.status, s.value);
     const r = e.target.closest("[data-role]");
     if (r) setRole(r.dataset.role, r.value);
+    const pl = e.target.closest("[data-plan]");
+    if (pl) setPlan(pl.dataset.plan, pl.value);
   });
   async function setStatus(id, status) {
     const { error } = await supa.from("listings").update({ status }).eq("id", id);
@@ -244,6 +269,10 @@
             <option value="agent"${p.role === "agent" ? " selected" : ""}>סוכן</option>
             <option value="admin"${p.role === "admin" ? " selected" : ""}>מנהל</option>
           </select>
+          <select class="input" data-plan="${esc(p.id)}">
+            <option value="free"${p.plan !== "pro" ? " selected" : ""}>מנוי: חינם</option>
+            <option value="pro"${p.plan === "pro" ? " selected" : ""}>מנוי: Pro</option>
+          </select>
         </div>
       </div>`).join("") || `<div class="empty">לא נמצאו משתמשים.</div>`;
   }
@@ -253,6 +282,13 @@
     const { error } = await supa.from("profiles").update({ role }).eq("id", id);
     if (error) return toast("שגיאה: " + error.message);
     toast("ההרשאה עודכנה"); loadAll();
+  }
+  // subscription plan (server-side: only an admin may change plan — protect_profile_fields)
+  async function setPlan(id, plan) {
+    const { error } = await supa.from("profiles").update({ plan }).eq("id", id);
+    if (error) return toast("שגיאה: " + error.message);
+    toast(plan === "pro" ? "המנוי שודרג ל-Pro ⭐" : "המנוי הוחזר לחינם");
+    loadAll();
   }
 
   /* --------------------------------------------------------- buildings */
