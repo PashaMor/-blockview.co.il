@@ -111,6 +111,8 @@
   }
   function closeAccount() { accountSheet.classList.remove("open"); accountSheet.setAttribute("aria-hidden", "true"); }
   function renderAccount() {
+    // signing out fires onAuthStateChange while this sheet may still be open
+    if (!state.user) { closeAccount(); return; }
     const lim = limits[state.plan] || limits.free;
     const favN = window.favCount ? window.favCount() : 0, folN = window.subCount ? window.subCount() : 0;
     $("acc-email").textContent = state.user.email || "";
@@ -137,7 +139,7 @@
   }
   $("account-btn").addEventListener("click", () => (state.user ? openAccount() : openAuth()));
   $("account-close").addEventListener("click", closeAccount);
-  $("acc-signout").addEventListener("click", async () => { await supa.auth.signOut(); closeAccount(); });
+  $("acc-signout").addEventListener("click", async () => { closeAccount(); await supa.auth.signOut(); });
   $("acc-upgrade").addEventListener("click", () => { closeAccount(); showUpgrade(); });
 
   // avatar upload — resized & compressed client-side, stored as a small data-URL (RLS-protected profile row)
