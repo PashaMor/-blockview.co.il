@@ -982,6 +982,7 @@ const EDU_KINDS = [
   { img: "bv-edu-uni",     emoji: "🏛️", color: "#B3261E", match: ["university"] },
   { img: "bv-poi-bank",    emoji: "🏦", color: "#1F6FB2", match: ["bank"] },
   { img: "bv-poi-market",  emoji: "🛒", color: "#C2410C", match: ["supermarket", "grocery", "convenience"] },
+  { img: "bv-poi-clinic",  emoji: "🏥", color: "#0E9AA7", match: ["clinic", "doctors", "health_post"] },
 ];
 let eduVisible = true;
 try { eduVisible = localStorage.getItem("blockview_edu") !== "0"; } catch (e) {}
@@ -1023,6 +1024,7 @@ function addEducationLayer() {
           "college", "bv-edu-college",
           "bank", "bv-poi-bank",
           ["supermarket", "grocery", "convenience"], "bv-poi-market",
+          ["clinic", "doctors", "health_post"], "bv-poi-clinic",
           "bv-edu-college"],
         "icon-size": 0.85,
         "icon-allow-overlap": false,

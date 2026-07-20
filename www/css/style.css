@@ -380,6 +380,24 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .sk { display: block; font-size: 11.5px; color: var(--muted); }
 .sv { display: block; font-size: 15px; font-weight: 700; color: var(--ink); margin-top: 2px; }
 .d-sec { margin: 24px 0 8px; font-size: 15px; color: var(--ink); }
+
+/* ---------- what's nearby (site + app) ---------- */
+.nb-summary { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.nb-chip { font-size: 13px; font-weight: 700; color: var(--ink); background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: 20px; padding: 5px 11px; white-space: nowrap; }
+.nb-groups { display: grid; gap: 12px; }
+.nb-group { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.nb-head { font-size: 13.5px; font-weight: 800; color: var(--text-soft); margin-bottom: 8px; }
+.nb-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.nb-item { display: flex; align-items: center; gap: 9px; font-size: 14px; }
+.nb-item.extra { display: none; }
+.nb-group.open .nb-item.extra { display: flex; }
+.nb-ic { font-size: 16px; flex: none; }
+.nb-name { color: var(--ink); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nb-dist { font-size: 12.5px; color: var(--muted); white-space: nowrap; flex: none; }
+.nb-more { margin-top: 9px; border: 0; background: transparent; color: var(--blue);
+  font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; padding: 0; }
+.nb-note { margin: 10px 0 0; font-size: 11.5px; color: var(--muted); }
 .d-desc { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
 .d-desc li { position: relative; padding-right: 22px; font-size: 14px; color: var(--text); }
 .d-desc li::before { content: "✓"; position: absolute; right: 0; color: var(--sale); font-weight: 800; }
