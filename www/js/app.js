@@ -509,7 +509,28 @@ document.getElementById("search-results").addEventListener("click", (e) => {
 });
 
 /* --------------------------------------------------------- full detail ---- */
-const AGENT = { name: "ענבל לוי", office: "BlockView נדל\"ן", phone: "050-000-0000" };
+const AGENT = { name: "ענבל לוי", office: "BlockView נדל\"ן", phone: "050-000-0000", email: "demo@blockview.co.il" };
+
+/* Contact details follow the same rule as the database (supabase/10_listing_contacts.sql):
+ * a guest sees a masked phone/email, a signed-in user sees them in full. The masks
+ * here are only for display — the real values are withheld by RLS, not by this code. */
+function maskPhone(p) {
+  const d = String(p || "").replace(/\D/g, "");
+  if (d.length < 6) return "•".repeat(Math.max(d.length, 4));
+  return d.slice(0, 3) + "•".repeat(d.length - 5) + d.slice(-2);
+}
+function maskEmail(e) {
+  const at = String(e || "").indexOf("@");
+  if (at < 1) return "";
+  return e.slice(0, 2) + "•••@" + e.slice(at + 1);
+}
+const signedIn = () => !!(window.BVAuth && BVAuth.isLoggedIn());
+function contactBlock() {
+  if (signedIn())
+    return `<a class="btn-primary" href="tel:${AGENT.phone}">📞 ${AGENT.phone}</a>` +
+           `<a class="btn-ghost" href="mailto:${AGENT.email}">✉ ${AGENT.email}</a>`;
+  return `<button class="btn-primary locked" id="reveal-contact">📞 ${maskPhone(AGENT.phone)} · ${t("show_contact")}</button>`;
+}
 function specRows(l) {
   const a = attrs(l);
   return [
@@ -554,12 +575,15 @@ function openDetail(lid) {
         <div class="note-saved" id="note-saved" hidden>נשמר ✓</div>
         <div class="contact">
           <div class="agent"><div class="agent-av">${AGENT.name.charAt(0)}</div><div><div class="agent-name">${AGENT.name}</div><div class="agent-office">${AGENT.office}</div></div></div>
-          <div class="contact-btns"><button class="btn-primary">📞 ${AGENT.phone}</button><button class="btn-ghost fav-toggle ${isFav(l.id) ? "on" : ""}" data-fav="${l.id}">${t("save")}</button><button class="btn-ghost" data-share="${l.id}">${t("share")}</button></div>
+          <div class="contact-btns">${contactBlock()}<button class="btn-ghost fav-toggle ${isFav(l.id) ? "on" : ""}" data-fav="${l.id}">${t("save")}</button><button class="btn-ghost" data-share="${l.id}">${t("share")}</button></div>
+          ${signedIn() ? "" : `<p class="contact-hint">${t("contact_locked")}</p>`}
         </div>
         <p class="disclaimer">נתונים לדוגמה — אב-טיפוס BlockView. התמונות להמחשה בלבד.</p>
       </div>
     </div>`;
   el.hidden = false;
+  const reveal = el.querySelector("#reveal-contact");
+  if (reveal) reveal.onclick = (ev) => { ev.stopPropagation(); if (window.BVAuth) BVAuth.openAuth(); };
   el.querySelectorAll("[data-fav]").forEach((b) => (b.onclick = (ev) => {
     ev.stopPropagation(); toggleFav(b.dataset.fav); b.classList.toggle("on", isFav(b.dataset.fav));
   }));
