@@ -31,13 +31,105 @@
     $("who").textContent = state.user.email + (state.role === "admin" ? " · מנהל" : " · סוכן");
     $("signout").hidden = false;
     if (state.role !== "agent" && state.role !== "admin") return showNoAccess();
+    if (!(await mfaLoginGate())) return;   // only blocks if the agent enabled 2FA
     showApp();
     loadAll();
+    refreshSecurity();
   });
 
-  function showGate() { $("gate").hidden = false; $("noaccess").hidden = true; $("app").hidden = true; $("signout").hidden = true; $("who").textContent = ""; }
-  function showNoAccess() { $("gate").hidden = true; $("noaccess").hidden = false; $("app").hidden = true; }
-  function showApp() { $("gate").hidden = true; $("noaccess").hidden = true; $("app").hidden = false; }
+  function hideAll() { ["gate", "noaccess", "mfa", "app"].forEach((n) => ($(n).hidden = true)); }
+  function showGate() { hideAll(); $("gate").hidden = false; $("signout").hidden = true; $("who").textContent = ""; }
+  function showNoAccess() { hideAll(); $("noaccess").hidden = false; }
+  function showApp() { hideAll(); $("app").hidden = false; }
+  function showMfa() { hideAll(); $("mfa").hidden = false; }
+
+  /* ------------------------------------------------------------- 2FA ---- */
+  const mfa = { factorId: null, challengeId: null, mode: null };
+
+  async function listTotp() {
+    const { data } = await supa.auth.mfa.listFactors();
+    return (data && data.totp) || [];
+  }
+
+  // On login: if the agent has 2FA on, require the code. Otherwise let them in.
+  async function mfaLoginGate() {
+    const totp = await listTotp();
+    const verified = totp.filter((x) => x.status === "verified");
+    if (!verified.length) return true;                       // 2FA not enabled
+    const { data: aal } = await supa.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal && aal.currentLevel === "aal2") return true;     // already verified
+    await startChallenge(verified[0].id);
+    return false;
+  }
+
+  async function startChallenge(factorId) {
+    mfa.mode = "challenge"; mfa.factorId = factorId;
+    const { data, error } = await supa.auth.mfa.challenge({ factorId });
+    if (error) { showMfa(); return mfaErr(error.message); }
+    mfa.challengeId = data.id;
+    $("mfa-title").textContent = "אימות דו-שלבי";
+    $("mfa-sub").textContent = "הזן את הקוד בן 6 הספרות מאפליקציית האימות";
+    $("mfa-enroll").hidden = true; $("mfa-cancel").hidden = true;
+    showMfa(); $("mfa-code").value = ""; $("mfa-code").focus();
+  }
+
+  async function startEnroll() {
+    const stale = (await listTotp()).filter((x) => x.status !== "verified");
+    for (const s of stale) { try { await supa.auth.mfa.unenroll({ factorId: s.id }); } catch (e) {} }
+    const { data, error } = await supa.auth.mfa.enroll({ factorType: "totp", friendlyName: "BlockView CRM" });
+    if (error) { showMfa(); return mfaErr(error.message); }
+    mfa.mode = "enroll"; mfa.factorId = data.id;
+    $("mfa-title").textContent = "הפעלת אימות דו-שלבי";
+    $("mfa-sub").textContent = "סרוק את הקוד באפליקציית אימות ואשר עם 6 ספרות.";
+    $("mfa-enroll").hidden = false; $("mfa-cancel").hidden = false;
+    $("mfa-qr").innerHTML = data.totp.qr_code || "";
+    $("mfa-secret").textContent = data.totp.secret || "";
+    showMfa(); $("mfa-code").value = ""; $("mfa-code").focus();
+  }
+
+  function mfaErr(m) { const e = $("mfa-err"); e.textContent = m; e.hidden = false; }
+
+  $("mfa-verify").addEventListener("click", async () => {
+    $("mfa-err").hidden = true;
+    const code = $("mfa-code").value.trim();
+    if (!/^\d{6}$/.test(code)) return mfaErr("הזן קוד בן 6 ספרות");
+    try {
+      let challengeId = mfa.challengeId;
+      if (mfa.mode === "enroll") {
+        const ch = await supa.auth.mfa.challenge({ factorId: mfa.factorId });
+        if (ch.error) throw ch.error;
+        challengeId = ch.data.id;
+      }
+      const { error } = await supa.auth.mfa.verify({ factorId: mfa.factorId, challengeId, code });
+      if (error) throw error;
+      toast(mfa.mode === "enroll" ? "אימות דו-שלבי הופעל 🔐" : "אומת בהצלחה");
+      showApp(); loadAll(); refreshSecurity();
+    } catch (err) { mfaErr(err.message || "קוד שגוי"); }
+  });
+  $("mfa-code").addEventListener("keydown", (e) => { if (e.key === "Enter") $("mfa-verify").click(); });
+  $("mfa-signout").addEventListener("click", () => supa.auth.signOut());
+  $("mfa-cancel").addEventListener("click", async () => {
+    const stale = (await listTotp()).filter((x) => x.status !== "verified");
+    for (const s of stale) { try { await supa.auth.mfa.unenroll({ factorId: s.id }); } catch (e) {} }
+    showApp(); refreshSecurity();
+  });
+
+  /* security panel */
+  async function refreshSecurity() {
+    const verified = (await listTotp()).filter((x) => x.status === "verified");
+    const on = verified.length > 0;
+    const el = $("sec-state");
+    el.textContent = on ? "✅ מופעל" : "לא מופעל";
+    el.className = "sec-state " + (on ? "on" : "off");
+    $("sec-enable").hidden = on;
+    $("sec-disable").hidden = !on;
+  }
+  $("sec-enable").addEventListener("click", startEnroll);
+  $("sec-disable").addEventListener("click", async () => {
+    if (!confirm("לכבות אימות דו-שלבי? החשבון יהיה מוגן פחות.")) return;
+    for (const f of (await listTotp())) { try { await supa.auth.mfa.unenroll({ factorId: f.id }); } catch (e) {} }
+    toast("אימות דו-שלבי כובה"); refreshSecurity();
+  });
 
   $("g-signin").addEventListener("click", async () => {
     const email = $("g-email").value.trim(), password = $("g-pw").value;
@@ -301,6 +393,8 @@
     $("tab-listings").hidden = name !== "listings";
     $("tab-editor").hidden = name !== "editor";
     $("tab-leads").hidden = name !== "leads";
+    $("tab-security").hidden = name !== "security";
+    if (name === "security") refreshSecurity();
   }
   document.querySelectorAll(".tab").forEach((t) =>
     t.addEventListener("click", () => { if (t.dataset.tab === "editor") openEditor(null); else switchTab(t.dataset.tab); }));

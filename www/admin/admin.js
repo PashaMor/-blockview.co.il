@@ -23,18 +23,79 @@
   supa.auth.onAuthStateChange(async (_e, session) => {
     state.user = session ? session.user : null;
     if (!state.user) return show("gate");
+    // own row is readable at aal1 (profiles_self_select), so the role check works pre-2FA
     const { data } = await supa.from("profiles").select("role").eq("id", state.user.id).single();
     $("who").textContent = state.user.email;
     $("signout").hidden = false;
     if (!data || data.role !== "admin") return show("noaccess");
+    if (!(await mfaGate())) return;        // 2FA is mandatory for admins
     show("app"); loadAll();
   });
   function show(which) {
-    $("gate").hidden = which !== "gate";
-    $("noaccess").hidden = which !== "noaccess";
-    $("app").hidden = which !== "app";
+    ["gate", "noaccess", "mfa", "app"].forEach((n) => ($(n).hidden = n !== which));
     if (which === "gate") { $("signout").hidden = true; $("who").textContent = ""; }
   }
+
+  /* ---------------------------------------------------------------- 2FA */
+  const mfa = { factorId: null, challengeId: null, mode: null };
+
+  async function mfaGate() {
+    const { data: f } = await supa.auth.mfa.listFactors();
+    const totp = (f && f.totp) || [];
+    const verified = totp.filter((x) => x.status === "verified");
+    const { data: aal } = await supa.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (verified.length && aal && aal.currentLevel === "aal2") return true;  // already 2FA'd
+    if (verified.length) { await startChallenge(verified[0].id); return false; }
+    await startEnroll(totp.filter((x) => x.status !== "verified"));
+    return false;
+  }
+
+  async function startEnroll(stale) {
+    // clear half-finished factors so enroll() doesn't collide
+    for (const s of stale) { try { await supa.auth.mfa.unenroll({ factorId: s.id }); } catch (e) {} }
+    const { data, error } = await supa.auth.mfa.enroll({ factorType: "totp", friendlyName: "BlockView Admin" });
+    if (error) { show("mfa"); return mfaErr(error.message); }
+    mfa.mode = "enroll"; mfa.factorId = data.id;
+    $("mfa-title").textContent = "הגדרת אימות דו-שלבי";
+    $("mfa-sub").textContent = "אבטחת מנהל היא חובה. סרוק את הקוד ואשר עם 6 ספרות.";
+    $("mfa-enroll").hidden = false;
+    $("mfa-qr").innerHTML = data.totp.qr_code || "";
+    $("mfa-secret").textContent = data.totp.secret || "";
+    show("mfa"); $("mfa-code").value = ""; $("mfa-code").focus();
+  }
+
+  async function startChallenge(factorId) {
+    mfa.mode = "challenge"; mfa.factorId = factorId;
+    const { data, error } = await supa.auth.mfa.challenge({ factorId });
+    if (error) { show("mfa"); return mfaErr(error.message); }
+    mfa.challengeId = data.id;
+    $("mfa-title").textContent = "אימות דו-שלבי";
+    $("mfa-sub").textContent = "הזן את הקוד בן 6 הספרות מאפליקציית האימות";
+    $("mfa-enroll").hidden = true;
+    show("mfa"); $("mfa-code").value = ""; $("mfa-code").focus();
+  }
+
+  function mfaErr(m) { const e = $("mfa-err"); e.textContent = m; e.hidden = false; }
+
+  $("mfa-verify").addEventListener("click", async () => {
+    $("mfa-err").hidden = true;
+    const code = $("mfa-code").value.trim();
+    if (!/^\d{6}$/.test(code)) return mfaErr("הזן קוד בן 6 ספרות");
+    try {
+      let challengeId = mfa.challengeId;
+      if (mfa.mode === "enroll") {
+        const ch = await supa.auth.mfa.challenge({ factorId: mfa.factorId });
+        if (ch.error) throw ch.error;
+        challengeId = ch.data.id;
+      }
+      const { error } = await supa.auth.mfa.verify({ factorId: mfa.factorId, challengeId, code });
+      if (error) throw error;
+      toast("אומת בהצלחה 🔐");
+      show("app"); loadAll();
+    } catch (err) { mfaErr(err.message || "קוד שגוי"); }
+  });
+  $("mfa-code").addEventListener("keydown", (e) => { if (e.key === "Enter") $("mfa-verify").click(); });
+  $("mfa-signout").addEventListener("click", () => supa.auth.signOut());
   $("g-signin").addEventListener("click", async () => {
     const email = $("g-email").value.trim(), password = $("g-pw").value;
     if (!email || !password) { $("g-err").textContent = "נא למלא אימייל וסיסמה"; $("g-err").hidden = false; return; }

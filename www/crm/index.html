@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BlockView CRM — ניהול נכסים</title>
-  <link rel="stylesheet" href="crm.css?v=2" />
+  <link rel="stylesheet" href="crm.css?v=3" />
 </head>
 <body>
 
@@ -29,6 +29,25 @@
     </div>
   </section>
 
+  <!-- ===== 2FA (only if the agent enabled it) ===== -->
+  <section id="mfa" class="gate" hidden>
+    <div class="gate-card">
+      <div class="big">🔐</div>
+      <h1 id="mfa-title">אימות דו-שלבי</h1>
+      <p class="muted" id="mfa-sub">הזן את הקוד בן 6 הספרות מאפליקציית האימות</p>
+      <div id="mfa-enroll" hidden>
+        <div id="mfa-qr" class="qr"></div>
+        <p class="muted small">סרוק עם Google Authenticator / Authy, או הזן ידנית:</p>
+        <code id="mfa-secret" class="secret"></code>
+      </div>
+      <input id="mfa-code" class="input code-input" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code" />
+      <div id="mfa-err" class="err" hidden></div>
+      <button id="mfa-verify" class="btn-primary">אמת</button>
+      <button id="mfa-cancel" class="btn-ghost" hidden>ביטול</button>
+      <button id="mfa-signout" class="btn-ghost">התנתק</button>
+    </div>
+  </section>
+
   <!-- ===== No access ===== -->
   <section id="noaccess" class="gate" hidden>
     <div class="gate-card">
@@ -45,6 +64,7 @@
       <button class="tab active" data-tab="listings">הנכסים שלי</button>
       <button class="tab" data-tab="editor">➕ נכס חדש</button>
       <button class="tab" data-tab="leads">לידים <b id="leads-badge">0</b></button>
+      <button class="tab" data-tab="security">🔐 אבטחה</button>
     </nav>
 
     <!-- stats -->
@@ -143,6 +163,22 @@
       </form>
     </section>
 
+    <!-- ---- security / 2FA ---- -->
+    <section class="panel" id="tab-security" hidden>
+      <div class="panel-head"><h2>אבטחת חשבון</h2></div>
+      <div class="sec-row">
+        <div>
+          <div class="sec-title">אימות דו-שלבי (2FA)</div>
+          <div class="sec-sub">הגנה נוספת על החשבון באמצעות קוד חד-פעמי מאפליקציית אימות.</div>
+          <div id="sec-state" class="sec-state">בודק…</div>
+        </div>
+        <div class="sec-actions">
+          <button id="sec-enable" class="btn-primary" hidden>הפעל 2FA</button>
+          <button id="sec-disable" class="btn-danger" hidden>כבה 2FA</button>
+        </div>
+      </div>
+    </section>
+
     <!-- ---- leads ---- -->
     <section class="panel" id="tab-leads" hidden>
       <div class="panel-head"><h2>לידים</h2></div>
@@ -155,6 +191,6 @@
 
   <script src="../vendor/supabase.min.js?v=1"></script>
   <script src="../js/config.js?v=12"></script>
-  <script src="crm.js?v=1"></script>
+  <script src="crm.js?v=3"></script>
 </body>
 </html>

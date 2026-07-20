@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BlockView — ניהול מערכת</title>
-  <link rel="stylesheet" href="admin.css?v=1" />
+  <link rel="stylesheet" href="admin.css?v=2" />
 </head>
 <body>
 
@@ -26,6 +26,24 @@
       <input id="g-pw" type="password" placeholder="סיסמה" autocomplete="current-password" />
       <div id="g-err" class="err" hidden></div>
       <button id="g-signin" class="btn-primary">התחבר</button>
+    </div>
+  </section>
+
+  <!-- two-factor (mandatory for admins) -->
+  <section id="mfa" class="gate" hidden>
+    <div class="gate-card">
+      <div class="big">🔐</div>
+      <h1 id="mfa-title">אימות דו-שלבי</h1>
+      <p class="muted" id="mfa-sub">הזן את הקוד בן 6 הספרות מאפליקציית האימות</p>
+      <div id="mfa-enroll" hidden>
+        <div id="mfa-qr" class="qr"></div>
+        <p class="muted small">סרוק עם Google Authenticator / Authy, או הזן ידנית:</p>
+        <code id="mfa-secret" class="secret"></code>
+      </div>
+      <input id="mfa-code" class="input code-input" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code" />
+      <div id="mfa-err" class="err" hidden></div>
+      <button id="mfa-verify" class="btn-primary">אמת</button>
+      <button id="mfa-signout" class="btn-ghost">התנתק</button>
     </div>
   </section>
 
@@ -114,6 +132,6 @@
 
   <script src="../vendor/supabase.min.js?v=1"></script>
   <script src="../js/config.js?v=14"></script>
-  <script src="admin.js?v=1"></script>
+  <script src="admin.js?v=2"></script>
 </body>
 </html>

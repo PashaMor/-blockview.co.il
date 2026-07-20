@@ -90,5 +90,13 @@ main { max-width: 1140px; margin: 0 auto; padding: 20px; }
 .thumbs-mini { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 .thumbs-mini img { width: 56px; height: 42px; object-fit: cover; border-radius: 7px; border: 1px solid var(--line); }
 
+/* 2FA */
+.qr { display: grid; place-items: center; margin: 6px 0; }
+.qr svg, .qr img { width: 190px; height: 190px; background: #fff; border-radius: 10px; padding: 6px; }
+.secret { display: block; font-family: monospace; font-size: 13px; background: var(--surface-2); border: 1px solid var(--line);
+  padding: 9px; border-radius: 8px; word-break: break-all; direction: ltr; }
+.small { font-size: 12.5px; }
+.code-input { text-align: center; letter-spacing: .5em; font-size: 22px; font-weight: 700; direction: ltr; }
+
 #toast { position: fixed; bottom: 24px; inset-inline-start: 50%; transform: translateX(50%);
   background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 22px; font-size: 14px; font-weight: 600; z-index: 50; }
