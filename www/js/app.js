@@ -584,7 +584,7 @@ function openDetail(lid) {
         <div class="note-saved" id="note-saved" hidden>נשמר ✓</div>
         <div class="contact">
           <div class="agent"><div class="agent-av">${AGENT.name.charAt(0)}</div><div><div class="agent-name">${AGENT.name}</div><div class="agent-office">${AGENT.office}</div></div></div>
-          <div class="contact-btns">${contactBlock()}<button class="btn-ghost fav-toggle ${isFav(l.id) ? "on" : ""}" data-fav="${l.id}">${t("save")}</button>${l.hasWhatsapp ? `<button class="btn-wa" data-wa="${l.id}">${t("wa_contact")}</button>` : ""}<button class="btn-ghost" data-share="${l.id}">${t("share")}</button></div>
+          <div class="contact-btns">${contactBlock()}${isDbListing(l.id) ? `<button class="btn-lead" data-lead="${l.id}">${t("lead_send")}</button>` : ""}<button class="btn-ghost fav-toggle ${isFav(l.id) ? "on" : ""}" data-fav="${l.id}">${t("save")}</button>${l.hasWhatsapp ? `<button class="btn-wa" data-wa="${l.id}">${t("wa_contact")}</button>` : ""}<button class="btn-ghost" data-share="${l.id}">${t("share")}</button></div>
           ${signedIn() ? "" : `<p class="contact-hint">${t("contact_locked")}</p>`}
         </div>
         <p class="disclaimer">נתונים לדוגמה — אב-טיפוס BlockView. התמונות להמחשה בלבד.</p>
@@ -598,6 +598,7 @@ function openDetail(lid) {
     ev.stopPropagation(); toggleFav(b.dataset.fav); b.classList.toggle("on", isFav(b.dataset.fav));
   }));
   el.querySelectorAll("[data-share]").forEach((b) => (b.onclick = (ev) => { ev.stopPropagation(); shareListing(b.dataset.share); }));
+  el.querySelectorAll("[data-lead]").forEach((b) => (b.onclick = (ev) => { ev.stopPropagation(); openLead(b.dataset.lead); }));
   const ta = el.querySelector("#note-input");
   if (window.BVAuth && BVAuth.isLoggedIn()) {
     ta.value = getNote(l.id);
@@ -724,6 +725,64 @@ async function renderNearby(bid) {
   }));
 }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeDetail(); closeSheet(); closeSearch(); } });
+
+/* ------------------------------------------------------- enquiries (leads) ----
+ * A visitor can reach the owner without opening an account. The insert is allowed
+ * by RLS only on APPROVED listings, and the DB derives the receiving agent from
+ * the listing itself, so an enquiry can't be addressed to someone else.
+ * Sample listings from data.js have no DB row, hence the isDbListing() guard.
+ */
+const isDbListing = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(String(id));
+const leadSheet = document.getElementById("lead-sheet");
+let leadFor = null;
+
+function openLead(lid) {
+  const l = LISTING_INDEX[lid];
+  if (!l || !isDbListing(lid)) return;
+  leadFor = lid;
+  closeAllSheets(); closeAuthUI();
+  document.getElementById("lead-err").hidden = true;
+  document.getElementById("lead-for").textContent = l.title + " — " + l.building.address;
+  document.getElementById("lead-form").reset();
+  // signed-in visitors shouldn't retype what we already know
+  if (window.BVAuth && BVAuth.isLoggedIn() && BVAuth.email)
+    document.getElementById("lead-email").value = BVAuth.email() || "";
+  leadSheet.classList.add("open");
+  leadSheet.setAttribute("aria-hidden", "false");
+  setTimeout(() => document.getElementById("lead-name").focus(), 250);
+}
+function closeLead() { leadSheet.classList.remove("open"); leadSheet.setAttribute("aria-hidden", "true"); }
+document.getElementById("lead-close").addEventListener("click", closeLead);
+
+document.getElementById("lead-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const err = document.getElementById("lead-err");
+  err.hidden = true;
+  const btn = document.getElementById("lead-submit");
+  const name = document.getElementById("lead-name").value.trim();
+  const phone = document.getElementById("lead-phone").value.trim();
+  const email = document.getElementById("lead-email").value.trim();
+  const message = document.getElementById("lead-message").value.trim();
+  const fail = (msg) => { err.textContent = msg; err.hidden = false; };
+
+  if (document.getElementById("lead-hp").value) { closeLead(); return; }  // bot
+  if (name.length < 2) return fail(t("lead_name_bad"));
+  if (!phone && !email) return fail(t("lead_reach_bad"));
+  if (phone && phone.replace(/\D/g, "").length < 6) return fail(t("lead_phone_bad"));
+
+  btn.disabled = true;
+  const res = await BVDB.from("leads").insert({
+    listing_id: leadFor, name: name,
+    phone: phone || null, email: email || null,
+    message: message || null,
+  });
+  btn.disabled = false;
+  if (res.error) {
+    return fail(/TOO_MANY_LEADS/.test(res.error.message) ? t("lead_too_many") : t("lead_error"));
+  }
+  closeLead();
+  toast(t("lead_ok"));
+});
 
 /* -------------------------------------------------------- filter wiring ---- */
 function refreshBuildings() {
@@ -901,7 +960,7 @@ window.subCount = () => subs.size;
 window.bvToast = (m) => toast(m);
 // closeDetail too: the detail card sits above the sheets, so an auth sheet opened
 // from inside it (contact / note / save) would otherwise appear behind it
-window.closeAllSheets = function () { closeDetail(); closeSheet(); closeListings(); closeFavs(); closeAlerts(); closeSearch(); };
+window.closeAllSheets = function () { closeDetail(); closeSheet(); closeListings(); closeFavs(); closeAlerts(); closeSearch(); closeLead(); };
 window.reRender = function () {
   updateTotal();
   if (typeof updatePriceUI === "function") updatePriceUI();

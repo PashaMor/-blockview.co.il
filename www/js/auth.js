@@ -75,6 +75,7 @@
     async saveFilter(obj) { if (state.user) await supa.from("profiles").update({ saved_filter: obj }).eq("id", state.user.id); },
     async clearFilter() { if (state.user) await supa.from("profiles").update({ saved_filter: null }).eq("id", state.user.id); },
     async saveTheme(m) { if (state.user) await supa.from("profiles").update({ theme: m }).eq("id", state.user.id); },
+    email: () => (state.user ? state.user.email || "" : ""),
     openAuth, showUpgrade,
   };
 
