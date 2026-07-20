@@ -535,9 +535,9 @@ function maskEmail(e) {
 const signedIn = () => !!(window.BVAuth && BVAuth.isLoggedIn());
 function contactBlock() {
   if (signedIn())
-    return `<a class="btn-primary" href="tel:${AGENT.phone}">📞 ${AGENT.phone}</a>` +
-           `<a class="btn-ghost" href="mailto:${AGENT.email}">✉ ${AGENT.email}</a>`;
-  return `<button class="btn-primary locked" id="reveal-contact">📞 ${maskPhone(AGENT.phone)} · ${t("show_contact")}</button>`;
+    return `<a class="btn-primary" href="tel:${AGENT.phone}">📞 <bdi class="ltr">${AGENT.phone}</bdi></a>` +
+           `<a class="btn-ghost" href="mailto:${AGENT.email}">✉ <bdi class="ltr">${AGENT.email}</bdi></a>`;
+  return `<button class="btn-primary locked" id="reveal-contact">📞 <bdi class="ltr">${maskPhone(AGENT.phone)}</bdi> · ${t("show_contact")}</button>`;
 }
 function specRows(l) {
   const a = attrs(l);
@@ -871,6 +871,8 @@ const EDU_KINDS = [
   { img: "bv-edu-school",  emoji: "🎒", color: "#2C8874", match: ["school"] },
   { img: "bv-edu-college", emoji: "🎓", color: "#6B4FD8", match: ["college"] },
   { img: "bv-edu-uni",     emoji: "🏛️", color: "#B3261E", match: ["university"] },
+  { img: "bv-poi-bank",    emoji: "🏦", color: "#1F6FB2", match: ["bank"] },
+  { img: "bv-poi-market",  emoji: "🛒", color: "#C2410C", match: ["supermarket", "grocery", "convenience"] },
 ];
 let eduVisible = true;
 try { eduVisible = localStorage.getItem("blockview_edu") !== "0"; } catch (e) {}
@@ -909,6 +911,9 @@ function addEducationLayer() {
           "kindergarten", "bv-edu-kg",
           "school", "bv-edu-school",
           "university", "bv-edu-uni",
+          "college", "bv-edu-college",
+          "bank", "bv-poi-bank",
+          ["supermarket", "grocery", "convenience"], "bv-poi-market",
           "bv-edu-college"],
         "icon-size": 0.85,
         "icon-allow-overlap": false,
