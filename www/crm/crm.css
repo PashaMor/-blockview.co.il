@@ -206,3 +206,14 @@ main { max-width: 1080px; margin: 0 auto; padding: 20px; }
 
 .btn-ghost.danger { color: var(--bad); }
 .btn-ghost.danger:hover { border-color: var(--bad); color: var(--bad); }
+
+/* ---- contact people on a listing (editor) ---- */
+.contact-row { position: relative; border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; background: var(--surface-2); }
+.contact-row .grid2 { margin-top: 10px; gap: 10px; }
+.contact-row .wa-check { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; color: var(--text-soft); }
+.contact-row .wa-check input { width: 17px; height: 17px; accent-color: var(--blue); }
+.contact-row .c-remove { position: absolute; top: 8px; inset-inline-end: 8px; width: 24px; height: 24px; border-radius: 50%;
+  border: 1px solid var(--line); background: var(--surface); color: var(--text-soft); cursor: pointer; font-size: 12px; line-height: 1; }
+.add-row { font: inherit; font-weight: 700; font-size: 13.5px; color: var(--blue); background: transparent;
+  border: 1px dashed var(--line); border-radius: 10px; padding: 9px 14px; cursor: pointer; width: 100%; }
+.add-row:hover { border-color: var(--blue); }

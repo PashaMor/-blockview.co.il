@@ -387,7 +387,7 @@
   async function loadListings() {
     const { data, error } = await supa
       .from("listings")
-      .select("*, buildings(name,address), listing_photos(id,path,sort)")
+      .select("*, buildings(name,address), listing_photos(id,path,sort), listing_contacts(id,name,phone,email,whatsapp,sort)")
       .eq("agent_id", state.user.id)
       .order("created_at", { ascending: false });
     if (error) return toast("שגיאה בטעינת נכסים");
@@ -467,6 +467,64 @@
     $("f-delete").hidden = !l;
     $("f-photos").value = "";
     renderPhotoStrip();
+    const cs = l ? (l.listing_contacts || []).slice().sort((a, b) => a.sort - b.sort) : [];
+    resetContacts(cs, state.user.email);
+  }
+
+  /* --------------------------------------------------------- contacts ----
+   * Same rule as the website: full details are readable by signed-in users only
+   * (supabase/10_listing_contacts.sql). Up to 5 per listing — the DB enforces it. */
+  const MAX_CONTACTS = 5;
+  function contactRow(c, first) {
+    const d = document.createElement("div");
+    d.className = "contact-row";
+    d.innerHTML =
+      '<input class="input c-name" maxlength="80" placeholder="שם איש קשר" autocomplete="name" />' +
+      '<div class="grid2">' +
+        '<input class="input c-phone" type="tel" maxlength="20" placeholder="טלפון" autocomplete="tel" />' +
+        '<input class="input c-email" type="email" maxlength="120" placeholder="אימייל (לא חובה)" />' +
+      '</div>' +
+      '<label class="wa-check"><input type="checkbox" class="c-wa" /> 💬 המספר זמין בוואטסאפ</label>' +
+      (first ? "" : '<button type="button" class="c-remove" aria-label="הסר איש קשר">✕</button>');
+    if (c) {
+      d.querySelector(".c-name").value = c.name || "";
+      d.querySelector(".c-phone").value = c.phone || "";
+      d.querySelector(".c-email").value = c.email || "";
+      d.querySelector(".c-wa").checked = !!c.whatsapp;
+    }
+    return d;
+  }
+  function addContactRow(c) {
+    const box = $("f-contacts");
+    if (box.children.length >= MAX_CONTACTS) return;
+    box.appendChild(contactRow(c, box.children.length === 0));
+    $("f-add-contact").hidden = box.children.length >= MAX_CONTACTS;
+  }
+  function resetContacts(list, myEmail) {
+    $("f-contacts").innerHTML = "";
+    $("f-add-contact").hidden = false;
+    if (list && list.length) list.forEach((c) => addContactRow(c));
+    else addContactRow({ name: "", phone: "", email: myEmail || "" });
+  }
+  $("f-add-contact").addEventListener("click", () => addContactRow(null));
+  $("f-contacts").addEventListener("click", (e) => {
+    const b = e.target.closest(".c-remove");
+    if (!b) return;
+    b.parentNode.remove();
+    $("f-add-contact").hidden = $("f-contacts").children.length >= MAX_CONTACTS;
+  });
+  function readContacts() {
+    const out = [];
+    Array.prototype.forEach.call($("f-contacts").querySelectorAll(".contact-row"), (r) => {
+      const name = r.querySelector(".c-name").value.trim();
+      const phone = r.querySelector(".c-phone").value.trim();
+      const email = r.querySelector(".c-email").value.trim();
+      if (!name && !phone && !email) return;
+      if (name.length < 2) throw new Error("נא למלא שם איש קשר");
+      if (phone.replace(/\D/g, "").length < 6) throw new Error("נא למלא מספר טלפון תקין");
+      out.push({ name: name, phone: phone, email: email || null, whatsapp: !!r.querySelector(".c-wa").checked });
+    });
+    return out;
   }
 
   function renderPhotoStrip() {
@@ -522,6 +580,7 @@
     $("f-err").hidden = true;
     $("f-save").disabled = true;
     try {
+      const contacts = readContacts();   // validated before anything is written
       const row = {
         building_id: $("f-building").value,
         agent_id: state.user.id,
@@ -561,6 +620,14 @@
         if (ins.error) throw ins.error;
       }
       state.pending = [];
+      // contacts: replace the whole set (RLS keeps this to our own listing)
+      const del = await supa.from("listing_contacts").delete().eq("listing_id", listingId);
+      if (del.error) throw del.error;
+      if (contacts.length) {
+        const cins = await supa.from("listing_contacts").insert(
+          contacts.map((c, i) => ({ listing_id: listingId, name: c.name, phone: c.phone, email: c.email, whatsapp: c.whatsapp, sort: i })));
+        if (cins.error) throw cins.error;
+      }
       toast(id ? "הנכס עודכן" : "הנכס נוסף");
       await loadListings();
       switchTab("listings");

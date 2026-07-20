@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BlockView CRM — ניהול נכסים</title>
-  <link rel="stylesheet" href="crm.css?v=9" />
+  <link rel="stylesheet" href="crm.css?v=10" />
 </head>
 <body>
 
@@ -242,6 +242,12 @@
           <div class="hint">התמונות נדחסות אוטומטית לפני העלאה.</div>
         </div>
 
+        <div class="field"><span>אנשי קשר</span>
+          <div id="f-contacts"></div>
+          <button type="button" id="f-add-contact" class="add-row">＋ הוסף איש קשר</button>
+          <div class="hint">גולשים שאינם מחוברים יראו טלפון ואימייל חלקיים בלבד. משתמשים מחוברים יראו את הפרטים המלאים.</div>
+        </div>
+
         <div id="f-err" class="err" hidden></div>
         <div class="form-actions">
           <button type="submit" id="f-save" class="btn-primary">שמור נכס</button>
@@ -280,6 +286,6 @@
   <script src="../vendor/supabase.min.js?v=1"></script>
   <script src="../js/config.js?v=20"></script>
   <script src="../js/oauth.js?v=17"></script>
-  <script src="crm.js?v=10"></script>
+  <script src="crm.js?v=11"></script>
 </body>
 </html>

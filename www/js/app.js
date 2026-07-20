@@ -408,7 +408,10 @@ function renderListings(b) {
     (sale ? `<span class="stat-chip sale"><b>${sale}</b> ${t("for_sale")}</span>` : "") +
     (rent ? `<span class="stat-chip rent"><b>${rent}</b> ${t("for_rent")}</span>` : "");
   const list = document.getElementById("listings"), noMatch = document.getElementById("no-match");
-  if (m.length) { list.innerHTML = m.map(listingCard).join(""); noMatch.hidden = true; }
+  if (m.length) {
+    list.innerHTML = m.map(listingCard).join(""); noMatch.hidden = true;
+    if (window.BVTrack) m.forEach((l) => BVTrack.impression(l.id));   // seen in the building sheet
+  }
   else { list.innerHTML = ""; noMatch.hidden = false; }
   const sb = document.getElementById("sub-btn");
   sb.classList.toggle("on", isSub(b.id));
@@ -591,6 +594,7 @@ function openDetail(lid) {
       </div>
     </div>`;
   el.hidden = false;
+  if (window.BVTrack) BVTrack.detail(l.id);        // the listing was actually opened
   renderNearby(l.building.id);
   const reveal = el.querySelector("#reveal-contact");
   if (reveal) reveal.onclick = (ev) => { ev.stopPropagation(); if (window.BVAuth) BVAuth.openAuth(); };
