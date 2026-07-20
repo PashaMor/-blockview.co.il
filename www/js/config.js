@@ -13,7 +13,7 @@ window.BLOCKVIEW_CONFIG = {
    * provider that isn't configured just errors with "Unsupported provider".
    * NATIVE_REDIRECT is the Android deep link that brings the system browser back
    * into the app; it must be listed in Supabase -> URL Configuration. */
-  OAUTH: { google: false, apple: false },
+  OAUTH: { google: true, apple: false },
   NATIVE_REDIRECT: "com.blockview.app://auth/callback",
 
   // Free-tier limits (keep in sync with supabase/schema.sql).
