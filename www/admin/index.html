@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BlockView — ניהול מערכת</title>
+  <link rel="stylesheet" href="admin.css?v=1" />
+</head>
+<body>
+
+  <header class="topbar">
+    <a class="brand" href="https://blockview.co.il"><img src="../logo.png" alt="BlockView" /></a>
+    <div class="top-right">
+      <span class="chip-admin">ניהול מערכת</span>
+      <span id="who" class="who"></span>
+      <button id="signout" class="btn-ghost" hidden>התנתק</button>
+    </div>
+  </header>
+
+  <!-- sign in -->
+  <section id="gate" class="gate" hidden>
+    <div class="gate-card">
+      <h1>כניסת מנהל</h1>
+      <p class="muted">אזור מוגבל למנהלי המערכת בלבד.</p>
+      <input id="g-email" type="email" placeholder="אימייל" autocomplete="email" />
+      <input id="g-pw" type="password" placeholder="סיסמה" autocomplete="current-password" />
+      <div id="g-err" class="err" hidden></div>
+      <button id="g-signin" class="btn-primary">התחבר</button>
+    </div>
+  </section>
+
+  <!-- not an admin -->
+  <section id="noaccess" class="gate" hidden>
+    <div class="gate-card">
+      <div class="big">⛔</div>
+      <h1>אין הרשאת מנהל</h1>
+      <p class="muted">החשבון הזה אינו מנהל מערכת.</p>
+      <button id="na-signout" class="btn-ghost">התנתק</button>
+    </div>
+  </section>
+
+  <main id="app" hidden>
+    <nav class="tabs">
+      <button class="tab active" data-tab="overview">סקירה</button>
+      <button class="tab" data-tab="queue">ממתינים לאישור <b id="queue-badge">0</b></button>
+      <button class="tab" data-tab="listings">כל הנכסים</button>
+      <button class="tab" data-tab="users">משתמשים</button>
+      <button class="tab" data-tab="buildings">בניינים</button>
+    </nav>
+
+    <!-- overview -->
+    <section class="panel" id="tab-overview">
+      <div class="panel-head"><h2>סקירה כללית</h2></div>
+      <div class="stats" id="stats"></div>
+      <div class="panel-head" style="margin-top:22px"><h2>פעילות אחרונה</h2></div>
+      <div id="recent" class="rows"></div>
+    </section>
+
+    <!-- moderation queue -->
+    <section class="panel" id="tab-queue" hidden>
+      <div class="panel-head"><h2>ממתינים לאישור</h2></div>
+      <div id="queue-list" class="rows"></div>
+      <div id="queue-empty" class="empty" hidden>אין נכסים הממתינים לאישור. 🎉</div>
+    </section>
+
+    <!-- all listings -->
+    <section class="panel" id="tab-listings" hidden>
+      <div class="panel-head">
+        <h2>כל הנכסים</h2>
+        <div class="filters">
+          <input id="l-search" class="input" placeholder="חיפוש כותרת / כתובת..." />
+          <select id="l-status" class="input">
+            <option value="all">כל הסטטוסים</option>
+            <option value="pending">ממתין</option>
+            <option value="approved">מאושר</option>
+            <option value="rejected">נדחה</option>
+            <option value="sold">נמכר</option>
+            <option value="draft">טיוטה</option>
+          </select>
+        </div>
+      </div>
+      <div id="all-list" class="rows"></div>
+      <div id="all-empty" class="empty" hidden>לא נמצאו נכסים.</div>
+    </section>
+
+    <!-- users -->
+    <section class="panel" id="tab-users" hidden>
+      <div class="panel-head">
+        <h2>משתמשים</h2>
+        <div class="filters"><input id="u-search" class="input" placeholder="חיפוש אימייל..." /></div>
+      </div>
+      <div id="users-list" class="rows"></div>
+    </section>
+
+    <!-- buildings -->
+    <section class="panel" id="tab-buildings" hidden>
+      <div class="panel-head"><h2>בניינים</h2></div>
+      <form id="b-form" class="bform">
+        <input id="b-id" class="input" placeholder="מזהה (למשל b9)" required />
+        <input id="b-name" class="input" placeholder="שם" required />
+        <input id="b-address" class="input" placeholder="כתובת" required />
+        <input id="b-city" class="input" placeholder="עיר" value="תל אביב-יפו" />
+        <input id="b-lng" class="input" type="number" step="0.00001" placeholder="קו אורך (lng)" required />
+        <input id="b-lat" class="input" type="number" step="0.00001" placeholder="קו רוחב (lat)" required />
+        <input id="b-height" class="input" type="number" placeholder="גובה (מ')" value="24" />
+        <button class="btn-primary" type="submit">הוסף בניין</button>
+      </form>
+      <div id="b-err" class="err" hidden></div>
+      <div id="buildings-list" class="rows"></div>
+    </section>
+  </main>
+
+  <div id="toast" hidden></div>
+
+  <script src="../vendor/supabase.min.js?v=1"></script>
+  <script src="../js/config.js?v=14"></script>
+  <script src="admin.js?v=1"></script>
+</body>
+</html>
