@@ -41,6 +41,22 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 #account-btn { top: 124px; font-size: 19px; overflow: hidden; background-size: cover; background-position: center; }
 #lang-btn { top: 178px; font-size: 20px; }
 
+/* ---------- zoom controls (left middle) ---------- */
+#zoom-ctrl {
+  position: absolute; left: 16px; top: 50%; transform: translateY(-50%); z-index: 6;
+  display: flex; flex-direction: column; gap: 8px;
+}
+#zoom-ctrl button {
+  width: 46px; height: 46px; border-radius: 50%;
+  border: 1px solid var(--line); background: rgba(255,255,255,.92); backdrop-filter: blur(8px);
+  color: var(--ink); font-size: 22px; font-weight: 700; line-height: 1; cursor: pointer;
+  box-shadow: var(--shadow-sm); transition: transform .12s ease, border-color .12s ease;
+  display: grid; place-items: center;
+}
+#zoom-ctrl button:hover { border-color: var(--blue); color: var(--blue); transform: scale(1.06); }
+#zoom-ctrl button:active { transform: scale(.96); }
+@media (max-width: 560px) { #zoom-ctrl button { width: 42px; height: 42px; font-size: 20px; } }
+
 /* ---------- publish (website only) ---------- */
 #publish-btn {
   position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 6;

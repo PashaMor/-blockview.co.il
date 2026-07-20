@@ -820,3 +820,10 @@ document.querySelectorAll(".dl-store").forEach((a) => a.addEventListener("click"
     a.removeAttribute("target");
   });
 })();
+
+/* ---- zoom buttons (left middle) ---- */
+(function () {
+  const zi = document.getElementById("zoom-in"), zo = document.getElementById("zoom-out");
+  if (zi) zi.addEventListener("click", () => map.easeTo({ zoom: map.getZoom() + 1, duration: 300 }));
+  if (zo) zo.addEventListener("click", () => map.easeTo({ zoom: map.getZoom() - 1, duration: 300 }));
+})();
