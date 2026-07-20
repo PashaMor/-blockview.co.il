@@ -81,7 +81,8 @@
     });
   }
 
-  /* Hide buttons for providers that aren't configured yet, and bind the rest.
+  /* The buttons ship hidden in the HTML; this reveals only the providers that are
+   * switched on in config.js, so a half-configured provider is never clickable.
    * root: element containing the [data-oauth] buttons. */
   function wire(supa, root, onError) {
     var btns = (root || document).querySelectorAll("[data-oauth]");
@@ -89,6 +90,7 @@
     Array.prototype.forEach.call(btns, function (b) {
       var provider = b.dataset.oauth;
       if (!enabled(provider)) { b.hidden = true; return; }
+      b.hidden = false;
       shown++;
       b.addEventListener("click", async function () {
         b.disabled = true;
@@ -97,11 +99,9 @@
         if (msg && onError) onError(msg);
       });
     });
-    // nothing to show -> drop the "or with email" divider too
-    if (!shown) {
-      var div = (root || document).querySelectorAll(".auth-divider");
-      Array.prototype.forEach.call(div, function (d) { d.hidden = true; });
-    }
+    // the "or with email" divider only makes sense next to a visible button
+    var div = (root || document).querySelectorAll(".auth-divider");
+    Array.prototype.forEach.call(div, function (d) { d.hidden = shown === 0; });
     attach(supa, onError);
     return shown;
   }

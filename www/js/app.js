@@ -97,6 +97,13 @@ function footprint(b) {
 }
 // derived attributes (single source of truth for filters + detail)
 function attrs(l) {
+  // real records carry these columns; sample data falls back to derived values
+  if (l.type !== undefined) {
+    return {
+      elevator: !!l.elevator, parking: !!l.parking, pets: !!l.pets,
+      furnished: !!l.furnished, type: l.type, age: l.age || "old",
+    };
+  }
   const h = hashHue(l.id);
   return {
     elevator: l.floor >= 4,
@@ -138,12 +145,73 @@ function buildingsGeoJSON() {
     })),
   };
 }
-const idToIndex = Object.fromEntries(BUILDINGS.map((b, i) => [b.id, i]));
+let idToIndex = {};
+let LISTING_INDEX = {};
+function indexData() {
+  idToIndex = Object.fromEntries(BUILDINGS.map((b, i) => [b.id, i]));
+  LISTING_INDEX = {};
+  for (const bid in LISTINGS) {
+    const b = BUILDINGS.find((x) => x.id === bid);
+    if (!b) continue;
+    LISTINGS[bid].forEach((l) => (LISTING_INDEX[l.id] = { ...l, building: b }));
+  }
+}
+indexData();
 
-const LISTING_INDEX = {};
-for (const bid in LISTINGS) {
-  const b = BUILDINGS.find((x) => x.id === bid);
-  LISTINGS[bid].forEach((l) => (LISTING_INDEX[l.id] = { ...l, building: b }));
+/* ---------------------------------------------- live data (Supabase) ----
+ * Buildings + APPROVED listings come from the database. The hardcoded sample
+ * data in data.js is only a fallback so the map is never blank.
+ * Reading approved listings is public (RLS), so no session is needed here.
+ */
+const BVDB = window.supabase.createClient(
+  window.BLOCKVIEW_CONFIG.SUPABASE_URL,
+  window.BLOCKVIEW_CONFIG.SUPABASE_ANON_KEY,
+  { auth: { persistSession: false, autoRefreshToken: false } }
+);
+
+async function loadLiveData() {
+  try {
+    const [B, L] = await Promise.all([
+      BVDB.from("buildings").select("*"),
+      BVDB.from("listings").select("*, listing_photos(path,sort)").eq("status", "approved"),
+    ]);
+    if (B.error) throw B.error;
+    if (L.error) throw L.error;
+    if (!(B.data || []).length) { console.warn("[BlockView] no buildings in DB — keeping sample data"); return; }
+
+    BUILDINGS = B.data.map((b) => ({
+      id: b.id, name: b.name, address: b.address, city: b.city,
+      lng: +b.lng, lat: +b.lat,
+      w: +b.w || 0.00028, h: +b.h || 0.00032, height: +b.height || 24,
+    }));
+
+    const grouped = {};
+    (L.data || []).forEach((r) => {
+      const photos = (r.listing_photos || [])
+        .sort((a, b) => a.sort - b.sort)
+        .map((p) => BVDB.storage.from("listing-photos").getPublicUrl(p.path).data.publicUrl);
+      (grouped[r.building_id] = grouped[r.building_id] || []).push({
+        id: r.id, deal: r.deal, price: +r.price, rooms: +r.rooms, size: +r.size, floor: +r.floor,
+        title: r.title, description: r.description || "", tour: !!r.tour_url,
+        type: r.type, age: r.age,
+        furnished: !!r.furnished, pets: !!r.pets, parking: !!r.parking, elevator: !!r.elevator,
+        photos,
+      });
+    });
+    LISTINGS = grouped;
+
+    indexData();
+    if (map.getSource("blockview")) map.getSource("blockview").setData(buildingsGeoJSON());
+    fillCities();
+    updateTotal();
+    if (selectedId) {
+      const b = BUILDINGS.find((x) => x.id === selectedId);
+      b ? renderListings(b) : deselect();
+    }
+    console.log("[BlockView] live data:", BUILDINGS.length, "buildings,", (L.data || []).length, "approved listings");
+  } catch (e) {
+    console.warn("[BlockView] live data failed, using sample data:", e.message);
+  }
 }
 
 /* ---- placeholder images ---- */
@@ -161,7 +229,10 @@ function placeholder(seed, label, i) {
   </svg>`;
   return "data:image/svg+xml," + encodeURIComponent(svg);
 }
-const imagesFor = (l) => ROOM_LABELS.map((lbl, i) => placeholder(l.id, lbl, i));
+// real uploaded photos when the listing has them, otherwise generated placeholders
+const imagesFor = (l) => (l.photos && l.photos.length)
+  ? l.photos
+  : ROOM_LABELS.map((lbl, i) => placeholder(l.id, lbl, i));
 
 /* ---------------------------------------------------------------- map ---- */
 maplibregl.setRTLTextPlugin("vendor/mapbox-gl-rtl-text.min.js", null, true);
@@ -238,6 +309,7 @@ map.on("load", () => {
   addCustomLayers();
   updateTotal();
   applyTheme(mode, false); // sync the toggle icon to the loaded theme
+  loadLiveData();          // swap the sample data for real listings from Supabase
   // interactions (query-based so they survive style switches)
   map.on("mousemove", (e) => {
     const hit = map.queryRenderedFeatures(e.point, { layers: ["bv-buildings"] });
@@ -586,12 +658,16 @@ psMin.addEventListener("input", () => onPriceInput("min"));
 psMax.addEventListener("input", () => onPriceInput("max"));
 setupPriceSlider();
 // city
-(function initCities() {
+function fillCities() {
   const cities = [...new Set(BUILDINGS.map((b) => b.city || DEFAULT_CITY))];
   const sel = document.getElementById("city-select");
+  const keep = sel.value;
   sel.innerHTML = `<option value="all">${t("all_cities")}</option>` + cities.map((c) => `<option value="${c}">${c}</option>`).join("");
-  sel.addEventListener("change", (e) => { filter.city = e.target.value; refreshBuildings(); });
-})();
+  if (keep) sel.value = keep;
+}
+fillCities();
+document.getElementById("city-select")
+  .addEventListener("change", (e) => { filter.city = e.target.value; refreshBuildings(); });
 
 /* ---- saved filter preset (per-user default) ---- */
 let savedFilter = null;

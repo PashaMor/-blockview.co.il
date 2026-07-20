@@ -6,7 +6,7 @@
  * Each building: id, name (he), address (he), lng/lat (footprint center),
  * w/h (footprint size, degrees), height (meters for 3D extrusion).
  */
-const BUILDINGS = [
+var BUILDINGS = [
   { id: "b1", name: "רוטשילד 22",     address: "שדרות רוטשילד 22, תל אביב", lng: 34.77145, lat: 32.06405, w: 0.00028, h: 0.00034, height: 32 },
   { id: "b2", name: "רוטשילד 45",     address: "שדרות רוטשילד 45, תל אביב", lng: 34.77320, lat: 32.06520, w: 0.00030, h: 0.00030, height: 54 },
   { id: "b3", name: "אלנבי 40",       address: "אלנבי 40, תל אביב",         lng: 34.76980, lat: 32.06480, w: 0.00026, h: 0.00040, height: 24 },
@@ -36,7 +36,7 @@ const TRANSIT_LINES = {
 /* Listings keyed by building id. deal: "sale" | "rent".
  * price: ₪ (rent = per month). rooms, size (m²), floor. tour: has 3D interior tour.
  */
-const LISTINGS = {
+var LISTINGS = {
   b1: [
     { id: "b1-1", deal: "sale", price: 3250000, title: "דירת 3 חדרים משופצת", rooms: 3, size: 78,  floor: 2, tour: true },
     { id: "b1-2", deal: "rent", price: 7800,    title: "דירת 2 חדרים עם מרפסת", rooms: 2, size: 55,  floor: 4, tour: false },

@@ -25,8 +25,8 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=16" />
-  <link rel="stylesheet" href="css/style.css?v=16" />
+  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=17" />
+  <link rel="stylesheet" href="css/style.css?v=17" />
 </head>
 <body>
   <div id="map"></div>
@@ -192,9 +192,10 @@
       <div class="b-address" data-i18n="auth_sub">התחבר כדי לשמור נכסים, לעקוב אחר בניינים ולהוסיף הערות</div>
     </div>
     <div class="auth-body">
-      <button class="oauth-btn" data-oauth="google"><span class="ob-ic">G</span> <span data-i18n="continue_google">המשך עם Google</span></button>
-      <button class="oauth-btn dark" data-oauth="apple"><span class="ob-ic"></span> <span data-i18n="continue_apple">המשך עם Apple</span></button>
-      <div class="auth-divider"><span data-i18n="or_email">או באמצעות אימייל</span></div>
+      <!-- revealed by js/oauth.js only when the provider is enabled in config.js -->
+      <button class="oauth-btn" data-oauth="google" hidden><span class="ob-ic">G</span> <span data-i18n="continue_google">המשך עם Google</span></button>
+      <button class="oauth-btn dark" data-oauth="apple" hidden><span class="ob-ic"></span> <span data-i18n="continue_apple">המשך עם Apple</span></button>
+      <div class="auth-divider" hidden><span data-i18n="or_email">או באמצעות אימייל</span></div>
       <input id="auth-email" type="email" class="selectbox" placeholder="אימייל" data-i18n-ph="email" autocomplete="email" />
       <input id="auth-pw" type="password" class="selectbox" placeholder="סיסמה" data-i18n-ph="password" autocomplete="current-password" />
       <div id="auth-error" class="auth-error" hidden></div>
@@ -374,14 +375,14 @@
     </div>
   </div>
 
-  <script src="vendor/maplibre-gl.js?v=16"></script>
-  <script src="vendor/supabase.min.js?v=16"></script>
-  <script src="js/config.js?v=16"></script>
-  <script src="js/oauth.js?v=16"></script>
-  <script src="js/i18n.js?v=16"></script>
-  <script src="js/data.js?v=16"></script>
-  <script src="js/app.js?v=16"></script>
-  <script src="js/auth.js?v=16"></script>
-  <script src="js/publish.js?v=16"></script>
+  <script src="vendor/maplibre-gl.js?v=17"></script>
+  <script src="vendor/supabase.min.js?v=17"></script>
+  <script src="js/config.js?v=17"></script>
+  <script src="js/oauth.js?v=17"></script>
+  <script src="js/i18n.js?v=17"></script>
+  <script src="js/data.js?v=17"></script>
+  <script src="js/app.js?v=17"></script>
+  <script src="js/auth.js?v=17"></script>
+  <script src="js/publish.js?v=17"></script>
 </body>
 </html>
