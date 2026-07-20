@@ -257,8 +257,8 @@
     if (!cs.length) return "";
     return `<div class="contacts">` + cs.map((c) =>
       `<span class="ct"><b>${esc(c.name)}</b>` +
-      `<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>` +
-      (c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : "") +
+      `<a class="ltr" href="tel:${esc(c.phone)}">${esc(c.phone)}</a>` +
+      (c.email ? `<a class="ltr" href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : "") +
       `</span>`).join("") + `</div>`;
   }
 

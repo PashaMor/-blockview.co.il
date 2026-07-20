@@ -596,7 +596,7 @@
       const when = new Date(l.created_at).toLocaleString("he-IL");
       return `<div class="lead">
         <div class="lead-top">
-          <div><span class="lead-name">${esc(l.name)}</span> ${l.phone ? `· <a href="tel:${esc(l.phone)}">${esc(l.phone)}</a>` : ""}</div>
+          <div><span class="lead-name">${esc(l.name)}</span> ${l.phone ? `· <a class="ltr" href="tel:${esc(l.phone)}">${esc(l.phone)}</a>` : ""}</div>
           <span class="lead-when">${esc(when)}</span>
         </div>
         <div class="lead-for">על הנכס: ${esc((l.listings || {}).title || "—")}</div>

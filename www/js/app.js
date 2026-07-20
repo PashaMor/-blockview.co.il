@@ -792,7 +792,9 @@ window.onUserData = function (favIds, subIds, notesObj, plan) {
 window.favCount = () => favs.size;
 window.subCount = () => subs.size;
 window.bvToast = (m) => toast(m);
-window.closeAllSheets = function () { closeSheet(); closeListings(); closeFavs(); closeAlerts(); closeSearch(); };
+// closeDetail too: the detail card sits above the sheets, so an auth sheet opened
+// from inside it (contact / note / save) would otherwise appear behind it
+window.closeAllSheets = function () { closeDetail(); closeSheet(); closeListings(); closeFavs(); closeAlerts(); closeSearch(); };
 window.reRender = function () {
   updateTotal();
   if (typeof updatePriceUI === "function") updatePriceUI();

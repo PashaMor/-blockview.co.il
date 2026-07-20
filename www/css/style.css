@@ -442,3 +442,5 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .btn-wa { font: inherit; font-weight: 700; font-size: 13.5px; cursor: pointer; padding: 10px 16px;
   border-radius: 10px; border: 0; background: #25D366; color: #fff; }
 .btn-wa:hover { background: #1DA851; }
+/* phone / email inside RTL text must stay left-to-right */
+.ltr { direction: ltr; unicode-bidi: isolate; }

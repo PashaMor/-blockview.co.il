@@ -152,3 +152,6 @@ main { max-width: 1140px; margin: 0 auto; padding: 20px; }
 .ct b { color: var(--ink); }
 .ct a { color: var(--blue); text-decoration: none; }
 .ct a:hover { text-decoration: underline; }
+
+/* phone / email inside RTL text must stay left-to-right */
+.ltr { direction: ltr; unicode-bidi: isolate; display: inline-block; }

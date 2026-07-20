@@ -200,3 +200,6 @@ main { max-width: 1080px; margin: 0 auto; padding: 20px; }
 .ob-ic { font-weight: 800; font-size: 16px; }
 .auth-divider { display: flex; align-items: center; gap: 10px; color: var(--text-soft); font-size: 12.5px; margin: 2px 0; }
 .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+/* phone / email inside RTL text must stay left-to-right */
+.ltr { direction: ltr; unicode-bidi: isolate; display: inline-block; }
