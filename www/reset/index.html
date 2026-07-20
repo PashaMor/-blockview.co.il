@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BlockView — איפוס סיסמה</title>
+  <style>
+    :root { --blue:#0038B8; --blue-dk:#002C92; --ink:#151C27; --text:#263140; --text-soft:#5A6879;
+            --surface:#fff; --surface-2:#F5F7F9; --line:#E4E8ED; --bad:#B0322A; --bad-bg:#FBE9E7;
+            --ok:#2C8874; --ok-bg:#DCEEE8;
+            --font:"Segoe UI",system-ui,-apple-system,"Assistant",Arial,sans-serif; }
+    *{box-sizing:border-box} [hidden]{display:none!important}
+    body{margin:0;min-height:100vh;background:var(--surface-2);color:var(--text);font-family:var(--font);
+         display:grid;place-items:center;padding:24px}
+    .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:32px 28px;
+          width:min(420px,100%);box-shadow:0 4px 20px rgba(20,30,45,.08);display:flex;flex-direction:column;gap:13px;text-align:center}
+    .logo{height:46px;margin:0 auto 6px}
+    h1{margin:0;font-size:22px;color:var(--ink)}
+    p{margin:0;font-size:14px;color:var(--text-soft);line-height:1.6}
+    input{width:100%;font:inherit;font-size:15px;color:var(--ink);padding:12px;border:1px solid var(--line);
+          border-radius:11px;background:var(--surface)}
+    input:focus{outline:none;border-color:var(--blue)}
+    button{font:inherit;font-weight:700;font-size:15px;cursor:pointer;padding:12px;border-radius:11px;border:0;
+           background:var(--blue);color:#fff}
+    button:hover{background:var(--blue-dk)}
+    button.ghost{background:transparent;color:var(--blue);font-size:13.5px;padding:6px}
+    .msg{font-size:13.5px;padding:11px;border-radius:10px}
+    .msg.err{background:var(--bad-bg);color:var(--bad)}
+    .msg.ok{background:var(--ok-bg);color:var(--ok)}
+    .hint{font-size:12.5px;color:#8592A2}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img class="logo" src="../logo.png" alt="BlockView" />
+
+    <!-- step 1: ask for the email -->
+    <div id="request">
+      <h1>איפוס סיסמה</h1>
+      <p>הזן את כתובת האימייל שלך ונשלח לך קישור לבחירת סיסמה חדשה.</p>
+      <div style="height:12px"></div>
+      <input id="email" type="email" placeholder="אימייל" autocomplete="email" />
+      <div style="height:10px"></div>
+      <button id="send">שלח קישור איפוס</button>
+    </div>
+
+    <!-- step 2: choose a new password (arrived from the email link) -->
+    <div id="choose" hidden>
+      <h1>בחירת סיסמה חדשה</h1>
+      <p>בחר סיסמה חדשה לחשבון שלך.</p>
+      <div style="height:12px"></div>
+      <input id="pw1" type="password" placeholder="סיסמה חדשה" autocomplete="new-password" />
+      <div style="height:10px"></div>
+      <input id="pw2" type="password" placeholder="אימות סיסמה" autocomplete="new-password" />
+      <div class="hint" style="margin-top:8px">לפחות 8 תווים.</div>
+      <div style="height:10px"></div>
+      <button id="save">שמור סיסמה</button>
+    </div>
+
+    <div id="msg" class="msg" hidden></div>
+    <button class="ghost" id="back">חזרה לאתר</button>
+  </div>
+
+  <script src="../vendor/supabase.min.js?v=1"></script>
+  <script src="../js/config.js?v=14"></script>
+  <script src="reset.js?v=1"></script>
+</body>
+</html>

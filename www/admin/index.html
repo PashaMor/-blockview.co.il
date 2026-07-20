@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BlockView — ניהול מערכת</title>
-  <link rel="stylesheet" href="admin.css?v=4" />
+  <link rel="stylesheet" href="admin.css?v=5" />
 </head>
 <body>
 
@@ -27,6 +27,7 @@
           <button class="sm-item" id="sm-reset2fa">📱 החלף מכשיר 2FA</button>
           <button class="sm-item" id="sm-crm">🧑‍💼 מעבר ל-CRM</button>
           <button class="sm-item" id="sm-site">🌍 מעבר לאתר</button>
+          <button class="sm-item" id="sm-password">🔑 שינוי סיסמה</button>
           <button class="sm-item danger" id="sm-signout">↩ התנתק</button>
         </div>
       </div>
@@ -39,10 +40,14 @@
     <div class="gate-card">
       <h1>כניסת מנהל</h1>
       <p class="muted">אזור מוגבל למנהלי המערכת בלבד.</p>
+      <button class="oauth-btn" data-oauth="google" hidden><span class="ob-ic">G</span> המשך עם Google</button>
+      <button class="oauth-btn dark" data-oauth="apple" hidden><span class="ob-ic"></span> המשך עם Apple</button>
+      <div class="auth-divider"><span>או באמצעות אימייל</span></div>
       <input id="g-email" type="email" placeholder="אימייל" autocomplete="email" />
       <input id="g-pw" type="password" placeholder="סיסמה" autocomplete="current-password" />
       <div id="g-err" class="err" hidden></div>
       <button id="g-signin" class="btn-primary">התחבר</button>
+      <button id="g-forgot" class="btn-ghost" style="border:0;color:var(--blue)">שכחת סיסמה?</button>
     </div>
   </section>
 
@@ -78,6 +83,7 @@
     <nav class="tabs">
       <button class="tab active" data-tab="overview">סקירה</button>
       <button class="tab" data-tab="queue">ממתינים לאישור <b id="queue-badge">0</b></button>
+      <button class="tab" data-tab="agents">בקשות סוכנים <b id="agents-badge">0</b></button>
       <button class="tab" data-tab="listings">כל הנכסים</button>
       <button class="tab" data-tab="users">משתמשים</button>
       <button class="tab" data-tab="buildings">בניינים</button>
@@ -96,6 +102,23 @@
       <div class="panel-head"><h2>ממתינים לאישור</h2></div>
       <div id="queue-list" class="rows"></div>
       <div id="queue-empty" class="empty" hidden>אין נכסים הממתינים לאישור. 🎉</div>
+    </section>
+
+    <!-- agent applications -->
+    <section class="panel" id="tab-agents" hidden>
+      <div class="panel-head">
+        <h2>בקשות להצטרפות כסוכן</h2>
+        <div class="filters">
+          <select id="a-status" class="input">
+            <option value="pending">ממתינות</option>
+            <option value="approved">אושרו</option>
+            <option value="rejected">נדחו</option>
+            <option value="all">הכל</option>
+          </select>
+        </div>
+      </div>
+      <div id="agents-list" class="rows"></div>
+      <div id="agents-empty" class="empty" hidden>אין בקשות בסטטוס הזה.</div>
     </section>
 
     <!-- all listings -->
@@ -148,7 +171,8 @@
   <div id="toast" hidden></div>
 
   <script src="../vendor/supabase.min.js?v=1"></script>
-  <script src="../js/config.js?v=14"></script>
-  <script src="admin.js?v=3"></script>
+  <script src="../js/config.js?v=15"></script>
+  <script src="../js/oauth.js?v=15"></script>
+  <script src="admin.js?v=5"></script>
 </body>
 </html>

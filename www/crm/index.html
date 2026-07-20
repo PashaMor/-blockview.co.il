@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BlockView CRM — ניהול נכסים</title>
-  <link rel="stylesheet" href="crm.css?v=5" />
+  <link rel="stylesheet" href="crm.css?v=6" />
 </head>
 <body>
 
@@ -25,6 +25,7 @@
           </div>
           <button class="sm-item" id="sm-security">🔐 אבטחה ואימות דו-שלבי <span class="sm-tag" id="sm-2fa"></span></button>
           <button class="sm-item" id="sm-site">🌍 מעבר לאתר</button>
+          <button class="sm-item" id="sm-password">🔑 שינוי סיסמה</button>
           <button class="sm-item danger" id="sm-signout">↩ התנתק</button>
         </div>
       </div>
@@ -32,15 +33,74 @@
     </div>
   </header>
 
-  <!-- ===== Sign in ===== -->
+  <!-- ===== Sign in / sign up ===== -->
   <section id="gate" class="gate" hidden>
     <div class="gate-card">
-      <h1>CRM לסוכנים</h1>
-      <p class="muted">התחבר כדי לנהל את הנכסים והלידים שלך.</p>
+      <h1 id="g-title">CRM לסוכנים</h1>
+      <p class="muted" id="g-sub">התחבר כדי לנהל את הנכסים והלידים שלך.</p>
+      <button class="oauth-btn" data-oauth="google" hidden><span class="ob-ic">G</span> המשך עם Google</button>
+      <button class="oauth-btn dark" data-oauth="apple" hidden><span class="ob-ic"></span> המשך עם Apple</button>
+      <div class="auth-divider"><span>או באמצעות אימייל</span></div>
       <input id="g-email" type="email" placeholder="אימייל" autocomplete="email" />
       <input id="g-pw" type="password" placeholder="סיסמה" autocomplete="current-password" />
       <div id="g-err" class="err" hidden></div>
+      <div id="g-ok" class="ok-box" hidden></div>
       <button id="g-signin" class="btn-primary">התחבר</button>
+      <button id="g-forgot" class="btn-ghost" style="border:0;color:var(--blue)">שכחת סיסמה?</button>
+      <button id="g-signup" class="btn-primary" hidden>צור חשבון סוכן</button>
+      <div class="gate-alt">
+        <span id="g-alt-tx">עוד לא רשום כסוכן?</span>
+        <button id="g-toggle" class="linkish">הרשמה כסוכן</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Agent application (role = user) ===== -->
+  <section id="apply" class="gate" hidden>
+    <div class="gate-card wide">
+      <div class="big">🧑‍💼</div>
+      <h1 id="ap-title">בקשה להצטרף כסוכן</h1>
+      <p class="muted" id="ap-sub">מלא את הפרטים; מנהל המערכת יאשר את החשבון וייפתח לך CRM מלא.</p>
+
+      <!-- current application status -->
+      <div id="ap-status" class="ap-status" hidden>
+        <div class="ap-state"><span id="ap-badge" class="badge pending">ממתין</span></div>
+        <div id="ap-state-tx" class="muted"></div>
+        <div id="ap-admin-note" class="ap-note" hidden></div>
+      </div>
+
+      <form id="ap-form" class="form">
+        <div class="grid2">
+          <label class="field"><span>שם מלא *</span>
+            <input id="ap-name" class="input" required maxlength="80" autocomplete="name" />
+          </label>
+          <label class="field"><span>טלפון *</span>
+            <input id="ap-phone" class="input" required maxlength="20" inputmode="tel" autocomplete="tel" placeholder="050-0000000" />
+          </label>
+        </div>
+        <div class="grid2">
+          <label class="field"><span>משרד / סוכנות</span>
+            <input id="ap-agency" class="input" maxlength="80" />
+          </label>
+          <label class="field"><span>מספר רישיון תיווך</span>
+            <input id="ap-license" class="input" maxlength="30" placeholder="לפי רשם המתווכים" />
+          </label>
+        </div>
+        <label class="field"><span>עיר פעילות</span>
+          <input id="ap-city" class="input" maxlength="60" placeholder="תל אביב-יפו" />
+        </label>
+        <label class="field"><span>הערה למנהל</span>
+          <textarea id="ap-note" class="input" rows="3" maxlength="500" placeholder="ספר בקצרה על הפעילות שלך..."></textarea>
+        </label>
+        <div id="ap-err" class="err" hidden></div>
+        <div class="form-actions">
+          <button type="submit" id="ap-submit" class="btn-primary">שלח בקשה</button>
+          <button type="button" id="ap-signout" class="btn-ghost">התנתק</button>
+        </div>
+      </form>
+
+      <button id="ap-edit" class="btn-ghost" hidden>עריכה ושליחה מחדש</button>
+      <button id="ap-signout2" class="btn-ghost" hidden>התנתק</button>
     </div>
   </section>
 
@@ -60,16 +120,6 @@
       <button id="mfa-verify" class="btn-primary">אמת</button>
       <button id="mfa-cancel" class="btn-ghost" hidden>ביטול</button>
       <button id="mfa-signout" class="btn-ghost">התנתק</button>
-    </div>
-  </section>
-
-  <!-- ===== No access ===== -->
-  <section id="noaccess" class="gate" hidden>
-    <div class="gate-card">
-      <div class="big">🔒</div>
-      <h1>אין לך הרשאת סוכן</h1>
-      <p class="muted">החשבון שלך אינו מסומן כסוכן. פנה למנהל המערכת כדי לקבל גישה.</p>
-      <button id="na-signout" class="btn-ghost">התנתק</button>
     </div>
   </section>
 
@@ -205,7 +255,8 @@
   <div id="toast" hidden></div>
 
   <script src="../vendor/supabase.min.js?v=1"></script>
-  <script src="../js/config.js?v=12"></script>
-  <script src="crm.js?v=4"></script>
+  <script src="../js/config.js?v=15"></script>
+  <script src="../js/oauth.js?v=15"></script>
+  <script src="crm.js?v=6"></script>
 </body>
 </html>

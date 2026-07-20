@@ -5,7 +5,8 @@
  */
 (function () {
   const cfg = window.BLOCKVIEW_CONFIG;
-  const supa = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  const supa = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY,
+    window.BVOAuth ? BVOAuth.clientOptions() : undefined);
   const $ = (id) => document.getElementById(id);
   const BUCKET = "listing-photos";
 
@@ -14,7 +15,7 @@
   const nis = (n) => "₪" + Number(n || 0).toLocaleString("he-IL");
   const STATUS_HE = { pending: "ממתין לאישור", approved: "מאושר", rejected: "נדחה", sold: "נמכר", draft: "טיוטה" };
 
-  const state = { user: null, role: "user", buildings: [], listings: [], leads: [], photos: [], pending: [] };
+  const state = { user: null, role: "user", application: null, buildings: [], listings: [], leads: [], photos: [], pending: [] };
 
   let toastTimer;
   function toast(msg) {
@@ -28,19 +29,20 @@
     if (!state.user) return showGate();
     const { data } = await supa.from("profiles").select("role").eq("id", state.user.id).single();
     state.role = (data && data.role) || "user";
-    $("who").textContent = state.user.email + (state.role === "admin" ? " · מנהל" : " · סוכן");
+    const roleHe = state.role === "admin" ? "מנהל מערכת" : state.role === "agent" ? "סוכן נדל\"ן" : "משתמש";
+    $("who").textContent = state.user.email + " · " + roleHe;
     $("settings-btn").hidden = false;
     $("sm-email").textContent = state.user.email;
-    $("sm-role").textContent = state.role === "admin" ? "מנהל מערכת" : "סוכן נדל\"ן";
+    $("sm-role").textContent = roleHe;
     $("sm-avatar").textContent = String(state.user.email || "?").charAt(0).toUpperCase();
-    if (state.role !== "agent" && state.role !== "admin") return showNoAccess();
+    if (state.role !== "agent" && state.role !== "admin") return showApply();
     if (!(await mfaLoginGate())) return;   // only blocks if the agent enabled 2FA
     showApp();
     loadAll();
     refreshSecurity();
   });
 
-  function hideAll() { ["gate", "noaccess", "mfa", "app"].forEach((n) => ($(n).hidden = true)); }
+  function hideAll() { ["gate", "apply", "mfa", "app"].forEach((n) => ($(n).hidden = true)); }
   function showGate() { hideAll(); $("gate").hidden = false; $("settings-btn").hidden = true; $("settings-menu").hidden = true; $("who").textContent = ""; }
 
   /* ------------------------------------------------------ settings menu ---- */
@@ -56,7 +58,6 @@
   $("sm-security").addEventListener("click", () => { $("settings-menu").hidden = true; switchTab("security"); });
   $("sm-site").addEventListener("click", () => { window.location.href = "https://blockview.co.il"; });
   $("sm-signout").addEventListener("click", () => supa.auth.signOut());
-  function showNoAccess() { hideAll(); $("noaccess").hidden = false; }
   function showApp() { hideAll(); $("app").hidden = false; }
   function showMfa() { hideAll(); $("mfa").hidden = false; }
 
@@ -150,16 +151,133 @@
     toast("אימות דו-שלבי כובה"); refreshSecurity();
   });
 
+  /* -------------------------------------------------- sign in / sign up ---- */
+  let gateMode = "in";
+  function setGateMode(m) {
+    gateMode = m;
+    const up = m === "up";
+    $("g-title").textContent = up ? "הרשמה כסוכן" : "CRM לסוכנים";
+    $("g-sub").textContent = up
+      ? "צור חשבון, מלא את פרטי הסוכן, ומנהל המערכת יאשר אותך."
+      : "התחבר כדי לנהל את הנכסים והלידים שלך.";
+    $("g-signin").hidden = up;
+    $("g-signup").hidden = !up;
+    $("g-alt-tx").textContent = up ? "כבר יש לך חשבון?" : "עוד לא רשום כסוכן?";
+    $("g-toggle").textContent = up ? "התחברות" : "הרשמה כסוכן";
+    $("g-pw").setAttribute("autocomplete", up ? "new-password" : "current-password");
+    $("g-err").hidden = true; $("g-ok").hidden = true;
+  }
+  $("g-toggle").addEventListener("click", () => setGateMode(gateMode === "in" ? "up" : "in"));
+
   $("g-signin").addEventListener("click", async () => {
     const email = $("g-email").value.trim(), password = $("g-pw").value;
     if (!email || !password) return showErr("g-err", "נא למלא אימייל וסיסמה");
     const { error } = await supa.auth.signInWithPassword({ email, password });
     if (error) showErr("g-err", error.message);
   });
-  $("g-pw").addEventListener("keydown", (e) => { if (e.key === "Enter") $("g-signin").click(); });
+  $("g-signup").addEventListener("click", async () => {
+    $("g-err").hidden = true; $("g-ok").hidden = true;
+    const email = $("g-email").value.trim(), password = $("g-pw").value;
+    if (!email || !password) return showErr("g-err", "נא למלא אימייל וסיסמה");
+    if (password.length < 8) return showErr("g-err", "הסיסמה חייבת להיות באורך 8 תווים לפחות");
+    const { data, error } = await supa.auth.signUp({ email, password });
+    if (error) return showErr("g-err", error.message);
+    if (data && !data.session) {
+      const ok = $("g-ok");
+      ok.textContent = "נשלח אימייל אימות. אשר אותו, התחבר, והשלם את פרטי הסוכן.";
+      ok.hidden = false;
+      setGateMode("in");
+      $("g-ok").hidden = false;   // keep the confirmation visible after the mode switch
+    }
+    // with email-confirmation off, onAuthStateChange takes over and opens the form
+  });
+  $("g-pw").addEventListener("keydown", (e) => { if (e.key === "Enter") (gateMode === "up" ? $("g-signup") : $("g-signin")).click(); });
   $("signout").addEventListener("click", () => supa.auth.signOut());
-  $("na-signout").addEventListener("click", () => supa.auth.signOut());
   function showErr(id, msg) { const e = $(id); e.textContent = msg; e.hidden = false; }
+  // Google / Apple. A social sign-in still lands on the agent-application screen
+  // until an admin approves the account (role stays 'user').
+  if (window.BVOAuth) BVOAuth.wire(supa, $("gate"), (m) => showErr("g-err", m));
+
+  /* ------------------------------------------------- agent application ---- */
+  const AP_STATE = {
+    pending:  { badge: "pending",  label: "ממתין",  tx: "הבקשה שלך נשלחה וממתינה לאישור מנהל. נעדכן אותך במייל." },
+    rejected: { badge: "rejected", label: "נדחתה",  tx: "הבקשה נדחתה. ניתן לתקן את הפרטים ולשלוח שוב." },
+    approved: { badge: "approved", label: "אושרה",  tx: "הבקשה אושרה. התנתק והתחבר מחדש כדי לפתוח את ה-CRM." },
+  };
+
+  async function showApply() {
+    hideAll(); $("apply").hidden = false;
+    $("ap-err").hidden = true;
+    const { data } = await supa.from("agent_applications").select("*").eq("user_id", state.user.id).maybeSingle();
+    state.application = data || null;
+    renderApply();
+  }
+
+  function renderApply(forceForm) {
+    const a = state.application;
+    const showForm = forceForm || !a || a.status === "rejected";
+    const meta = a ? AP_STATE[a.status] : null;
+
+    $("ap-status").hidden = !a;
+    if (a && meta) {
+      $("ap-badge").className = "badge " + meta.badge;
+      $("ap-badge").textContent = meta.label;
+      $("ap-state-tx").textContent = meta.tx;
+      const note = $("ap-admin-note");
+      note.hidden = !a.admin_note;
+      note.textContent = a.admin_note ? "הערת מנהל: " + a.admin_note : "";
+    }
+    $("ap-title").textContent = a ? "סטטוס הבקשה" : "בקשה להצטרף כסוכן";
+    $("ap-sub").hidden = !!a;
+
+    $("ap-form").hidden = !showForm;
+    $("ap-edit").hidden = !(a && a.status === "pending");
+    $("ap-signout2").hidden = showForm;
+
+    if (a) {
+      $("ap-name").value = a.full_name || "";
+      $("ap-phone").value = a.phone || "";
+      $("ap-agency").value = a.agency || "";
+      $("ap-license").value = a.license_no || "";
+      $("ap-city").value = a.city || "";
+      $("ap-note").value = a.note || "";
+    }
+    $("ap-submit").textContent = a ? "שלח שוב לבדיקה" : "שלח בקשה";
+  }
+
+  $("ap-edit").addEventListener("click", () => renderApply(true));
+  $("ap-signout").addEventListener("click", () => supa.auth.signOut());
+  $("ap-signout2").addEventListener("click", () => supa.auth.signOut());
+
+  $("ap-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    $("ap-err").hidden = true;
+    const btn = $("ap-submit"); btn.disabled = true;
+    try {
+      const row = {
+        user_id: state.user.id,
+        full_name: $("ap-name").value.trim(),
+        phone: $("ap-phone").value.trim(),
+        agency: $("ap-agency").value.trim(),
+        license_no: $("ap-license").value.trim(),
+        city: $("ap-city").value.trim(),
+        note: $("ap-note").value.trim(),
+        status: "pending",       // the DB trigger forces this anyway
+      };
+      // upsert so a rejected applicant can fix and re-send (RLS allows it while
+      // status is pending/rejected; an approved row is locked)
+      const { data, error } = await supa.from("agent_applications")
+        .upsert(row, { onConflict: "user_id" }).select("*").single();
+      if (error) throw error;
+      state.application = data;
+      renderApply();
+      toast("הבקשה נשלחה ✓");
+    } catch (err) {
+      showErr("ap-err", err.message || "שגיאה בשליחת הבקשה");
+    } finally {
+      btn.disabled = false;
+    }
+  });
 
   /* ------------------------------------------------------------ data ---- */
   async function loadAll() { await loadBuildings(); await loadListings(); await loadLeads(); }
@@ -417,4 +535,15 @@
   }
   document.querySelectorAll(".tab").forEach((t) =>
     t.addEventListener("click", () => { if (t.dataset.tab === "editor") openEditor(null); else switchTab(t.dataset.tab); }));
+
+  setGateMode("in");
+})();
+
+/* ---- password reset (shared /reset page) ---- */
+(function () {
+  const go = (email) => (window.location.href = "https://blockview.co.il/reset" + (email ? "?email=" + encodeURIComponent(email) : ""));
+  const f = document.getElementById("g-forgot");
+  if (f) f.addEventListener("click", () => go(document.getElementById("g-email").value.trim()));
+  const p = document.getElementById("sm-password");
+  if (p) p.addEventListener("click", () => go(document.getElementById("sm-email").textContent.trim()));
 })();

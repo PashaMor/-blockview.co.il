@@ -161,3 +161,12 @@
     }
   });
 })();
+
+/* ---- password reset links (website) ---- */
+(function () {
+  const go = (email) => (window.location.href = "/reset" + (email ? "?email=" + encodeURIComponent(email) : ""));
+  const f = document.getElementById("auth-forgot");
+  if (f) f.addEventListener("click", () => go((document.getElementById("auth-email") || {}).value));
+  const p = document.getElementById("acc-password");
+  if (p) p.addEventListener("click", () => go((document.getElementById("acc-email") || {}).textContent));
+})();

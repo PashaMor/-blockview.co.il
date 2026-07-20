@@ -52,6 +52,19 @@ textarea.input { resize: vertical; }
 .gate-card h1 { margin: 0; font-size: 23px; color: var(--ink); }
 .gate-card .big { font-size: 44px; }
 .gate-card p { margin: 0 0 6px; font-size: 14px; }
+.gate-card.wide { width: min(620px, 100%); text-align: start; }
+.gate-card.wide h1, .gate-card.wide .big { text-align: center; }
+.gate-alt { font-size: 13.5px; color: var(--text-soft); display: flex; gap: 6px; justify-content: center; align-items: center; }
+.linkish { font: inherit; font-size: 13.5px; font-weight: 700; color: var(--blue); background: none;
+  border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+.ok-box { background: var(--ok-bg); color: var(--ok); font-size: 13.5px; padding: 10px 12px; border-radius: 9px; }
+
+/* ---------- agent application ---------- */
+.ap-status { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--surface-2);
+  display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.ap-state { display: flex; gap: 8px; align-items: center; }
+.ap-note { font-size: 13.5px; color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 9px; padding: 9px 11px; }
 
 /* ---------- layout ---------- */
 main { max-width: 1080px; margin: 0 auto; padding: 20px; }
@@ -164,3 +177,13 @@ main { max-width: 1080px; margin: 0 auto; padding: 20px; }
 #toast { position: fixed; bottom: 24px; inset-inline-start: 50%; transform: translateX(50%);
   background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 22px; font-size: 14px; font-weight: 600; z-index: 50; }
 #toast[hidden] { display: none; }
+
+/* ---- social sign-in (Google / Apple) ---- */
+.oauth-btn { display: flex; align-items: center; justify-content: center; gap: 10px; font: inherit; font-weight: 700;
+  font-size: 15px; cursor: pointer; padding: 12px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); }
+.oauth-btn.dark { background: var(--ink); color: #fff; border-color: transparent; }
+.oauth-btn:disabled { opacity: .6; cursor: default; }
+.ob-ic { font-weight: 800; font-size: 16px; }
+.auth-divider { display: flex; align-items: center; gap: 10px; color: var(--text-soft); font-size: 12.5px; margin: 2px 0; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }

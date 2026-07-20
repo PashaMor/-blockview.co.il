@@ -122,3 +122,13 @@ main { max-width: 1140px; margin: 0 auto; padding: 20px; }
 
 #toast { position: fixed; bottom: 24px; inset-inline-start: 50%; transform: translateX(50%);
   background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 22px; font-size: 14px; font-weight: 600; z-index: 50; }
+
+/* ---- social sign-in (Google / Apple) ---- */
+.oauth-btn { display: flex; align-items: center; justify-content: center; gap: 10px; font: inherit; font-weight: 700;
+  font-size: 15px; cursor: pointer; padding: 12px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); }
+.oauth-btn.dark { background: var(--ink); color: #fff; border-color: transparent; }
+.oauth-btn:disabled { opacity: .6; cursor: default; }
+.ob-ic { font-weight: 800; font-size: 16px; }
+.auth-divider { display: flex; align-items: center; gap: 10px; color: var(--text-soft); font-size: 12.5px; margin: 2px 0; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }

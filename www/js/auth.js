@@ -5,7 +5,8 @@
  */
 (function () {
   const cfg = window.BLOCKVIEW_CONFIG;
-  const supa = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  const supa = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY,
+    window.BVOAuth ? BVOAuth.clientOptions() : undefined);
   window.BVSupa = supa; // shared client (publish.js reuses it)
   const limits = cfg.LIMITS;
   const state = { user: null, plan: "free", avatar: null, notifications: false };
@@ -88,12 +89,8 @@
 
   $("auth-close").addEventListener("click", closeAuth);
   $("auth-toggle").addEventListener("click", () => setMode(signMode === "in" ? "up" : "in"));
-  document.querySelectorAll("[data-oauth]").forEach((b) =>
-    b.addEventListener("click", async () => {
-      const { error } = await supa.auth.signInWithOAuth({ provider: b.dataset.oauth, options: { redirectTo: location.origin + location.pathname } });
-      if (error) showError(error.message);
-    })
-  );
+  // Google / Apple (hidden until enabled in config.js — see OAUTH_SETUP.md)
+  if (window.BVOAuth) BVOAuth.wire(supa, authSheet, showError);
   $("auth-submit").addEventListener("click", async () => {
     const email = $("auth-email").value.trim(), pw = $("auth-pw").value;
     if (!email || !pw) { showError("נא למלא אימייל וסיסמה"); return; }
@@ -197,6 +194,19 @@
     upModal.hidden = true;
     if (window.bvToast) window.bvToast(`תשלום (${price}) יתווסף בקרוב 💳`);
   });
+
+  /* ---------- clean up after a social redirect ---------- */
+  // supabase-js consumes ?code= itself; this only surfaces a provider error and
+  // strips leftovers, keeping ?listing= (the share deep link) intact.
+  (function afterOAuthRedirect() {
+    const q = new URLSearchParams(location.search);
+    const err = q.get("error_description") || q.get("error");
+    if (err) { openAuth(); showError(err); }
+    if (!err && !q.get("code")) return;
+    ["code", "error", "error_description", "error_code", "state"].forEach((k) => q.delete(k));
+    const qs = q.toString();
+    history.replaceState({}, "", location.pathname + (qs ? "?" + qs : ""));
+  })();
 
   window.closeAuthSheets = () => { closeAuth(); closeAccount(); };
   window.reRenderAuth = () => setMode(signMode);

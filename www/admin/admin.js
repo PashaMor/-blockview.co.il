@@ -4,7 +4,8 @@
  */
 (function () {
   const cfg = window.BLOCKVIEW_CONFIG;
-  const supa = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  const supa = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY,
+    window.BVOAuth ? BVOAuth.clientOptions() : undefined);
   const $ = (id) => document.getElementById(id);
   const BUCKET = "listing-photos";
 
@@ -14,7 +15,7 @@
   const ST = { pending: "ממתין", approved: "מאושר", rejected: "נדחה", sold: "נמכר", draft: "טיוטה" };
   const when = (d) => new Date(d).toLocaleDateString("he-IL");
 
-  const state = { user: null, listings: [], profiles: [], pmap: {}, buildings: [], leadCount: 0 };
+  const state = { user: null, listings: [], profiles: [], pmap: {}, buildings: [], leadCount: 0, apps: [], appsMissing: false };
 
   let tt; function toast(m) { const t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => (t.hidden = true), 2400); }
   const photoUrl = (p) => supa.storage.from(BUCKET).getPublicUrl(p).data.publicUrl;
@@ -125,23 +126,30 @@
     if (error) { $("g-err").textContent = error.message; $("g-err").hidden = false; }
   });
   $("g-pw").addEventListener("keydown", (e) => { if (e.key === "Enter") $("g-signin").click(); });
+  // Google / Apple. The role check and mandatory 2FA below still apply — a social
+  // login grants no admin power on its own.
+  if (window.BVOAuth) BVOAuth.wire(supa, $("gate"), (m) => { $("g-err").textContent = m; $("g-err").hidden = false; });
   $("signout").addEventListener("click", () => supa.auth.signOut());
   $("na-signout").addEventListener("click", () => supa.auth.signOut());
 
   /* --------------------------------------------------------------- data */
   async function loadAll() {
-    const [L, P, B, Lead] = await Promise.all([
+    const [L, P, B, Lead, A] = await Promise.all([
       supa.from("listings").select("*, buildings(name,address), listing_photos(path,sort)").order("created_at", { ascending: false }),
       supa.from("profiles").select("id,email,role,plan,created_at").order("created_at", { ascending: false }),
       supa.from("buildings").select("*").order("name"),
       supa.from("leads").select("id"),
+      // 07_agent_applications.sql may not have been run yet — degrade gracefully
+      supa.from("agent_applications").select("*").order("created_at", { ascending: false }),
     ]);
     state.listings = L.data || [];
     state.profiles = P.data || [];
     state.buildings = B.data || [];
     state.leadCount = (Lead.data || []).length;
+    state.apps = A.data || [];
+    state.appsMissing = !!A.error;
     state.pmap = {}; state.profiles.forEach((p) => (state.pmap[p.id] = p));
-    renderStats(); renderQueue(); renderAll(); renderUsers(); renderBuildings(); renderRecent();
+    renderStats(); renderQueue(); renderAll(); renderUsers(); renderBuildings(); renderRecent(); renderApps();
   }
 
   const byStatus = (s) => state.listings.filter((l) => l.status === s).length;
@@ -155,7 +163,71 @@
       `<div class="stat"><b>${state.profiles.filter((p) => p.plan === "pro").length}</b><span>מנויי Pro</span></div>` +
       `<div class="stat"><b>${state.leadCount}</b><span>לידים</span></div>`;
     $("queue-badge").textContent = byStatus("pending");
+    $("agents-badge").textContent = state.apps.filter((a) => a.status === "pending").length;
   }
+
+  /* ------------------------------------------------- agent applications */
+  const APP_ST = { pending: "ממתין", approved: "אושר", rejected: "נדחה" };
+
+  function appRow(a) {
+    const p = state.pmap[a.user_id] || {};
+    const acted = a.status === "pending";
+    return `<div class="row">
+      <div class="uavatar">${esc(String(a.full_name || p.email || "?").charAt(0).toUpperCase())}</div>
+      <div class="rmain">
+        <div class="rtitle">${esc(a.full_name)} <span class="badge ${esc(a.status)}">${esc(APP_ST[a.status] || a.status)}</span></div>
+        <div class="rsub">${esc(p.email || "—")} · ${esc(a.phone)}</div>
+        <div class="rmeta">
+          ${a.agency ? `<span>משרד: ${esc(a.agency)}</span>` : ""}
+          ${a.license_no ? `<span>רישיון: ${esc(a.license_no)}</span>` : ""}
+          ${a.city ? `<span>${esc(a.city)}</span>` : ""}
+          <span>הוגש ${esc(when(a.created_at))}</span>
+          <span class="badge ${esc(p.role || "user")}">${esc(p.role || "user")}</span>
+        </div>
+        ${a.note ? `<div class="rsub">${esc(String(a.note).slice(0, 300))}</div>` : ""}
+        ${a.admin_note ? `<div class="rsub">הערת מנהל: ${esc(a.admin_note)}</div>` : ""}
+      </div>
+      <div class="ractions">
+        ${acted ? `<button class="btn-ok" data-appok="${esc(a.user_id)}">אשר כסוכן</button>
+                   <button class="btn-bad" data-appno="${esc(a.user_id)}">דחה</button>`
+                : `<button class="btn-ghost" data-appok="${esc(a.user_id)}">אשר כסוכן</button>`}
+      </div>
+    </div>`;
+  }
+
+  function renderApps() {
+    const st = $("a-status").value;
+    if (state.appsMissing) {
+      $("agents-list").innerHTML = `<div class="empty">טבלת הבקשות לא קיימת עדיין — הרץ את supabase/07_agent_applications.sql.</div>`;
+      $("agents-empty").hidden = true;
+      return;
+    }
+    const rows = state.apps.filter((a) => st === "all" || a.status === st);
+    $("agents-empty").hidden = rows.length > 0;
+    $("agents-list").innerHTML = rows.map(appRow).join("");
+  }
+  $("a-status").addEventListener("change", renderApps);
+
+  // approval happens in one DB call: review_agent_application() checks is_admin()
+  // (role admin + aal2) and flips the application status and profiles.role together.
+  async function reviewApp(userId, decision) {
+    let note = "";
+    if (decision === "rejected") {
+      const r = prompt("סיבת הדחייה (תוצג למבקש):", "");
+      if (r === null) return;
+      note = r.trim();
+    } else if (!confirm("לאשר את המשתמש כסוכן? תיפתח לו גישה מלאה ל-CRM.")) return;
+    const { error } = await supa.rpc("review_agent_application", { target: userId, decision, note });
+    if (error) return toast("שגיאה: " + error.message);
+    toast(decision === "approved" ? "אושר כסוכן ✓" : "הבקשה נדחתה");
+    loadAll();
+  }
+  document.addEventListener("click", (e) => {
+    const ok = e.target.closest("[data-appok]");
+    if (ok) return reviewApp(ok.dataset.appok, "approved");
+    const no = e.target.closest("[data-appno]");
+    if (no) return reviewApp(no.dataset.appno, "rejected");
+  });
 
   function agentLabel(id) { const p = state.pmap[id]; return p ? p.email : "—"; }
 
@@ -329,6 +401,15 @@
   /* -------------------------------------------------------------- tabs */
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("active", x === t));
-    ["overview", "queue", "listings", "users", "buildings"].forEach((n) => ($("tab-" + n).hidden = n !== t.dataset.tab));
+    ["overview", "queue", "agents", "listings", "users", "buildings"].forEach((n) => ($("tab-" + n).hidden = n !== t.dataset.tab));
   }));
+})();
+
+/* ---- password reset (shared /reset page) ---- */
+(function () {
+  const go = (email) => (window.location.href = "https://blockview.co.il/reset" + (email ? "?email=" + encodeURIComponent(email) : ""));
+  const f = document.getElementById("g-forgot");
+  if (f) f.addEventListener("click", () => go(document.getElementById("g-email").value.trim()));
+  const p = document.getElementById("sm-password");
+  if (p) p.addEventListener("click", () => go(document.getElementById("sm-email").textContent.trim()));
 })();
