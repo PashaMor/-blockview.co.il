@@ -976,16 +976,18 @@ document.querySelectorAll(".dl-store").forEach((a) => a.addEventListener("click"
  * depend on the base style's sprite. Re-added on every style switch.
  */
 const EDU_KINDS = [
-  { img: "bv-edu-kg",      emoji: "🧸", color: "#E08A2E", match: ["kindergarten"] },
-  { img: "bv-edu-school",  emoji: "🎒", color: "#2C8874", match: ["school"] },
-  { img: "bv-edu-college", emoji: "🎓", color: "#6B4FD8", match: ["college"] },
-  { img: "bv-edu-uni",     emoji: "🏛️", color: "#B3261E", match: ["university"] },
-  { img: "bv-poi-bank",    emoji: "🏦", color: "#1F6FB2", match: ["bank"] },
-  { img: "bv-poi-market",  emoji: "🛒", color: "#C2410C", match: ["supermarket", "grocery", "convenience"] },
-  { img: "bv-poi-clinic",  emoji: "🏥", color: "#0E9AA7", match: ["clinic", "doctors", "health_post"] },
+  { key: "kg",      img: "bv-edu-kg",      emoji: "🧸", color: "#E08A2E", match: ["kindergarten"] },
+  { key: "school",  img: "bv-edu-school",  emoji: "🎒", color: "#2C8874", match: ["school"] },
+  { key: "college", img: "bv-edu-college", emoji: "🎓", color: "#6B4FD8", match: ["college"] },
+  { key: "uni",     img: "bv-edu-uni",     emoji: "🏛️", color: "#B3261E", match: ["university"] },
+  { key: "bank",    img: "bv-poi-bank",    emoji: "🏦", color: "#1F6FB2", match: ["bank"] },
+  { key: "market",  img: "bv-poi-market",  emoji: "🛒", color: "#C2410C", match: ["supermarket", "grocery", "convenience"] },
+  { key: "clinic",  img: "bv-poi-clinic",  emoji: "🏥", color: "#0E9AA7", match: ["clinic", "doctors", "health_post"] },
 ];
 let eduVisible = true;
 try { eduVisible = localStorage.getItem("blockview_edu") !== "0"; } catch (e) {}
+let poiOn = {};
+try { poiOn = JSON.parse(localStorage.getItem("blockview_poi") || "{}"); } catch (e) { poiOn = {}; }
 
 function eduIcon(emoji, color) {
   const s = 48, c = document.createElement("canvas");
@@ -1007,7 +1009,7 @@ function addEducationLayer() {
       if (!map.hasImage(k.img)) map.addImage(k.img, eduIcon(k.emoji, k.color), { pixelRatio: 2 });
     });
     if (map.getLayer("poi-edu")) map.removeLayer("poi-edu");
-    const all = EDU_KINDS.flatMap((k) => k.match);
+    const all = EDU_KINDS.filter((k) => poiOn[k.key] !== false).flatMap((k) => k.match);
     map.addLayer({
       id: "poi-edu",
       type: "symbol",
@@ -1045,18 +1047,44 @@ function addEducationLayer() {
   } catch (e) { console.warn("[BlockView] education layer:", e.message); }
 }
 
-/* toggle button */
+/* toggle button + per-category panel */
 (function () {
   const btn = document.getElementById("edu-toggle");
+  const panel = document.getElementById("poi-panel");
   if (!btn) return;
-  const paint = () => { btn.classList.toggle("on", eduVisible); btn.title = eduVisible ? "הסתר מוסדות חינוך" : "הצג מוסדות חינוך"; };
-  paint();
-  btn.addEventListener("click", () => {
-    eduVisible = !eduVisible;
-    try { localStorage.setItem("blockview_edu", eduVisible ? "1" : "0"); } catch (e) {}
-    if (map.getLayer("poi-edu")) map.setLayoutProperty("poi-edu", "visibility", eduVisible ? "visible" : "none");
-    paint();
-    if (window.bvToast) bvToast(eduVisible ? "מוסדות חינוך מוצגים" : "מוסדות חינוך מוסתרים");
+
+  const paintBtn = () => {
+    btn.classList.toggle("on", eduVisible);
+    btn.title = eduVisible ? "מה יש בסביבה (מוצג)" : "מה יש בסביבה (מוסתר)";
+  };
+  const savePoi = () => { try { localStorage.setItem("blockview_poi", JSON.stringify(poiOn)); } catch (e) {} };
+
+  // restore checkbox state
+  document.querySelectorAll("#poi-panel [data-poi]").forEach((cb) => {
+    if (poiOn[cb.dataset.poi] === false) cb.checked = false;
+  });
+  paintBtn();
+  if (panel) panel.hidden = true;
+
+  // gear-style: click shows the panel; long-press/second click hides the whole layer
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (panel) panel.hidden = !panel.hidden;
+  });
+  document.addEventListener("click", (e) => {
+    if (panel && !panel.hidden && !e.target.closest("#poi-panel") && !e.target.closest("#edu-toggle")) panel.hidden = true;
+  });
+
+  document.querySelectorAll("#poi-panel [data-poi]").forEach((cb) => {
+    cb.addEventListener("change", () => {
+      poiOn[cb.dataset.poi] = cb.checked;
+      savePoi();
+      const anyOn = Object.keys(poiOn).length === 0 || EDU_KINDS.some((k) => poiOn[k.key] !== false);
+      eduVisible = anyOn;
+      try { localStorage.setItem("blockview_edu", eduVisible ? "1" : "0"); } catch (e) {}
+      paintBtn();
+      addEducationLayer();   // rebuild with the new category filter
+    });
   });
 })();
 

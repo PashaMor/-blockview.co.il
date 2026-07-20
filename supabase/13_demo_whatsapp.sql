@@ -2,11 +2,9 @@
 -- 💬 button appears while testing. Requires 12_whatsapp.sql.
 -- Run in Supabase: SQL Editor -> New query -> paste -> Run. Safe to re-run.
 
--- OPTIONAL but recommended: put YOUR real number here first, so tapping the
--- button opens a real chat instead of an invalid one. Format: 05X-XXXXXXX.
--- Delete these 5 lines if you'd rather keep the fake demo number.
+-- Uses the owner's real WhatsApp number so the button opens a real chat.
 update public.listing_contacts c
-set    phone = '050-1234567'          -- <-- change to your WhatsApp number
+set    phone = '052-3125235'          -- the owner's real WhatsApp number
 where  c.name = 'ענבל לוי'
   and  exists (select 1 from public.listings l join auth.users u on u.id = l.agent_id
                where l.id = c.listing_id and u.email = 'pasham1991@gmail.com');

@@ -467,3 +467,17 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .wa-check { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px;
   color: var(--text-soft); cursor: pointer; }
 .wa-check input { width: 17px; height: 17px; accent-color: #25D366; cursor: pointer; flex: none; }
+
+/* ---------- POI category panel ---------- */
+#poi-panel {
+  position: absolute; right: 70px; top: 232px; z-index: 7; width: 190px;
+  background: rgba(255,255,255,.97); backdrop-filter: blur(10px);
+  border: 1px solid var(--line); border-radius: 14px; padding: 10px;
+  box-shadow: 0 10px 30px rgba(20,30,45,.18);
+}
+.poi-head { font-size: 12px; font-weight: 800; color: var(--text-soft); padding: 4px 6px 8px; }
+.poi-row { display: flex; align-items: center; gap: 9px; padding: 7px 6px; border-radius: 9px;
+  font-size: 13.5px; color: var(--ink); cursor: pointer; }
+.poi-row:hover { background: var(--surface-2); }
+.poi-row input { width: 16px; height: 16px; accent-color: var(--blue); cursor: pointer; flex: none; }
+@media (max-width: 560px) { #poi-panel { right: 64px; width: 172px; } }
