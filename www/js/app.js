@@ -1043,6 +1043,11 @@ const EDU_KINDS = [
   { key: "market",  img: "bv-poi-market",  emoji: "🛒", color: "#C2410C", match: ["supermarket", "grocery", "convenience"] },
   { key: "clinic",  img: "bv-poi-clinic",  emoji: "🏥", color: "#0E9AA7", match: ["clinic", "doctors", "health_post"] },
   { key: "hospital", img: "bv-poi-hospital", emoji: "🚑", color: "#D12E4E", match: ["hospital"] },
+  { key: "synagogue", img: "bv-poi-syn",    emoji: "🕍", color: "#2A6BB0", match: ["synagogue"] },
+  { key: "church",   img: "bv-poi-church",  emoji: "⛪", color: "#7A5AF0", match: ["church", "chapel", "cathedral"] },
+  { key: "mosque",   img: "bv-poi-mosque",  emoji: "🕌", color: "#17876B", match: ["mosque"] },
+  { key: "beach",    img: "bv-poi-beach",   emoji: "🏖️", color: "#EFA53B", match: ["beach", "beach_resort"] },
+  { key: "play",     img: "bv-poi-play",    emoji: "🎠", color: "#E0559B", match: ["playground"] },
 ];
 let eduVisible = true;
 try { eduVisible = localStorage.getItem("blockview_edu") !== "0"; } catch (e) {}
@@ -1088,6 +1093,11 @@ function addEducationLayer() {
           ["supermarket", "grocery", "convenience"], "bv-poi-market",
           ["clinic", "doctors", "health_post"], "bv-poi-clinic",
           "hospital", "bv-poi-hospital",
+          "synagogue", "bv-poi-syn",
+          ["church", "chapel", "cathedral"], "bv-poi-church",
+          "mosque", "bv-poi-mosque",
+          ["beach", "beach_resort"], "bv-poi-beach",
+          "playground", "bv-poi-play",
           "bv-edu-college"],
         "icon-size": 0.85,
         "icon-allow-overlap": false,

@@ -487,3 +487,4 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .btn-lead { font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; padding: 11px 16px;
   border-radius: 12px; border: 0; background: var(--ink); color: #fff; }
 .btn-lead:hover { opacity: .92; }
+#poi-panel { max-height: 60vh; overflow-y: auto; }
