@@ -12,7 +12,6 @@
   ],
   "headers": [
     {
-      "//": "HTML must always be revalidated: it carries the ?v=N that busts every other file. A cached index.html pins the whole app to an old version — the phone keeps loading yesterday's CSS however often you refresh. Assets keep normal caching; their ?v=N changes the URL.",
       "source": "/",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
     },
