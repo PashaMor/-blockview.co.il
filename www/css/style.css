@@ -321,7 +321,7 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
    The bottom padding keeps the last row clear of the phone's nav bar. */
 .listings { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
   padding: 14px; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; }
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; align-items: start; }
 .no-match { padding: 34px 24px; text-align: center; color: var(--text-soft); font-size: 14px; }
 
 /* subscribe (follow building) */
@@ -346,16 +346,19 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .alert-open { margin-top: 10px; width: 100%; border: 0; background: var(--surface-2); color: var(--blue); font: inherit; font-weight: 700; font-size: 13px; padding: 9px; border-radius: 10px; cursor: pointer; }
 
 /* ---------- Listing card ---------- */
-.card { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); cursor: pointer; transition: transform .15s, box-shadow .15s, border-color .15s; }
+/* column layout so the body can never be squeezed out by a stretched grid row:
+   the thumb keeps its size, the body keeps its content height */
+.card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+  background: var(--surface); cursor: pointer; transition: transform .15s, box-shadow .15s, border-color .15s; }
 .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); border-color: var(--blue); }
-.card-thumb { height: 108px; position: relative; display: grid; place-items: center; font-size: 34px; }
+.card-thumb { flex: none; height: 108px; position: relative; display: grid; place-items: center; font-size: 34px; }
 .card-badges { position: absolute; top: 9px; right: 9px; display: flex; gap: 5px; }
 .badge { font-size: 10.5px; font-weight: 700; padding: 4px 8px; border-radius: 7px; backdrop-filter: blur(4px); }
 .badge.sale { color: #fff; background: var(--sale); }
 .badge.rent { color: #fff; background: var(--rent); }
 .badge.tour { color: var(--ink); background: rgba(255,255,255,.9); }
 .badge.note { color: #fff; background: #7A5AF0; }
-.card-body { padding: 11px 13px 13px; }
+.card-body { flex: 1 0 auto; padding: 11px 13px 13px; }
 .card-price { font-size: 17px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
 .card-price .per { font-size: 11px; font-weight: 600; color: var(--muted); }
 .card-title { margin: 3px 0 9px; font-size: 13px; color: var(--text-soft); }
