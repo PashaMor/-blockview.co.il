@@ -66,6 +66,26 @@
   function closePublish() { sheet().classList.remove("open"); sheet().setAttribute("aria-hidden", "true"); }
   $("pub-close").addEventListener("click", closePublish);
 
+  /* ---- property types follow the category (25_listing_fields.sql) ---- */
+  const P_TYPES = {
+    residential: [["flat", "flat"], ["house", "house"], ["penthouse", "penthouse"], ["studio", "studio"]],
+    commercial: [["office", "office"], ["shop", "shop"], ["warehouse", "warehouse"], ["other", "other_type"]],
+  };
+  const TYPE_FALLBACK = {
+    flat: "דירה", house: "בית", penthouse: "פנטהאוז", studio: "סטודיו",
+    office: "משרד", shop: "חנות", warehouse: "מחסן / לוגיסטיקה", other_type: "אחר",
+  };
+  function fillTypes() {
+    const cat = $("p-category").value;
+    const keep = $("p-type").value;
+    const list = P_TYPES[cat] || P_TYPES.residential;
+    $("p-type").innerHTML = list
+      .map(([v, key]) => '<option value="' + v + '">' + T(key, TYPE_FALLBACK[key]) + "</option>").join("");
+    if (list.some((x) => x[0] === keep)) $("p-type").value = keep;
+  }
+  $("p-category").addEventListener("change", fillTypes);
+  fillTypes();
+
   /* ---- write the description from the fields (js/describe-gen.js) ----
    * No service call: it composes the text out of what the owner already typed,
    * plus the measured walking distances for the building, so it cannot claim
@@ -120,7 +140,7 @@
 
   async function loadBuildings() {
     if (state.buildings.length) return fillBuildings();
-    const { data } = await supa().from("buildings").select("id,name,address").order("name");
+    const { data } = await supa().from("buildings").select("id,name,address,city").order("name");
     state.buildings = data || [];
     fillBuildings();
   }

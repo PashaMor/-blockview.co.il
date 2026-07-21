@@ -419,10 +419,19 @@
       </div>
       <div class="fgroup grid-3">
         <div><label data-i18n="floor_lbl">קומה</label><input id="p-floor" class="selectbox" type="number" min="0" value="0" /></div>
-        <div><label data-i18n="prop_type">סוג נכס</label>
-          <select id="p-type" class="selectbox"><option value="flat" data-i18n="flat">דירה</option><option value="house" data-i18n="house">בית</option></select></div>
+        <div><label data-i18n="floors_total_lbl">מתוך כמה קומות</label>
+          <input id="p-floors-total" class="selectbox" type="number" min="1" max="200" placeholder="—" /></div>
         <div><label data-i18n="building_age">גיל</label>
           <select id="p-age" class="selectbox"><option value="old" data-i18n="old">ישן</option><option value="new" data-i18n="new">חדש</option></select></div>
+      </div>
+      <div class="fgroup grid-2">
+        <div><label data-i18n="category_lbl">ייעוד</label>
+          <select id="p-category" class="selectbox">
+            <option value="residential" data-i18n="residential">מגורים</option>
+            <option value="commercial" data-i18n="commercial">מסחרי</option>
+          </select></div>
+        <div><label data-i18n="prop_type">סוג נכס</label>
+          <select id="p-type" class="selectbox"></select></div>
       </div>
       <div class="fgroup">
         <label class="label-row">

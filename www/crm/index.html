@@ -206,12 +206,24 @@
           <label class="field"><span>מחיר (₪) *</span><input id="f-price" class="input" type="number" min="0" required /></label>
           <label class="field"><span>חדרים *</span><input id="f-rooms" class="input" type="number" min="0.5" step="0.5" required /></label>
           <label class="field"><span>שטח (מ"ר) *</span><input id="f-size" class="input" type="number" min="1" required /></label>
-          <label class="field"><span>קומה</span><input id="f-floor" class="input" type="number" min="0" value="0" /></label>
+          <label class="field"><span>קומה מתוך</span>
+            <div class="floor-row">
+              <input id="f-floor" class="input" type="number" min="0" value="0" aria-label="קומה" />
+              <span class="of">מתוך</span>
+              <input id="f-floors-total" class="input" type="number" min="1" max="200" placeholder="—" aria-label="סך הקומות בבניין" />
+            </div>
+          </label>
         </div>
 
         <div class="grid4">
+          <label class="field"><span>ייעוד</span>
+            <select id="f-category" class="input">
+              <option value="residential">מגורים</option>
+              <option value="commercial">מסחרי</option>
+            </select>
+          </label>
           <label class="field"><span>סוג נכס</span>
-            <select id="f-type" class="input"><option value="flat">דירה</option><option value="house">בית</option></select>
+            <select id="f-type" class="input"></select>
           </label>
           <label class="field"><span>גיל הבניין</span>
             <select id="f-age" class="input"><option value="old">ישן</option><option value="new">חדש</option></select>
@@ -225,6 +237,11 @@
           </label>
           <label class="field"><span>קישור לסיור וירטואלי</span><input id="f-tour" class="input" type="url" placeholder="https://..." /></label>
         </div>
+
+        <label class="field"><span>קישור לאתר שלך</span>
+          <input id="f-website" class="input" type="url" placeholder="https://www.my-agency.co.il/property/123" />
+          <div class="hint">יוצג בעמוד הנכס. אם תשאיר ריק, ייעשה שימוש בכתובת האתר שבפרטי המשרד.</div>
+        </label>
 
         <label class="field">
           <span class="field-head">תיאור
@@ -326,6 +343,6 @@
   <script src="../js/analytics.js?v=2"></script>
   <script src="../js/oauth.js?v=17"></script>
   <script src="../js/describe-gen.js?v=15"></script>
-  <script src="crm.js?v=13"></script>
+  <script src="crm.js?v=14"></script>
 </body>
 </html>

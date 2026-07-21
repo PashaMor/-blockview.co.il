@@ -5,130 +5,176 @@
  * form — it never invents a "sunny balcony" or a "quiet street" that nobody
  * entered. Everything it writes is checkable against the listing itself.
  *
+ * Written for search as well as for people: the opening line carries the words
+ * someone actually types into Google ("דירה 3 חדרים למכירה בתל אביב"), the
+ * street and city appear early, and the facts are repeated once in natural
+ * prose rather than stuffed. Length lands around 60–110 words, which is what a
+ * property page wants — long enough to rank, short enough to read.
+ *
  * Nearby places (supabase/12_nearby_places.sql) are used when they exist,
  * because those are real measured distances, not guesses.
  *
- * Conservative JS on purpose (see CLAUDE.md): no optional chaining, no
- * template-literal-only syntax that older WebViews choke on.
+ * Conservative JS on purpose (see CLAUDE.md): no optional chaining.
  */
 (function () {
   var HE = "he", EN = "en";
 
+  var KIND_HE = {
+    flat: "דירה", house: "בית", penthouse: "פנטהאוז", studio: "סטודיו",
+    office: "משרד", shop: "חנות", warehouse: "מחסן", other: "נכס מסחרי",
+  };
+  var KIND_EN = {
+    flat: "apartment", house: "house", penthouse: "penthouse", studio: "studio",
+    office: "office", shop: "retail space", warehouse: "warehouse", other: "commercial property",
+  };
+
   function pick(list, i) { return list[i % list.length]; }
   function clean(s) { return String(s == null ? "" : s).trim(); }
   function nOf(v) { var n = Number(v); return isFinite(n) && n > 0 ? n : 0; }
+  function isCommercial(f) { return f.category === "commercial"; }
+
+  // "שדרות רוטשילד 22, תל אביב" -> "שדרות רוטשילד 22"; keeps the street for the
+  // headline so the city can be stated separately without repeating it
+  function streetOf(f) {
+    var addr = clean(f.address);
+    if (!addr) return clean(f.building);
+    var city = clean(f.city);
+    if (city && addr.indexOf(city) > -1) addr = addr.split(",")[0];
+    return addr.trim();
+  }
 
   /* ---------------------------------------------------------- Hebrew ---- */
   function hebrew(f, variant) {
-    var parts = [];
-    var kind = f.type === "house" ? "בית" : "דירה";
-    var rooms = nOf(f.rooms), size = nOf(f.size), floor = Number(f.floor) || 0;
+    var rooms = nOf(f.rooms), size = nOf(f.size);
+    var floor = Number(f.floor), floors = nOf(f.floorsTotal);
+    var kind = KIND_HE[f.type] || KIND_HE.flat;
+    var deal = f.deal === "rent" ? "להשכרה" : "למכירה";
+    var street = streetOf(f), city = clean(f.city);
+    var out = [];
 
-    // opening — what it is, how big, where
-    var where = clean(f.address) || clean(f.building);
-    var open = [];
-    // "דירת 3 חדרים" / "בית 3 חדרים" — smichut, not "דירה של 3 חדרים"
-    if (rooms) open.push((f.type === "house" ? "בית " : "דירת ") + rooms + " חדרים");
-    else open.push(kind);
-    if (size) open.push("בשטח " + size + ' מ"ר');
-    if (floor > 0) open.push("בקומה " + floor);
-    else if (floor === 0 && f.type !== "house") open.push("בקומת קרקע");
-    if (where) open.push("ב" + where);
-    parts.push(pick([
-      open.join(" ") + ".",
-      "להשכרה" === f.deal ? open.join(" ") + ", פנוי/ה לכניסה בתיאום." : open.join(" ") + ".",
-      open.join(" ") + ".",
-    ], variant));
+    /* --- headline: the words people actually search --- */
+    var head = kind;
+    if (rooms && !isCommercial(f)) head += " " + rooms + " חדרים";
+    head += " " + deal;
+    if (street) head += " ב" + street;
+    if (city) head += (street ? ", " : " ב") + city;
+    out.push(head + ".");
 
-    // what it has — only the boxes that were ticked
+    /* --- the measurable facts, in prose --- */
+    var facts = [];
+    if (size) facts.push('שטח ' + size + ' מ"ר');
+    if (isFinite(floor) && floor > 0) facts.push(floors ? "קומה " + floor + " מתוך " + floors : "קומה " + floor);
+    else if (floor === 0 && !isCommercial(f)) facts.push("קומת קרקע");
+    if (facts.length) {
+      out.push(pick([
+        "ה" + kind + ": " + facts.join(", ") + ".",
+        facts.join(", ") + ".",
+        "מדובר ב" + kind + " בעל" + (kind === "דירה" || kind === "חנות" ? "ת " : " ") + facts.join(", ") + ".",
+      ], variant));
+    }
+
+    /* --- what it comes with (ticked boxes only) --- */
     var has = [];
     if (f.elevator) has.push("מעלית");
     if (f.parking) has.push("חניה");
-    if (f.furnished) has.push("ריהוט מלא");
+    if (f.furnished) has.push(isCommercial(f) ? "ריהוט" : "ריהוט מלא");
     if (has.length) {
-      parts.push(pick([
-        "הנכס כולל " + list(has) + ".",
-        "בנכס " + list(has) + ".",
-        "כולל " + list(has) + ".",
+      out.push(pick([
+        "ה" + kind + " כולל" + fem(kind) + " " + listHe(has) + ".",
+        "בנכס " + listHe(has) + ".",
+        "כולל " + listHe(has) + ".",
       ], variant));
     }
-    if (f.pets) parts.push(pick(["מותר להכניס חיות מחמד.", "ידידותי לחיות מחמד.", "בעלי חיים מתקבלים בברכה."], variant));
-
-    // the building
-    if (f.age === "new") {
-      parts.push(pick(["הבניין חדש.", "מדובר בבניין חדש.", "הבניין נבנה בשנים האחרונות."], variant));
-    } else if (f.age === "old") {
-      // no "in a sought-after area" or similar: nobody entered that, so it
-      // would be an invented claim
-      parts.push(pick(["הבניין ותיק.", "מדובר בבניין ותיק.", "הבניין אינו חדש."], variant));
+    if (f.pets && !isCommercial(f)) {
+      out.push(pick(["מותר להכניס חיות מחמד.", "ידידותי לחיות מחמד.", "בעלי חיים מתקבלים בברכה."], variant));
     }
 
-    // surroundings — real measured distances only
-    var near = nearbyLine(f, HE);
-    if (near) parts.push(near);
+    /* --- the building --- */
+    if (f.age === "new") out.push(pick(["הבניין חדש.", "מדובר בבניין חדש.", "הבניין נבנה בשנים האחרונות."], variant));
+    else if (f.age === "old") out.push(pick(["הבניין ותיק.", "מדובר בבניין ותיק.", "הבניין אינו חדש."], variant));
 
-    // closing
-    if (f.deal === "rent") {
-      parts.push(pick([
+    /* --- surroundings: measured walking times, never adjectives --- */
+    var near = nearbyLine(f, HE);
+    if (near) out.push(near);
+
+    /* --- close with the search phrase again, naturally --- */
+    if (isCommercial(f)) {
+      out.push(pick([
+        "מתאים לעסקים המחפשים " + kind + " " + deal + (city ? " ב" + city : "") + ". לפרטים ולתיאום סיור — צרו קשר.",
+        "לפרטים נוספים ולתיאום סיור בנכס — צרו קשר.",
+        "נשמח להציג את הנכס בתיאום מראש.",
+      ], variant));
+    } else if (f.deal === "rent") {
+      out.push(pick([
         "לתיאום ביקור ולפרטים נוספים — צרו קשר.",
-        "ניתן לתאם ביקור בימים ובשעות נוחים.",
+        "פנוי/ה לכניסה בתיאום. מוזמנים ליצור קשר.",
         "מוזמנים ליצור קשר לתיאום ביקור.",
       ], variant));
     } else {
-      parts.push(pick([
+      out.push(pick([
+        "מתאים למגורים או להשקעה. לפרטים ולתיאום ביקור — צרו קשר.",
         "לפרטים נוספים ולתיאום ביקור — צרו קשר.",
-        "מתאים למגורים או להשקעה. מוזמנים ליצור קשר.",
         "נשמח להראות את הנכס בתיאום מראש.",
       ], variant));
     }
-    return parts.join(" ");
+    return out.join(" ");
   }
 
-  function list(items) {
+  // "דירה כוללת" vs "בית כולל"
+  function fem(kind) { return (kind === "דירה" || kind === "חנות") ? "ת" : ""; }
+
+  function listHe(items) {
     if (items.length === 1) return items[0];
     return items.slice(0, -1).join(", ") + " ו" + items[items.length - 1];
   }
 
   /* --------------------------------------------------------- English ---- */
   function english(f, variant) {
-    var parts = [];
-    var kind = f.type === "house" ? "house" : "apartment";
-    var rooms = nOf(f.rooms), size = nOf(f.size), floor = Number(f.floor) || 0;
-    var where = clean(f.address) || clean(f.building);
+    var rooms = nOf(f.rooms), size = nOf(f.size);
+    var floor = Number(f.floor), floors = nOf(f.floorsTotal);
+    var kind = KIND_EN[f.type] || KIND_EN.flat;
+    var deal = f.deal === "rent" ? "for rent" : "for sale";
+    var street = streetOf(f), city = clean(f.city);
+    var out = [];
 
-    var open = [];
-    open.push(rooms ? "A " + rooms + "-room " + kind : "An " + kind);
-    if (size) open.push("of " + size + " m²");
-    if (floor > 0) open.push("on floor " + floor);
-    if (where) open.push("at " + where);
-    parts.push(open.join(" ") + ".");
+    var head = (rooms && !isCommercial(f) ? rooms + "-room " : "") + kind + " " + deal;
+    if (street) head += " on " + street;
+    if (city) head += (street ? ", " : " in ") + city;
+    out.push(cap(head) + ".");
+
+    var facts = [];
+    if (size) facts.push(size + " m²");
+    if (isFinite(floor) && floor > 0) facts.push(floors ? "floor " + floor + " of " + floors : "floor " + floor);
+    else if (floor === 0 && !isCommercial(f)) facts.push("ground floor");
+    if (facts.length) out.push(cap(facts.join(", ")) + ".");
 
     var has = [];
     if (f.elevator) has.push("an elevator");
     if (f.parking) has.push("parking");
-    if (f.furnished) has.push("full furnishing");
-    if (has.length) parts.push(pick(["The property includes ", "It comes with ", "Includes "], variant) + listEn(has) + ".");
-    if (f.pets) parts.push("Pets are welcome.");
-    if (f.age === "new") parts.push("The building is new.");
-    else if (f.age === "old") parts.push("The building is older and well established.");
+    if (f.furnished) has.push("furnishing");
+    if (has.length) out.push(pick(["The property includes ", "It comes with ", "Includes "], variant) + listEn(has) + ".");
+    if (f.pets && !isCommercial(f)) out.push("Pets are welcome.");
+    if (f.age === "new") out.push("The building is new.");
+    else if (f.age === "old") out.push("The building is older.");
 
     var near = nearbyLine(f, EN);
-    if (near) parts.push(near);
+    if (near) out.push(near);
 
-    parts.push(f.deal === "rent"
+    out.push(f.deal === "rent"
       ? "Get in touch to arrange a viewing."
       : "Suitable to live in or as an investment. Get in touch for details.");
-    return parts.join(" ");
+    return out.join(" ");
   }
 
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
   function listEn(items) {
     if (items.length === 1) return items[0];
     return items.slice(0, -1).join(", ") + " and " + items[items.length - 1];
   }
 
   /* ---- surroundings, from the precomputed nearby data (never invented) ---- */
-  var NEAR_HE = { education: "גן ילדים או בית ספר", transit: "תחבורה ציבורית", errands: "סופרמרקט", leisure: "פארק" };
-  var NEAR_EN = { education: "a school or kindergarten", transit: "public transport", errands: "a supermarket", leisure: "a park" };
+  var NEAR_HE = { transit: "תחבורה ציבורית", errands: "סופרמרקט", education: "גן ילדים או בית ספר", leisure: "פארק" };
+  var NEAR_EN = { transit: "public transport", errands: "a supermarket", education: "a school or kindergarten", leisure: "a park" };
 
   function nearbyLine(f, lang) {
     var near = f.nearby || {};
@@ -143,16 +189,13 @@
       if (bits.length === 3) break;
     }
     if (!bits.length) return "";
-    return lang === HE
-      ? "בסביבה הקרובה: " + bits.join(", ") + "."
-      : "Nearby: " + bits.join(", ") + ".";
+    return lang === HE ? "בסביבה הקרובה: " + bits.join(", ") + "." : "Nearby: " + bits.join(", ") + ".";
   }
 
   /* ------------------------------------------------------------ public ---- */
   window.BVDescribe = {
-    /* fields: {deal, type, rooms, size, floor, age, elevator, parking,
-     *          furnished, pets, address, building, nearby}
-     * nearby: {transit:{minutes}, errands:{minutes}, ...} — optional
+    /* fields: {deal, category, type, rooms, size, floor, floorsTotal, age,
+     *          elevator, parking, furnished, pets, address, building, city, nearby}
      * Returns 3 wordings of the same facts. */
     variants: function (fields, lang) {
       var f = fields || {};

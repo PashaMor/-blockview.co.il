@@ -481,17 +481,24 @@
 
   // name + phone the agent gave when applying — used to prefill a listing's contact
   async function loadMyAgentProfile() {
-    const { data } = await supa.from("agent_profiles").select("*").eq("user_id", state.user.id).maybeSingle();
-    state.agent = data || null;
+    const r = await supa.from("agent_profiles").select("*").eq("user_id", state.user.id).maybeSingle();
+    state.agent = (r && r.data) || null;
+    // an agent promoted by hand has no branding row; fall back to their application
+    if (!state.agent && !state.application) {
+      const a = await supa.from("agent_applications").select("*").eq("user_id", state.user.id).maybeSingle();
+      if (a && a.data) state.application = a.data;
+    }
   }
   function myContact() {
-    const a = state.agent;
-    const name = a ? ((a.first_name || "") + " " + (a.last_name || "")).trim() : "";
-    return { name: name, phone: (a && a.phone) || "", email: state.user.email || "" };
+    const a = state.agent, ap = state.application;
+    const full = (o) => ((o.first_name || "") + " " + (o.last_name || "")).trim() || (o.full_name || "");
+    const name = a ? full(a) : (ap ? full(ap) : "");
+    const phone = (a && a.phone) || (ap && ap.phone) || "";
+    return { name: name, phone: phone, email: state.user.email || "" };
   }
 
   async function loadBuildings() {
-    const { data } = await supa.from("buildings").select("id,name,address").order("name");
+    const { data } = await supa.from("buildings").select("id,name,address,city").order("name");
     state.buildings = data || [];
     $("f-building").innerHTML = state.buildings
       .map((b) => `<option value="${esc(b.id)}">${esc(b.name)} — ${esc(b.address)}</option>`).join("");
@@ -553,6 +560,21 @@
     if (b) openEditor(state.listings.find((l) => l.id === b.dataset.edit));
   });
 
+  /* ---- property types depend on the category (see 25_listing_fields.sql) ---- */
+  const TYPES = {
+    residential: [["flat", "דירה"], ["house", "בית"], ["penthouse", "פנטהאוז"], ["studio", "סטודיו"]],
+    commercial:  [["office", "משרד"], ["shop", "חנות"], ["warehouse", "מחסן / לוגיסטיקה"], ["other", "אחר"]],
+  };
+  function fillTypes(category, selected) {
+    const list = TYPES[category] || TYPES.residential;
+    $("f-type").innerHTML = list
+      .map(([v, label]) => `<option value="${esc(v)}"${v === selected ? " selected" : ""}>${esc(label)}</option>`)
+      .join("");
+    // a type from the other category can't stay selected — the DB rejects it
+    if (!list.some(([v]) => v === selected)) $("f-type").value = list[0][0];
+  }
+  $("f-category").addEventListener("change", () => fillTypes($("f-category").value, $("f-type").value));
+
   /* ---------------------------------------------------------- editor ---- */
   function openEditor(l) {
     switchTab("editor");
@@ -568,7 +590,10 @@
     $("f-rooms").value = l ? l.rooms : "";
     $("f-size").value = l ? l.size : "";
     $("f-floor").value = l ? l.floor : 0;
-    $("f-type").value = l ? l.type : "flat";
+    $("f-floors-total").value = l && l.floors_total ? l.floors_total : "";
+    $("f-category").value = (l && l.category) || "residential";
+    fillTypes($("f-category").value, l ? l.type : "flat");
+    $("f-website").value = l && l.website_url ? l.website_url : "";
     $("f-age").value = l ? l.age : "old";
     $("f-status").value = l ? (["pending", "draft", "sold"].includes(l.status) ? l.status : "pending") : "pending";
     $("f-tour").value = l && l.tour_url ? l.tour_url : "";
@@ -703,10 +728,13 @@
         rooms: +$("f-rooms").value,
         size: +$("f-size").value,
         floor: +$("f-floor").value || 0,
+        floors_total: +$("f-floors-total").value || null,
+        category: $("f-category").value,
         type: $("f-type").value,
         age: $("f-age").value,
         status: $("f-status").value,
         tour_url: $("f-tour").value.trim() || null,
+        website_url: $("f-website").value.trim() || null,
         description: $("f-desc").value.trim(),
         furnished: $("f-furnished").checked,
         pets: $("f-pets").checked,
@@ -760,10 +788,13 @@
     const b = state.buildings.find((x) => x.id === $("f-building").value) || {};
     const fields = {
       deal: $("f-deal").value,
+      category: $("f-category").value,
       type: $("f-type").value,
       rooms: $("f-rooms").value,
       size: $("f-size").value,
       floor: $("f-floor").value,
+      floorsTotal: $("f-floors-total").value,
+      city: b.city || "",
       age: $("f-age").value,
       elevator: $("f-elevator").checked,
       parking: $("f-parking").checked,
