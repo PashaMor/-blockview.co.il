@@ -42,6 +42,26 @@
 
   if (!ID || isBot || (isLocal && !cfg.GA4_DEBUG)) return;
 
+  /* Declared before the entry point below on purpose: this script is loaded at
+   * the end of <body>, so the banner runs the moment it is reached — a `var`
+   * assigned further down would still be undefined by then. */
+  var T = {
+    he: { body: "אנחנו משתמשים ב‑Google Analytics כדי להבין איך משתמשים באתר. לא נשלחים פרטים מזהים, ואין פרסום או מעקב בין אתרים.",
+          ok: "אישור", no: "לא, תודה", link: "מדיניות הפרטיות" },
+    en: { body: "We use Google Analytics to understand how the site is used. No identifying details are sent, and there is no advertising or cross-site tracking.",
+          ok: "Accept", no: "No thanks", link: "Privacy policy" },
+    ar: { body: "نستخدم Google Analytics لفهم كيفية استخدام الموقع. لا تُرسل أي بيانات تعريفية، ولا يوجد إعلانات أو تتبع عبر المواقع.",
+          ok: "موافق", no: "لا، شكرًا", link: "سياسة الخصوصية" },
+    es: { body: "Usamos Google Analytics para entender cómo se usa el sitio. No se envían datos identificativos y no hay publicidad ni seguimiento entre sitios.",
+          ok: "Aceptar", no: "No, gracias", link: "Política de privacidad" },
+    fr: { body: "Nous utilisons Google Analytics pour comprendre l'usage du site. Aucune donnée identifiante n'est envoyée, sans publicité ni suivi intersites.",
+          ok: "Accepter", no: "Non merci", link: "Politique de confidentialité" },
+    ru: { body: "Мы используем Google Analytics, чтобы понимать, как используется сайт. Идентифицирующие данные не передаются, рекламы и межсайтового отслеживания нет.",
+          ok: "Принять", no: "Нет, спасибо", link: "Политика конфиденциальности" }
+  };
+
+  var RTL = { he: 1, ar: 1 };
+
   var choice = read();
   if (choice === "granted") start();
   else if (choice !== "denied") ready(banner);
