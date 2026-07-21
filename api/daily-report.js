@@ -128,8 +128,8 @@ async function googleToken(scopes) {
  * "DECODER routines::unsupported". Rather than make the reader guess which,
  * accept them all: wrapping quotes, escaped \n, the whole JSON key file, or a
  * key whose line breaks were flattened to spaces or lost outright. */
-function normalizeKey(raw) {
-  let k = String(raw).trim();
+function normalizeKey(raw_) {
+  let k = String(raw_).trim();
 
   // the whole service-account JSON file, pasted in
   if (k.charAt(0) === "{") {
@@ -157,7 +157,16 @@ function normalizeKey(raw) {
     }
   }
   if (!/^-----BEGIN [A-Z0-9 ]+-----/.test(k)) {
-    throw new Error("GOOGLE_PRIVATE_KEY is not a PEM key — paste the private_key value, starting with -----BEGIN PRIVATE KEY-----");
+    // Describe the value's shape so the mistake is identifiable, but never
+    // print the value itself — it may well be some other secret.
+    const raw = String(raw_);
+    const shape = "length " + raw.length +
+                  ", " + (raw.indexOf("BEGIN") === -1 ? "no BEGIN marker" : "has BEGIN") +
+                  ", " + (raw.indexOf("\n") === -1 ? "no line breaks" : "has line breaks") +
+                  ", " + (raw.indexOf("\\n") === -1 ? "no escaped \\n" : "has escaped \\n");
+    throw new Error("GOOGLE_PRIVATE_KEY holds no PEM block (" + shape + "). " +
+                    "Paste the private_key value from the service-account JSON, " +
+                    "the part starting -----BEGIN PRIVATE KEY----- (a real key is ~1700 characters).");
   }
   return k;
 }
