@@ -39,8 +39,17 @@
     var addr = clean(f.address);
     if (!addr) return clean(f.building);
     var city = clean(f.city);
-    if (city && addr.indexOf(city) > -1) addr = addr.split(",")[0];
-    return addr.trim();
+    if (!city) return addr;
+    // The address usually ends in the city, but not always spelled the same way
+    // ("תל אביב" vs "תל אביב-יפו"), so a plain contains() check misses and the
+    // city ends up printed twice. Everything before the first comma is the
+    // street, which is what the headline wants.
+    if (addr.indexOf(",") > -1) addr = addr.split(",")[0];
+    addr = addr.trim();
+    // still the city and nothing else? then there is no street to show
+    var a = addr.replace(/[-–]/g, " "), c = city.replace(/[-–]/g, " ");
+    if (a === c || c.indexOf(a) > -1) return "";
+    return addr;
   }
 
   /* ---------------------------------------------------------- Hebrew ---- */

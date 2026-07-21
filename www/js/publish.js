@@ -48,6 +48,9 @@
     document.querySelectorAll("#p-deal-seg .seg-btn").forEach((b) => b.classList.toggle("active", b.dataset.pdeal === "sale"));
     $("pub-form").reset();
     $("p-floor").value = 0;
+    $("p-floors-total").value = "";
+    $("p-category").value = "residential";
+    fillTypes();
     // first contact row starts prefilled with the account's own address
     let myEmail = "";
     try {
@@ -99,17 +102,21 @@
       return;
     }
     const b = (state.buildings || []).find((x) => x.id === $("p-building").value) || {};
+    const picked = state.address || {};        // the address they searched, if any
     const lang = window.currentLang && window.currentLang() === "en" ? "en" : "he";
     const text = window.BVDescribe.one({
       deal: state.deal,
+      category: $("p-category").value,
       type: $("p-type").value,
       rooms: rooms, size: size, floor: $("p-floor").value,
+      floorsTotal: $("p-floors-total").value,
+      city: picked.city || b.city || "",
       age: $("p-age").value,
       elevator: !!state.amen.elevator,
       parking: !!state.amen.parking,
       furnished: !!state.amen.furnished,
       pets: !!state.amen.pets,
-      address: b.address || "", building: b.name || "",
+      address: picked.short || b.address || "", building: b.name || "",
       nearby: await nearbyFor($("p-building").value),
     }, lang);
 
@@ -349,6 +356,8 @@
         rooms: +$("p-rooms").value,
         size: +$("p-size").value,
         floor: +$("p-floor").value || 0,
+        floors_total: +$("p-floors-total").value || null,
+        category: $("p-category").value,
         type: $("p-type").value,
         age: $("p-age").value,
         description: $("p-desc").value.trim(),
