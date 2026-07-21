@@ -321,7 +321,10 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
    The bottom padding keeps the last row clear of the phone's nav bar. */
 .listings { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
   padding: 14px; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; align-items: start; }
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  /* content-sized rows: without this the grid may compress rows to fit the
+     container, and .card{overflow:hidden} then cuts the title and specs off */
+  grid-auto-rows: max-content; align-content: start; align-items: start; }
 .no-match { padding: 34px 24px; text-align: center; color: var(--text-soft); font-size: 14px; }
 
 /* subscribe (follow building) */
