@@ -521,6 +521,27 @@
    * admin_delete_user() re-checks is_admin() (admin + 2FA) in the database, so
    * the confirmation below is a guard against slips, not the security boundary.
    * The deletion cascades to the user's listings, photos, leads and enquiries. */
+  /* Files must go through the Storage API — Supabase refuses DELETE on
+   * storage.objects from SQL. Paths are <uid>/... and <uid>/<listing>/...,
+   * so this walks one level down. Best effort: if it fails we still delete the
+   * account, and the leftovers are unreachable from any listing. */
+  async function purgeUserFiles(uid) {
+    for (const bucket of ["listing-photos", "agent-logos"]) {
+      try {
+        const paths = [];
+        const { data: top } = await supa.storage.from(bucket).list(uid, { limit: 1000 });
+        for (const entry of top || []) {
+          if (entry.id) { paths.push(`${uid}/${entry.name}`); continue; }   // a file
+          const { data: inner } = await supa.storage.from(bucket).list(`${uid}/${entry.name}`, { limit: 1000 });
+          (inner || []).forEach((f) => paths.push(`${uid}/${entry.name}/${f.name}`));
+        }
+        if (paths.length) await supa.storage.from(bucket).remove(paths);
+      } catch (e) {
+        console.warn("[BlockView] file cleanup failed for", bucket, e.message);
+      }
+    }
+  }
+
   async function deleteUser(uid) {
     const p = state.pmap[uid] || {};
     const listings = state.listings.filter((l) => l.agent_id === uid).length;
@@ -533,6 +554,7 @@
     if (typed === null) return;
     if (typed.trim().toLowerCase() !== String(p.email || "").toLowerCase()) return toast("האימייל לא תואם — לא נמחק");
 
+    await purgeUserFiles(uid);          // before the account goes, while we still know the id
     const { error } = await supa.rpc("admin_delete_user", { target: uid });
     if (error) {
       const m = error.message || "";

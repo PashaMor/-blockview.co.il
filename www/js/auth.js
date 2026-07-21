@@ -197,6 +197,22 @@
       if (window.bvToast) window.bvToast(t("delete_mismatch"));
       return;
     }
+    // Files go through the Storage API (SQL may not delete from storage.objects).
+    // RLS already limits each user to their own <uid>/ folder. Best effort.
+    const uid = state.user.id;
+    for (const bucket of ["listing-photos", "agent-logos"]) {
+      try {
+        const paths = [];
+        const { data: top } = await supa.storage.from(bucket).list(uid, { limit: 1000 });
+        for (const entry of top || []) {
+          if (entry.id) { paths.push(uid + "/" + entry.name); continue; }
+          const { data: inner } = await supa.storage.from(bucket).list(uid + "/" + entry.name, { limit: 1000 });
+          (inner || []).forEach((f) => paths.push(uid + "/" + entry.name + "/" + f.name));
+        }
+        if (paths.length) await supa.storage.from(bucket).remove(paths);
+      } catch (e) { console.warn("[BlockView] file cleanup failed:", e.message); }
+    }
+
     const { error } = await supa.rpc("delete_my_account");
     if (error) {
       if (window.bvToast) window.bvToast(/LAST_ADMIN/.test(error.message) ? t("delete_last_admin") : t("delete_failed"));
