@@ -143,3 +143,16 @@ capacitor.config.json  server.url points at the hosted site
 - **Overpass (OSM) API is flaky** — expect timeouts and HTML error pages; handle both.
 - Tel Aviv light rail: only the **Red line** is properly mapped in OSM. Purple/Green
   aren't — we deliberately show nothing rather than fake routes.
+- **`vercel.json` is validated strictly — no comment keys.** A `"//": "note"` inside a
+  `headers` rule failed the build, and *every* push after it silently stopped
+  deploying while `main` moved on. Symptom: fix after fix "doesn't work" on the
+  phone. **Before adding another fix, check what the site actually serves:**
+  `curl -sL https://blockview.co.il/ | grep -o 'style.css?v=[0-9]*'` — if it lags
+  behind `www/index.html`, the deploy is broken, not the code.
+- **A cached `index.html` pins the whole app to an old version**, because it carries
+  the `?v=N` for every other file. `vercel.json` now serves HTML with
+  `max-age=0, must-revalidate`; don't undo that.
+- **Flex/grid clipping in the sheets:** a scrolling child of a flex column needs
+  `min-height: 0`, and the listings grid needs `grid-auto-rows: max-content` —
+  otherwise rows get compressed and `.card { overflow: hidden }` cuts the price
+  and specs off the bottom.
