@@ -134,7 +134,7 @@
 
   /* --------------------------------------------------------------- data */
   async function loadAll() {
-    const [L, P, B, Lead, A, AP] = await Promise.all([
+    const [L, P, B, Lead, A, AP, AU] = await Promise.all([
       supa.from("listings").select("*, buildings(name,address), listing_photos(path,sort), listing_contacts(name,phone,email,sort)").order("created_at", { ascending: false }),
       supa.from("profiles").select("*").order("created_at", { ascending: false }),
       supa.from("buildings").select("*").order("name"),
@@ -143,7 +143,12 @@
       supa.from("agent_applications").select("*").order("created_at", { ascending: false }),
       // 09_agent_profile.sql — approved agents' firm / licence / logo
       supa.from("agent_profiles").select("*"),
+      // 21_admin_confirm_email.sql — email confirmation lives in auth.users,
+      // which the browser cannot read, so an admin-only function returns it
+      supa.rpc("admin_auth_status"),
     ]);
+    state.authmap = {};
+    (AU.data || []).forEach((u) => (state.authmap[u.user_id] = u));
     state.listings = L.data || [];
     state.profiles = P.data || [];
     state.buildings = B.data || [];
@@ -454,12 +459,35 @@
     if (a) return APPROVAL[a.status] || APPROVAL.pending;
     return { cls: "user", label: "לא סוכן" };
   }
+  /* email confirmation state, and the manual override.
+   * The real gate is in the database: admin_confirm_email() re-checks is_admin()
+   * (admin + 2FA). Handy when mail is slow or the address bounces. */
+  function emailCell(p) {
+    const au = (state.authmap || {})[p.id];
+    if (!au) return "";                                   // 21_admin_confirm_email.sql not run yet
+    if (au.email_confirmed_at)
+      return `<span class="badge approved" title="אומת ${esc(dt(au.email_confirmed_at))}">📧 אימייל מאומת</span>`;
+    return `<span class="badge pending">📧 אימייל לא מאומת</span>` +
+           `<button class="btn-ok sm" data-confirmemail="${esc(p.id)}">אמת ידנית</button>`;
+  }
+  async function confirmEmail(uid) {
+    const p = state.pmap[uid] || {};
+    if (!confirm(`לאמת ידנית את האימייל של ${p.email || uid}?\n\nהמשתמש יוכל להתחבר בלי ללחוץ על הקישור שנשלח אליו.`)) return;
+    const { error } = await supa.rpc("admin_confirm_email", { target: uid });
+    if (error) {
+      if (/FORBIDDEN/.test(error.message)) return toast("נדרשת הרשאת מנהל עם אימות דו-שלבי");
+      return toast("שגיאה: " + error.message);
+    }
+    toast("האימייל אומת ✓"); loadAll();
+  }
+
   function approvalCell(p) {
     const st = approvalOf(p);
     const a = state.apmap[p.id];
     const canApprove = p.role !== "agent" && p.role !== "admin";
     const canRevoke = p.role === "agent";
-    return `<span class="badge ${esc(st.cls)}">${esc(st.label)}</span>` +
+    return emailCell(p) +
+      `<span class="badge ${esc(st.cls)}">${esc(st.label)}</span>` +
       (canApprove ? `<button class="btn-ok sm" data-approveagent="${esc(p.id)}">אשר כסוכן</button>` : "") +
       (a && a.status === "pending" ? `<button class="btn-bad sm" data-rejectagent="${esc(p.id)}">דחה</button>` : "") +
       (canRevoke ? `<button class="btn-bad sm" data-revokeagent="${esc(p.id)}">בטל הרשאת סוכן</button>` : "");
@@ -525,6 +553,8 @@
     if (rv) return revokeAgent(rv.dataset.revokeagent);
     const del = e.target.closest("[data-deluser]");
     if (del) return deleteUser(del.dataset.deluser);
+    const ce = e.target.closest("[data-confirmemail]");
+    if (ce) return confirmEmail(ce.dataset.confirmemail);
   });
   const dt = (d) => (d ? new Date(d).toLocaleString("he-IL") : "—");
 
