@@ -16,7 +16,7 @@
   const STATUS_HE = { pending: "ממתין לאישור", approved: "מאושר", rejected: "נדחה", sold: "נמכר", draft: "טיוטה" };
 
   const state = { user: null, role: "user", application: null, buildings: [], listings: [], leads: [], photos: [], pending: [],
-                  logoPath: null, logoBlob: null, logoPreview: null };
+                  logoPath: null, logoBlob: null, logoPreview: null, agent: null };
 
   /* consent to the terms & privacy policy — the DB trigger stamps the real time,
      so this can be recorded but never back-dated (supabase/08_terms_consent.sql) */
@@ -477,7 +477,18 @@
   });
 
   /* ------------------------------------------------------------ data ---- */
-  async function loadAll() { await loadBuildings(); await loadListings(); await loadLeads(); }
+  async function loadAll() { await loadMyAgentProfile(); await loadBuildings(); await loadListings(); await loadLeads(); }
+
+  // name + phone the agent gave when applying — used to prefill a listing's contact
+  async function loadMyAgentProfile() {
+    const { data } = await supa.from("agent_profiles").select("*").eq("user_id", state.user.id).maybeSingle();
+    state.agent = data || null;
+  }
+  function myContact() {
+    const a = state.agent;
+    const name = a ? ((a.first_name || "") + " " + (a.last_name || "")).trim() : "";
+    return { name: name, phone: (a && a.phone) || "", email: state.user.email || "" };
+  }
 
   async function loadBuildings() {
     const { data } = await supa.from("buildings").select("id,name,address").order("name");
@@ -570,7 +581,7 @@
     $("f-photos").value = "";
     renderPhotoStrip();
     const cs = l ? (l.listing_contacts || []).slice().sort((a, b) => a.sort - b.sort) : [];
-    resetContacts(cs, state.user.email);
+    resetContacts(cs, myContact());
   }
 
   /* --------------------------------------------------------- contacts ----
@@ -602,11 +613,11 @@
     box.appendChild(contactRow(c, box.children.length === 0));
     $("f-add-contact").hidden = box.children.length >= MAX_CONTACTS;
   }
-  function resetContacts(list, myEmail) {
+  function resetContacts(list, mine) {
     $("f-contacts").innerHTML = "";
     $("f-add-contact").hidden = false;
     if (list && list.length) list.forEach((c) => addContactRow(c));
-    else addContactRow({ name: "", phone: "", email: myEmail || "" });
+    else addContactRow(mine || { name: "", phone: "", email: "" });
   }
   $("f-add-contact").addEventListener("click", () => addContactRow(null));
   $("f-contacts").addEventListener("click", (e) => {
