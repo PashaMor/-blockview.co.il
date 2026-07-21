@@ -40,9 +40,7 @@
     return T("a11y_link", "הצהרת נגישות");
   }
 
-  async function fetchDoc(doc) {
-    var url = fileFor(doc);
-    if (cache[url]) return cache[url];
+  async function fetchOne(url) {
     var res = await fetch(url, { credentials: "same-origin" });
     if (!res.ok) throw new Error("HTTP " + res.status);
     var html = await res.text();
@@ -50,7 +48,21 @@
     var parsed = new DOMParser().parseFromString(html, "text/html");
     var article = parsed.querySelector("article.doc");
     if (!article) throw new Error("no article");
-    cache[url] = article.innerHTML;
+    return article.innerHTML;
+  }
+
+  async function fetchDoc(doc) {
+    var url = fileFor(doc);
+    if (cache[url]) return cache[url];
+    try {
+      cache[url] = await fetchOne(url);
+    } catch (e) {
+      // not every document is translated (the accessibility statement is
+      // Hebrew only) — the Hebrew original beats an error message
+      var plain = "legal/" + doc + ".html";
+      if (plain === url) throw e;
+      cache[url] = await fetchOne(plain);
+    }
     return cache[url];
   }
 
