@@ -19,7 +19,7 @@
   const T = (k, fb) => (window.t ? window.t(k) : fb) || fb;
 
   const state = { deal: "sale", amen: {}, pending: [], buildings: [], address: null, footprint: null,
-                  editId: null, savedPhotos: [] };
+                  editId: null, savedPhotos: [], posterType: "owner" };
 
   /* ---------------------------------------------------- chooser modal ---- */
   {
@@ -27,14 +27,42 @@
     $("who-close").addEventListener("click", () => ($("who-modal").hidden = true));
     $("who-modal").addEventListener("click", (e) => { if (e.target === $("who-modal")) $("who-modal").hidden = true; });
 
-    $("who-realtor").addEventListener("click", () => {
+    function openCrm() {
       if (!isNativeApp) { window.location.href = CRM_URL; return; }
       // outside the WebView, so the map is still here when they come back
       var cap = window.Capacitor;
       var browser = cap && cap.Plugins && cap.Plugins.Browser;
       if (browser && browser.open) browser.open({ url: CRM_URL });
       else window.open(CRM_URL, "_system");
+    }
+
+    $("who-realtor").addEventListener("click", async () => {
+      if (!window.BVAuth || !window.BVAuth.isLoggedIn()) {
+        $("who-modal").hidden = true;
+        if (window.bvToast) window.bvToast(T("login_to_publish", "התחבר כדי לפרסם נכס"));
+        window.BVAuth.openAuth();
+        return;
+      }
+      // an already-approved agent gets the same form as an owner, marked as an
+      // agent listing. Anyone else is sent to the CRM to apply first — the role
+      // itself is only ever granted by an admin (see review_agent_application).
+      const approved = await isApprovedAgent();
+      $("who-modal").hidden = true;
+      if (approved) { await openPublish("agent"); return; }
+      if (window.bvToast) window.bvToast(T("agent_apply_first", "יש להירשם כסוכן ולקבל אישור מנהל"));
+      openCrm();
     });
+
+    async function isApprovedAgent() {
+      try {
+        const u = await supa().auth.getUser();
+        const id = u && u.data && u.data.user ? u.data.user.id : null;
+        if (!id) return false;
+        const r = await supa().from("profiles").select("role").eq("id", id).single();
+        const role = r && r.data ? r.data.role : "";
+        return role === "agent" || role === "admin";
+      } catch (e) { return false; }
+    }
 
     $("who-owner").addEventListener("click", async () => {
       $("who-modal").hidden = true;
@@ -43,14 +71,15 @@
         if (window.BVAuth) window.BVAuth.openAuth();
         return;
       }
-      await openPublish();
+      await openPublish("owner");
     });
   }
 
   /* ------------------------------------------------------- publish UI ---- */
   const sheet = () => $("publish-sheet");
 
-  async function openPublish() {
+  async function openPublish(poster) {
+    state.posterType = poster === "agent" ? "agent" : "owner";
     if (window.closeAllSheets) window.closeAllSheets();
     if (window.closeAuthSheets) window.closeAuthSheets();
     $("p-err").hidden = true;
@@ -91,6 +120,10 @@
     const head = sheet().querySelector(".building-head");
     if (head) {
       const h2 = head.querySelector("h2"), sub = head.querySelector(".b-address");
+      const eyebrow = head.querySelector(".bh-eyebrow");
+      // says which hat the publisher is wearing; poster_type is set to match
+      if (eyebrow) eyebrow.textContent = state.posterType === "agent"
+        ? T("realtor", "מתווך / סוכן") : T("owner", "בעל נכס");
       if (h2) h2.textContent = editing ? T("edit_listing", "עריכת נכס") : T("publish_title", "פרסום נכס");
       if (sub) {
         sub.textContent = editing && listing && listing.status === "approved"
@@ -568,7 +601,7 @@
       const row = {
         building_id: editing ? state.buildingId : await resolveBuilding(),
         agent_id: user.id,
-        poster_type: "owner",
+        poster_type: state.posterType === "agent" ? "agent" : "owner",
         deal: state.deal,
         title: $("p-title").value.trim(),
         price: checkedPrice($("p-price").value),
