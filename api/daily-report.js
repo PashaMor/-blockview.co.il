@@ -141,6 +141,11 @@ function normalizeKey(raw) {
   }
   k = k.replace(/\\r/g, "").replace(/\\n/g, "\n").replace(/\r/g, "").trim();
 
+  // anything around the key — a leading `"private_key": "`, a trailing `",` —
+  // is discarded by keeping only what lies between the BEGIN and END markers
+  const span = k.match(/-----BEGIN [A-Z0-9 ]+-----[\s\S]*?-----END [A-Z0-9 ]+-----/);
+  if (span) k = span[0];
+
   // line breaks flattened away — rebuild the PEM from the base64 body
   if (k.indexOf("-----BEGIN") === 0 && k.indexOf("\n") === -1) {
     const m = k.match(/^-----BEGIN ([A-Z0-9 ]+)-----([\s\S]*?)-----END \1-----$/);
@@ -275,8 +280,9 @@ async function searchConsole(day) {
 async function dbStats(day) {
   const base = required("SUPABASE_URL").replace(/\/+$/, "") + "/rest/v1/";
   const key = required("SUPABASE_SECRET_KEY");
-  const from = day + "T00:00:00+03:00";
-  const to = nextDay(day) + "T00:00:00+03:00";
+  // "+03:00" must be percent-encoded: a bare "+" in a query string means a space
+  const from = encodeURIComponent(day + "T00:00:00+03:00");
+  const to = encodeURIComponent(nextDay(day) + "T00:00:00+03:00");
 
   // HEAD + count=exact: Supabase returns only the number, never a row.
   async function count(table, query) {
