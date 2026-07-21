@@ -169,3 +169,9 @@ main { max-width: 1140px; margin: 0 auto; padding: 20px; }
   border: 1px solid var(--line); border-radius: 10px; padding: 8px 11px; margin-bottom: 6px; font-size: 13px; }
 .ud-listing b { color: var(--ink); }
 .ud-empty { font-size: 13px; color: var(--muted); padding: 6px 2px; }
+.ud-agent { display: flex; align-items: flex-start; gap: 12px; }
+.ud-agent .grow { flex: 1; }
+.ud-logo { width: 64px; height: 64px; border-radius: 12px; object-fit: contain; background: var(--surface);
+  border: 1px solid var(--line); display: grid; place-items: center; font-size: 24px; flex: none; }
+.filter-count { font-size: 12.5px; color: var(--muted); align-self: center; }
+.filter-count b { color: var(--ink); }

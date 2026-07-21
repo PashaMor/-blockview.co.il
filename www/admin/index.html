@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>BlockView — ניהול מערכת</title>
-  <link rel="stylesheet" href="admin.css?v=9" />
+  <link rel="stylesheet" href="admin.css?v=10" />
 </head>
 <body>
 
@@ -146,7 +146,21 @@
     <section class="panel" id="tab-users" hidden>
       <div class="panel-head">
         <h2>משתמשים</h2>
-        <div class="filters"><input id="u-search" class="input" placeholder="חיפוש אימייל..." /></div>
+        <div class="filters">
+          <input id="u-search" class="input" placeholder="חיפוש אימייל / משרד / רישיון..." />
+          <select id="u-role" class="input">
+            <option value="all">כל התפקידים</option>
+            <option value="user">משתמשים</option>
+            <option value="agent">סוכנים</option>
+            <option value="admin">מנהלים</option>
+          </select>
+          <select id="u-plan" class="input">
+            <option value="all">כל המנויים</option>
+            <option value="free">חינם</option>
+            <option value="pro">Pro</option>
+          </select>
+          <span class="filter-count"><b id="u-count">0</b> תוצאות</span>
+        </div>
       </div>
       <div id="users-list" class="rows"></div>
     </section>
@@ -178,6 +192,6 @@
   <script src="../js/config.js?v=17"></script>
   <script src="../js/analytics.js?v=2"></script>
   <script src="../js/oauth.js?v=17"></script>
-  <script src="admin.js?v=13"></script>
+  <script src="admin.js?v=14"></script>
 </body>
 </html>

@@ -15,7 +15,7 @@
   const ST = { pending: "ממתין", approved: "מאושר", rejected: "נדחה", sold: "נמכר", draft: "טיוטה" };
   const when = (d) => new Date(d).toLocaleDateString("he-IL");
 
-  const state = { user: null, listings: [], profiles: [], pmap: {}, buildings: [], leadCount: 0, leads: [], apps: [], appsMissing: false };
+  const state = { user: null, listings: [], profiles: [], pmap: {}, buildings: [], leadCount: 0, leads: [], apps: [], appsMissing: false, agentProfiles: [], apmap: {} };
 
   let tt; function toast(m) { const t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => (t.hidden = true), 2400); }
   const photoUrl = (p) => supa.storage.from(BUCKET).getPublicUrl(p).data.publicUrl;
@@ -134,13 +134,15 @@
 
   /* --------------------------------------------------------------- data */
   async function loadAll() {
-    const [L, P, B, Lead, A] = await Promise.all([
+    const [L, P, B, Lead, A, AP] = await Promise.all([
       supa.from("listings").select("*, buildings(name,address), listing_photos(path,sort), listing_contacts(name,phone,email,sort)").order("created_at", { ascending: false }),
       supa.from("profiles").select("*").order("created_at", { ascending: false }),
       supa.from("buildings").select("*").order("name"),
       supa.from("leads").select("id,agent_id"),
       // 07_agent_applications.sql may not have been run yet — degrade gracefully
       supa.from("agent_applications").select("*").order("created_at", { ascending: false }),
+      // 09_agent_profile.sql — approved agents' firm / licence / logo
+      supa.from("agent_profiles").select("*"),
     ]);
     state.listings = L.data || [];
     state.profiles = P.data || [];
@@ -148,6 +150,8 @@
     state.leads = Lead.data || [];
     state.leadCount = state.leads.length;
     state.apps = A.data || [];
+    state.agentProfiles = AP.data || [];
+    state.apmap = {}; state.agentProfiles.forEach((a) => (state.apmap[a.user_id] = a));
     state.appsMissing = !!A.error;
     state.pmap = {}; state.profiles.forEach((p) => (state.pmap[p.id] = p));
     renderStats(); renderQueue(); renderAll(); renderUsers(); renderBuildings(); renderRecent(); renderApps();
@@ -376,7 +380,17 @@
   /* ------------------------------------------------------------- users */
   function renderUsers() {
     const q = $("u-search").value.trim().toLowerCase();
-    const rows = state.profiles.filter((p) => !q || String(p.email || "").toLowerCase().includes(q));
+    const role = $("u-role").value, plan = $("u-plan").value;
+    const rows = state.profiles.filter((p) => {
+      if (role !== "all" && p.role !== role) return false;
+      if (plan !== "all" && (p.plan === "pro" ? "pro" : "free") !== plan) return false;
+      if (!q) return true;
+      // search the firm and licence too, not just the email
+      const a = state.apmap[p.id] || {};
+      return (String(p.email || "") + " " + (a.agency || "") + " " + (a.license_no || "") +
+              " " + (a.first_name || "") + " " + (a.last_name || "")).toLowerCase().includes(q);
+    });
+    $("u-count").textContent = rows.length;
     $("users-list").innerHTML = rows.map((p) => `
       <div class="urow" data-urow="${esc(p.id)}">
       <div class="row">
@@ -388,6 +402,7 @@
             <span class="badge ${p.plan === "pro" ? "pro" : "user"}">${esc(p.plan)}</span>
             <span>הצטרף ${esc(when(p.created_at))}</span>
             <span>${state.listings.filter((l) => l.agent_id === p.id).length} נכסים</span>
+            ${agentBadges(p.id)}
           </div>
         </div>
         <div class="ractions">
@@ -407,9 +422,18 @@
       </div>`).join("") || `<div class="empty">לא נמצאו משתמשים.</div>`;
   }
   $("u-search").addEventListener("input", renderUsers);
+  $("u-role").addEventListener("change", renderUsers);
+  $("u-plan").addEventListener("change", renderUsers);
 
   /* ------------------------------------------------- one user's details */
   const yesno = (v) => (v ? "כן" : "לא");
+  // firm + licence at a glance on the row (agents only)
+  function agentBadges(uid) {
+    const a = state.apmap[uid];
+    if (!a) return "";
+    return (a.agency ? `<span>🏢 ${esc(a.agency)}</span>` : "") +
+           (a.license_no ? `<span>רישיון ${esc(a.license_no)}</span>` : "");
+  }
   const dt = (d) => (d ? new Date(d).toLocaleString("he-IL") : "—");
 
   function userDetailHtml(p) {
@@ -439,16 +463,37 @@
         </div>`).join("")
       : `<div class="ud-empty">אין נכסים.</div>`;
 
+    const appName = ((app && (app.first_name || app.last_name))
+      ? ((app.first_name || "") + " " + (app.last_name || "")).trim()
+      : (app && app.full_name) || "—");
     const appBlock = app ? `
       <div class="ud-sec">בקשת סוכן — <span class="badge ${esc(app.status)}">${esc(app.status)}</span></div>
       <div class="ud-grid">
-        ${[["שם", (app.first_name || "") + " " + (app.last_name || "")],
-           ["משרד", app.agency || "—"],
-           ["רישיון", app.license || "—"],
+        ${[["שם", appName],
+           ["משרד / סוכנות", app.agency || "—"],
+           ["מספר רישיון תיווך", app.license_no || "—"],
            ["טלפון", app.phone || "—"],
-           ["עיר", app.city || "—"],
-           ["הערה", app.note || "—"]]
+           ["עיר פעילות", app.city || "—"],
+           ["הוגשה", dt(app.created_at)],
+           ["הערת המבקש", app.note || "—"],
+           ["הערת מנהל", app.admin_note || "—"]]
           .map(([k, v]) => `<div class="ud-f"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("")}
+      </div>` : "";
+
+    // the approved branding actually printed on this agent's listings
+    const ap = state.apmap[p.id];
+    const apBlock = ap ? `
+      <div class="ud-sec">פרטי סוכן מאושרים (מוצגים על הנכסים)</div>
+      <div class="ud-agent">
+        ${ap.logo_path ? `<img class="ud-logo" src="${esc(logoUrl(ap.logo_path))}" alt="" />` : `<div class="ud-logo">🏢</div>`}
+        <div class="ud-grid grow">
+          ${[["שם", ((ap.first_name || "") + " " + (ap.last_name || "")).trim() || "—"],
+             ["משרד / סוכנות", ap.agency || "—"],
+             ["מספר רישיון תיווך", ap.license_no || "—"],
+             ["טלפון", ap.phone || "—"],
+             ["עודכן", dt(ap.updated_at)]]
+            .map(([k, v]) => `<div class="ud-f"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("")}
+        </div>
       </div>` : "";
 
     return `
@@ -456,6 +501,7 @@
       <div class="ud-grid">
         ${facts.map(([k, v]) => `<div class="ud-f"><span>${esc(k)}</span><b class="ltr-if-id">${esc(v)}</b></div>`).join("")}
       </div>
+      ${apBlock}
       ${appBlock}
       <div class="ud-sec">פעילות</div>
       <div class="ud-grid">
