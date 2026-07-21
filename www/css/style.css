@@ -475,7 +475,12 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
   border: 1px solid var(--line); border-radius: 14px; padding: 10px;
   box-shadow: 0 10px 30px rgba(20,30,45,.18);
 }
-.poi-head { font-size: 12px; font-weight: 800; color: var(--text-soft); padding: 4px 6px 8px; }
+.poi-head { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 12px; font-weight: 800; color: var(--text-soft); padding: 4px 6px 8px; }
+.poi-bulk { display: flex; align-items: center; gap: 4px; color: var(--line); font-weight: 400; }
+.poi-bulk button { border: 0; background: transparent; font: inherit; font-size: 11.5px; font-weight: 700;
+  color: var(--blue); cursor: pointer; padding: 2px 3px; }
+.poi-bulk button:hover { text-decoration: underline; }
 .poi-row { display: flex; align-items: center; gap: 9px; padding: 7px 6px; border-radius: 9px;
   font-size: 13.5px; color: var(--ink); cursor: pointer; }
 .poi-row:hover { background: var(--surface-2); }

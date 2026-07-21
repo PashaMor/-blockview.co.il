@@ -1195,17 +1195,26 @@ function addEducationLayer() {
     if (panel && !panel.hidden && !e.target.closest("#poi-panel") && !e.target.closest("#edu-toggle")) panel.hidden = true;
   });
 
+  // one place to apply a checkbox change, so "all"/"none" behave like clicking each row
+  function applyPoi() {
+    savePoi();
+    eduVisible = Object.keys(poiOn).length === 0 || EDU_KINDS.some((k) => poiOn[k.key] !== false);
+    try { localStorage.setItem("blockview_edu", eduVisible ? "1" : "0"); } catch (e) {}
+    paintBtn();
+    addEducationLayer();   // rebuild with the new category filter
+  }
   document.querySelectorAll("#poi-panel [data-poi]").forEach((cb) => {
-    cb.addEventListener("change", () => {
-      poiOn[cb.dataset.poi] = cb.checked;
-      savePoi();
-      const anyOn = Object.keys(poiOn).length === 0 || EDU_KINDS.some((k) => poiOn[k.key] !== false);
-      eduVisible = anyOn;
-      try { localStorage.setItem("blockview_edu", eduVisible ? "1" : "0"); } catch (e) {}
-      paintBtn();
-      addEducationLayer();   // rebuild with the new category filter
-    });
+    cb.addEventListener("change", () => { poiOn[cb.dataset.poi] = cb.checked; applyPoi(); });
   });
+  function setAllPoi(on) {
+    document.querySelectorAll("#poi-panel [data-poi]").forEach((cb) => {
+      cb.checked = on;
+      poiOn[cb.dataset.poi] = on;
+    });
+    applyPoi();
+  }
+  document.getElementById("poi-all").addEventListener("click", (e) => { e.stopPropagation(); setAllPoi(true); });
+  document.getElementById("poi-none").addEventListener("click", (e) => { e.stopPropagation(); setAllPoi(false); });
 })();
 
 /* ------------------------------------------------- WhatsApp contact ----
