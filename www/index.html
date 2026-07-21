@@ -31,8 +31,8 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=61" />
-  <link rel="stylesheet" href="css/style.css?v=61" />
+  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=62" />
+  <link rel="stylesheet" href="css/style.css?v=62" />
 </head>
 <body>
   <div id="map"></div>
@@ -84,7 +84,7 @@
 
   <!-- Bottom action bar -->
   <nav id="bottombar">
-    <button class="bb-btn primary" id="open-filters"><span class="bb-ic">⚙︎</span> <span data-i18n="filter">סינון</span> <b id="fcount">0</b></button>
+    <button class="bb-btn primary" id="open-filters" title="סינון" aria-label="סינון" data-i18n-title="filter"><span class="bb-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></svg></span><b id="fcount">0</b></button>
     <button class="bb-btn" id="open-search" title="חיפוש" aria-label="חיפוש"><span class="bb-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></span></button>
     <button class="bb-btn" id="open-favs" title="מועדפים" aria-label="מועדפים"><span class="bb-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.35-7-9a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 4.65-7 9-7 9z"/></svg></span><b id="favcount">0</b></button>
     <button class="bb-btn" id="open-alerts" title="התראות" aria-label="התראות"><span class="bb-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 15.5V10a6 6 0 1 0-12 0v5.5L4.5 18h15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg></span><b id="alertcount">0</b></button>
@@ -285,6 +285,15 @@
         <div id="acc-listings" class="acc-listings"></div>
       </div>
 
+      <!-- agent status: filled by js/agent-apply.js -->
+      <div class="acc-agent-row" id="acc-agent-row" hidden>
+        <div class="acc-agent-tx">
+          <div class="acc-agent-title" id="acc-agent-title">—</div>
+          <div class="acc-agent-sub" id="acc-agent-sub"></div>
+        </div>
+        <button id="acc-agent-btn" class="acc-agent-btn">—</button>
+      </div>
+
       <button id="acc-upgrade" class="sheet-apply" data-i18n="upgrade_pro">⭐ שדרג ל-Pro</button>
       <button id="acc-password" class="auth-link" data-i18n="change_pw">🔑 שינוי סיסמה</button>
       <button id="acc-signout" class="auth-link" data-i18n="sign_out">התנתק</button>
@@ -419,6 +428,44 @@
     </form>
   </section>
 
+  <!-- Become an agent (same application the CRM takes) -->
+  <section id="agent-sheet" class="sheet" aria-hidden="true">
+    <div class="sheet-handle"></div>
+    <button class="sheet-x" id="ag-close" aria-label="close">✕</button>
+    <div class="building-head">
+      <div class="bh-eyebrow" data-i18n="realtor">מתווך / סוכן</div>
+      <h2 data-i18n="agent_apply_title">בקשה להצטרף כסוכן</h2>
+      <div class="b-address" data-i18n="agent_apply_sub">מלא את הפרטים; מנהל המערכת יאשר את החשבון וייפתח לך CRM מלא.</div>
+    </div>
+    <div id="ag-status" class="ag-status" hidden></div>
+    <form id="ag-form" class="sheet-body">
+      <div class="fgroup grid-2">
+        <div><label data-i18n="first_name">שם פרטי *</label><input id="ag-first" class="selectbox" maxlength="40" required autocomplete="given-name" /></div>
+        <div><label data-i18n="last_name">שם משפחה *</label><input id="ag-last" class="selectbox" maxlength="40" required autocomplete="family-name" /></div>
+      </div>
+      <div class="fgroup grid-2">
+        <div><label data-i18n="agency">משרד / סוכנות *</label><input id="ag-agency" class="selectbox" maxlength="80" required /></div>
+        <div><label data-i18n="license_no">מספר רישיון תיווך *</label><input id="ag-license" class="selectbox" maxlength="30" required /></div>
+      </div>
+      <div class="fgroup grid-2">
+        <div><label data-i18n="phone">טלפון *</label><input id="ag-phone" class="selectbox" type="tel" maxlength="20" required autocomplete="tel" /></div>
+        <div><label data-i18n="city">עיר פעילות</label><input id="ag-city" class="selectbox" maxlength="60" /></div>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="agency_logo">לוגו המשרד *</label>
+        <input id="ag-logo" type="file" accept="image/*" class="selectbox" />
+        <div id="ag-logo-preview" class="ag-logo-preview" hidden><img id="ag-logo-img" alt="" /></div>
+        <p class="field-hint" data-i18n="agency_logo_hint">יופיע על הנכסים שתפרסם. נדחס אוטומטית.</p>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="note_to_admin">הערה למנהל</label>
+        <textarea id="ag-note" class="selectbox" rows="3" maxlength="500"></textarea>
+      </div>
+      <div id="ag-err" class="auth-error" hidden></div>
+      <button type="submit" id="ag-submit" class="sheet-apply" data-i18n="agent_apply_send">שלח בקשה</button>
+    </form>
+  </section>
+
   <section id="publish-sheet" class="sheet" aria-hidden="true">
     <div class="sheet-handle"></div>
     <button class="sheet-x" id="pub-close" aria-label="close">✕</button>
@@ -530,21 +577,22 @@
     </div>
   </div>
 
-  <script src="vendor/maplibre-gl.js?v=61"></script>
-  <script src="vendor/supabase.min.js?v=61"></script>
-  <script src="js/config.js?v=61"></script>
-  <script src="js/analytics.js?v=61"></script>
-  <script src="js/oauth.js?v=61"></script>
-  <script src="js/geo.js?v=61"></script>
-  <script src="js/i18n.js?v=61"></script>
-  <script src="js/confirm.js?v=61"></script>
-  <script src="js/data.js?v=61"></script>
-  <script src="js/track.js?v=61"></script>
-  <script src="js/app.js?v=61"></script>
-  <script src="js/auth.js?v=61"></script>
-  <script src="js/describe-gen.js?v=61"></script>
-  <script src="js/publish.js?v=61"></script>
-  <script src="js/my-listings.js?v=61"></script>
-  <script src="js/legal-modal.js?v=61"></script>
+  <script src="vendor/maplibre-gl.js?v=62"></script>
+  <script src="vendor/supabase.min.js?v=62"></script>
+  <script src="js/config.js?v=62"></script>
+  <script src="js/analytics.js?v=62"></script>
+  <script src="js/oauth.js?v=62"></script>
+  <script src="js/geo.js?v=62"></script>
+  <script src="js/i18n.js?v=62"></script>
+  <script src="js/confirm.js?v=62"></script>
+  <script src="js/data.js?v=62"></script>
+  <script src="js/track.js?v=62"></script>
+  <script src="js/app.js?v=62"></script>
+  <script src="js/auth.js?v=62"></script>
+  <script src="js/describe-gen.js?v=62"></script>
+  <script src="js/publish.js?v=62"></script>
+  <script src="js/my-listings.js?v=62"></script>
+  <script src="js/agent-apply.js?v=62"></script>
+  <script src="js/legal-modal.js?v=62"></script>
 </body>
 </html>

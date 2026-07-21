@@ -267,6 +267,12 @@
     document.documentElement.dir = dir;
     document.querySelectorAll("[data-i18n]").forEach((el) => (el.textContent = window.t(el.dataset.i18n)));
     document.querySelectorAll("[data-i18n-ph]").forEach((el) => (el.placeholder = window.t(el.dataset.i18nPh)));
+    // icon-only buttons carry their label in the tooltip, so translate that too
+    document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+      var v = window.t(el.dataset.i18nTitle);
+      el.title = v;
+      el.setAttribute("aria-label", v);
+    });
     const lb = document.getElementById("lang-btn");
     if (lb) lb.textContent = (LANGS.find((l) => l.code === code) || {}).flag || "🌐";
     document.querySelectorAll("#lang-list .lang-opt").forEach((o) => o.classList.toggle("on", o.dataset.lang === code));
