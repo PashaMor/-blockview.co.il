@@ -741,14 +741,16 @@
     $("f-addr-results").hidden = true; $("f-addr-results").innerHTML = "";
     $("f-addr-match").hidden = true; $("f-addr-match").textContent = "";
     const picked = $("f-addr-picked");
+    // Editing: show the current building as text, but keep the dropdown closed.
+    // Leaving it open made it look like the field that decides, when the
+    // address search is what actually does.
     if (building && building.address) {
-      picked.textContent = "📍 " + building.address;
+      picked.textContent = "📍 " + (building.name || "") + " — " + building.address;
       picked.hidden = false;
-      $("f-building-wrap").hidden = false;      // editing: show what it is attached to
     } else {
       picked.hidden = true; picked.textContent = "";
-      $("f-building-wrap").hidden = true;
     }
+    $("f-building-wrap").hidden = true;
   }
 
   $("f-pick-existing").addEventListener("click", () => {
@@ -804,7 +806,12 @@
         p_lng: fp && fp.center ? fp.center[0] : a.lng,
         p_osm_id: (fp && fp.osmId) || a.osmId || null,
       });
-      if (error || !data || !data.length) return;
+      if (error || !data || !data.length) {
+        // 25/26 not applied, or the call was refused — say nothing rather than
+        // guess, but leave a trace so this is diagnosable instead of silent
+        console.warn("[BlockView] building match preview unavailable:", error && error.message);
+        return;
+      }
       const m = data[0];
       if (m.reason === "new") {
         box.textContent = "🏠 ייווצר בניין חדש בכתובת הזו.";
@@ -819,12 +826,15 @@
     } catch (err) { /* the preview is a courtesy — never block saving */ }
   }
 
-  // the building id to save against: the dropdown if it is in use, else the address
+  /* The building id to save against.
+   * A freshly picked address always wins: choosing one is a deliberate act, and
+   * on an edit the dropdown still holds the OLD building, so letting it take
+   * priority silently threw the new address away. */
   async function resolveBuilding() {
-    const wrap = $("f-building-wrap");
-    if (!wrap.hidden && $("f-building").value) return $("f-building").value;
     if (!addr.picked) {
-      if ($("f-id").value && $("f-building").value) return $("f-building").value;  // editing, unchanged
+      const wrap = $("f-building-wrap");
+      if (!wrap.hidden && $("f-building").value) return $("f-building").value;   // picked from the list
+      if ($("f-id").value && $("f-building").value) return $("f-building").value; // editing, address untouched
       throw new Error("נא לבחור את כתובת הנכס");
     }
     const a = addr.picked, fp = addr.footprint;
