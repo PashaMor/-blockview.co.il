@@ -406,6 +406,7 @@
           </div>
         </div>
         <div class="ractions">
+          <span class="approval-cell">${approvalCell(p)}</span>
           <button class="btn-ghost" data-userdet="${esc(p.id)}">פרטים</button>
           <select class="input" data-role="${esc(p.id)}">
             <option value="user"${p.role === "user" ? " selected" : ""}>משתמש</option>
@@ -434,6 +435,67 @@
     return (a.agency ? `<span>🏢 ${esc(a.agency)}</span>` : "") +
            (a.license_no ? `<span>רישיון ${esc(a.license_no)}</span>` : "");
   }
+
+  /* ---- agent approval: state at a glance + one-click decision ----
+   * The badge answers "is this user approved as an agent?" in the users list.
+   * Approving goes through review_agent_application() when an application
+   * exists (it also publishes the branding), and falls back to a plain role
+   * change for users who never applied. */
+  const APPROVAL = {
+    approved: { cls: "approved", label: "✅ סוכן מאושר" },
+    pending:  { cls: "pending",  label: "⏳ ממתין לאישור" },
+    rejected: { cls: "rejected", label: "✖ נדחה" },
+  };
+  function approvalOf(p) {
+    const a = state.apmap[p.id];
+    if (p.role === "admin") return { cls: "admin", label: "מנהל מערכת" };
+    if (p.role === "agent") return APPROVAL.approved;
+    if (a) return APPROVAL[a.status] || APPROVAL.pending;
+    return { cls: "user", label: "לא סוכן" };
+  }
+  function approvalCell(p) {
+    const st = approvalOf(p);
+    const a = state.apmap[p.id];
+    const canApprove = p.role !== "agent" && p.role !== "admin";
+    const canRevoke = p.role === "agent";
+    return `<span class="badge ${esc(st.cls)}">${esc(st.label)}</span>` +
+      (canApprove ? `<button class="btn-ok sm" data-approveagent="${esc(p.id)}">אשר כסוכן</button>` : "") +
+      (a && a.status === "pending" ? `<button class="btn-bad sm" data-rejectagent="${esc(p.id)}">דחה</button>` : "") +
+      (canRevoke ? `<button class="btn-bad sm" data-revokeagent="${esc(p.id)}">בטל הרשאת סוכן</button>` : "");
+  }
+
+  async function approveAgent(uid) {
+    const p = state.pmap[uid] || {};
+    const app = state.apmap[uid];
+    if (!confirm(`לאשר את ${p.email || uid} כסוכן? תיפתח לו גישה מלאה ל-CRM.`)) return;
+    let error;
+    if (app) {
+      // the RPC flips the application, the role and the public branding together
+      ({ error } = await supa.rpc("review_agent_application", { target: uid, decision: "approved", note: "" }));
+    } else {
+      // no application on file — approve the role only, and say what is missing
+      ({ error } = await supa.from("profiles").update({ role: "agent" }).eq("id", uid));
+      if (!error) toast("אושר כסוכן. אין בקשה בתיק — שם המשרד, הרישיון והלוגו חסרים.");
+    }
+    if (error) return toast("שגיאה: " + error.message);
+    if (app) toast("אושר כסוכן ✓");
+    loadAll();
+  }
+  async function revokeAgent(uid) {
+    const p = state.pmap[uid] || {};
+    if (!confirm(`לבטל את הרשאת הסוכן של ${p.email || uid}? הנכסים שלו יישארו, אך לא יוכל לנהל אותם.`)) return;
+    const { error } = await supa.from("profiles").update({ role: "user" }).eq("id", uid);
+    if (error) return toast("שגיאה: " + error.message);
+    toast("הרשאת הסוכן בוטלה"); loadAll();
+  }
+  document.addEventListener("click", (e) => {
+    const ok = e.target.closest("[data-approveagent]");
+    if (ok) return approveAgent(ok.dataset.approveagent);
+    const no = e.target.closest("[data-rejectagent]");
+    if (no) return reviewApp(no.dataset.rejectagent, "rejected");
+    const rv = e.target.closest("[data-revokeagent]");
+    if (rv) return revokeAgent(rv.dataset.revokeagent);
+  });
   const dt = (d) => (d ? new Date(d).toLocaleString("he-IL") : "—");
 
   function userDetailHtml(p) {

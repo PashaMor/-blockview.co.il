@@ -175,3 +175,7 @@ main { max-width: 1140px; margin: 0 auto; padding: 20px; }
   border: 1px solid var(--line); display: grid; place-items: center; font-size: 24px; flex: none; }
 .filter-count { font-size: 12.5px; color: var(--muted); align-self: center; }
 .filter-count b { color: var(--ink); }
+
+/* agent approval, in the users list */
+.approval-cell { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.btn-ok.sm, .btn-bad.sm { padding: 5px 10px; font-size: 12px; border-radius: 8px; }
