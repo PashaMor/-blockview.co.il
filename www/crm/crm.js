@@ -653,6 +653,15 @@
     b.parentNode.remove();
     $("f-add-contact").hidden = $("f-contacts").children.length >= MAX_CONTACTS;
   });
+  // ₪99M ceiling — the DB enforces it too (26_price_cap.sql)
+  const MAX_PRICE = 99000000;
+  function checkedPrice(v) {
+    const n = +v;
+    if (!isFinite(n) || n <= 0) throw new Error("נא למלא מחיר תקין");
+    if (n > MAX_PRICE) throw new Error("המחיר המרבי הוא ₪99,000,000");
+    return n;
+  }
+
   function readContacts() {
     const out = [];
     Array.prototype.forEach.call($("f-contacts").querySelectorAll(".contact-row"), (r) => {
@@ -726,7 +735,7 @@
         agent_id: state.user.id,
         deal: $("f-deal").value,
         title: $("f-title").value.trim(),
-        price: +$("f-price").value,
+        price: checkedPrice($("f-price").value),
         rooms: +$("f-rooms").value,
         size: +$("f-size").value,
         floor: +$("f-floor").value || 0,

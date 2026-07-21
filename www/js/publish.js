@@ -257,6 +257,15 @@
     if (!sel.hidden) { clearAddress(); $("p-address").value = ""; }
   });
 
+  // ₪99M ceiling — the DB enforces it too (26_price_cap.sql)
+  const MAX_PRICE = 99000000;
+  function checkedPrice(v) {
+    const n = +v;
+    if (!isFinite(n) || n <= 0) throw new Error(T("price_bad", "נא למלא מחיר תקין"));
+    if (n > MAX_PRICE) throw new Error(T("price_max", "המחיר המרבי הוא ₪99,000,000"));
+    return n;
+  }
+
   // the building id this listing will attach to (created on demand)
   async function resolveBuilding() {
     const sel = $("p-building");
@@ -392,7 +401,7 @@
         poster_type: "owner",
         deal: state.deal,
         title: $("p-title").value.trim(),
-        price: +$("p-price").value,
+        price: checkedPrice($("p-price").value),
         rooms: +$("p-rooms").value,
         size: +$("p-size").value,
         floor: +$("p-floor").value || 0,
