@@ -217,6 +217,7 @@ window.BVLEGAL.es = {
         h: "Almacenamiento local y cookies",
         p: [
           "No utilizamos cookies publicitarias ni seguimiento entre sitios. El almacenamiento local de su navegador contiene únicamente elementos operativos: su token de inicio de sesión, el idioma de la interfaz y el modo de visualización.",
+          "Sí utilizamos Google Analytics para medir el uso agregado: cuántas personas nos visitan, qué pantallas abren y si llegaron desde el sitio web o desde la aplicación. La personalización de anuncios y Google Signals están desactivadas, su dirección IP se anonimiza y nunca enviamos a Google su correo electrónico, el identificador de su cuenta ni la identidad de un anuncio concreto. Para ello, Google guarda cookies de medición en su navegador.",
           "Puede borrar estos datos desde la configuración de su navegador; al hacerlo se cerrará su sesión.",
         ],
       },

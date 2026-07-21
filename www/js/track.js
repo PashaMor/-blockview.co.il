@@ -46,6 +46,16 @@
   // remember what this page already sent, so scrolling a list doesn't re-post
   const sentThisSession = new Set();
 
+  // Mirror the same event into GA4 (js/analytics.js). Sends the event name, the
+  // surface and the platform only — never the listing id, so nothing in Google's
+  // copy can be tied back to a specific property or its owner.
+  function mirrorToGA(event) {
+    var ga = window.BVGA;
+    if (!ga || !ga.on) return;
+    try { ga.event("listing_" + event, { surface: isApp ? "app" : "web", platform: platform() }); }
+    catch (e) {}
+  }
+
   function track(event, listingId) {
     if (isBot || !listingId || !supa()) return;
     // only real (database) listings have uuid ids; sample data uses "b1-2"
@@ -53,6 +63,7 @@
     const tag = event + ":" + listingId;
     if (sentThisSession.has(tag)) return;
     sentThisSession.add(tag);
+    mirrorToGA(event);
     try {
       supa().from("listing_views").insert({
         listing_id: listingId,

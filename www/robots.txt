@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Private surfaces — nothing here belongs in a search index.
+Disallow: /crm
+Disallow: /crm/
+Disallow: /admin
+Disallow: /admin/
+Disallow: /reset
+
+Sitemap: https://blockview.co.il/sitemap.xml

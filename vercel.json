@@ -7,7 +7,12 @@
     { "source": "/admin/", "destination": "https://admin.blockview.co.il", "permanent": true },
     { "source": "/admin/(.*)", "destination": "https://admin.blockview.co.il/$1", "permanent": true }
   ],
+  "crons": [
+    { "path": "/api/daily-report", "schedule": "0 5 * * *" }
+  ],
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+
     { "source": "/", "has": [{ "type": "host", "value": "crm.blockview.co.il" }], "destination": "/www/crm/index.html" },
     { "source": "/crm.css", "has": [{ "type": "host", "value": "crm.blockview.co.il" }], "destination": "/www/crm/crm.css" },
     { "source": "/crm.js", "has": [{ "type": "host", "value": "crm.blockview.co.il" }], "destination": "/www/crm/crm.js" },

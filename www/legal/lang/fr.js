@@ -217,6 +217,7 @@ window.BVLEGAL.fr = {
         h: "Stockage local et cookies",
         p: [
           "Nous n'utilisons ni cookies publicitaires ni traceurs intersites. Le stockage local de votre navigateur ne conserve que des éléments opérationnels : votre jeton de connexion, la langue de l'interface et le mode d'affichage.",
+          "Nous utilisons en revanche Google Analytics pour mesurer l'usage agrégé : le nombre de visiteurs, les écrans ouverts et s'ils sont venus du site ou de l'application. La personnalisation des annonces et Google Signals sont désactivées, votre adresse IP est anonymisée, et nous ne transmettons jamais à Google votre adresse e-mail, l'identifiant de votre compte ni l'identité d'une annonce précise. À cette fin, Google dépose des cookies de mesure dans votre navigateur.",
           "Vous pouvez effacer ces données depuis les paramètres de votre navigateur ; cette opération vous déconnectera.",
         ],
       },

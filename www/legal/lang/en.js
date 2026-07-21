@@ -217,6 +217,7 @@ window.BVLEGAL.en = {
         h: "Local storage and cookies",
         p: [
           "We do not use advertising cookies or cross-site tracking. Your browser's local storage holds only operational items: your sign-in token, the interface language and the display mode.",
+          "We do use Google Analytics to measure aggregate usage — how many people visit, which pages they open, and whether they came from the website or the app. Ad personalisation and Google Signals are disabled, your IP address is anonymised, and we never send Google your email, your account id or the identity of any specific listing. For this purpose Google sets measurement cookies in your browser.",
           "You can clear this data in your browser settings; doing so will sign you out.",
         ],
       },

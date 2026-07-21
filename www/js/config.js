@@ -13,6 +13,13 @@ window.BLOCKVIEW_CONFIG = {
    * provider that isn't configured just errors with "Unsupported provider".
    * NATIVE_REDIRECT is the Android deep link that brings the system browser back
    * into the app; it must be listed in Supabase -> URL Configuration. */
+  /* Google Analytics 4 measurement ID ("G-XXXXXXXXXX"), used by js/analytics.js
+   * on the site, the CRM and the admin console. It is a public identifier — it
+   * is safe here. Leave it empty to switch analytics off entirely.
+   * GA4_DEBUG: true also measures localhost (normally skipped). */
+  GA4_ID: "G-B69ZV5EFZQ",
+  GA4_DEBUG: false,
+
   OAUTH: { google: true, apple: false },
   NATIVE_REDIRECT: "com.blockview.app://auth/callback",
 
