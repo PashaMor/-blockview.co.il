@@ -31,8 +31,8 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=65" />
-  <link rel="stylesheet" href="css/style.css?v=65" />
+  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=66" />
+  <link rel="stylesheet" href="css/style.css?v=66" />
 </head>
 <body>
   <div id="map"></div>
@@ -54,8 +54,6 @@
     <button id="zoom-out" title="הקטן" aria-label="zoom out">−</button>
   </div>
 
-  <!-- Education POIs toggle -->
-  <button id="edu-toggle" title="מה יש בסביבה">🎓</button>
   <div id="poi-panel" hidden>
     <div class="poi-head">
       <span>מה יש בסביבה</span>
@@ -76,14 +74,20 @@
     <label class="poi-row"><input type="checkbox" data-poi="play" checked /><span>🎠 גני שעשועים</span></label>
   </div>
 
-  <!-- Day / night toggle -->
-  <button id="mode-toggle" title="יום / לילה">☾</button>
-  <!-- 2D / 3D toggle -->
-  <button id="view-toggle" title="2D / 3D">2D</button>
-  <!-- Account -->
-  <button id="account-btn" title="חשבון">👤</button>
-  <!-- Language -->
-  <button id="lang-btn" title="Language">🌐</button>
+  <!-- Map controls. On a phone they collapse behind the chevron so the map is
+       not framed by a column of buttons; on a wide screen they are always out. -->
+  <div id="tools">
+    <button id="tools-toggle" title="כלים" aria-label="כלים" aria-expanded="false" aria-controls="tools-stack">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+    </button>
+    <div id="tools-stack">
+      <button id="mode-toggle" title="יום / לילה" aria-label="יום / לילה">☾</button>
+      <button id="view-toggle" title="2D / 3D" aria-label="2D / 3D">2D</button>
+      <button id="account-btn" title="חשבון" aria-label="חשבון">👤</button>
+      <button id="lang-btn" title="Language" aria-label="Language">🌐</button>
+      <button id="edu-toggle" title="מה יש בסביבה" aria-label="מה יש בסביבה">🎓</button>
+    </div>
+  </div>
 
   <!-- Bottom action bar -->
   <nav id="bottombar">
@@ -580,22 +584,22 @@
     </div>
   </div>
 
-  <script src="vendor/maplibre-gl.js?v=65"></script>
-  <script src="vendor/supabase.min.js?v=65"></script>
-  <script src="js/config.js?v=65"></script>
-  <script src="js/analytics.js?v=65"></script>
-  <script src="js/oauth.js?v=65"></script>
-  <script src="js/geo.js?v=65"></script>
-  <script src="js/i18n.js?v=65"></script>
-  <script src="js/confirm.js?v=65"></script>
-  <script src="js/data.js?v=65"></script>
-  <script src="js/track.js?v=65"></script>
-  <script src="js/app.js?v=65"></script>
-  <script src="js/auth.js?v=65"></script>
-  <script src="js/describe-gen.js?v=65"></script>
-  <script src="js/publish.js?v=65"></script>
-  <script src="js/my-listings.js?v=65"></script>
-  <script src="js/agent-apply.js?v=65"></script>
-  <script src="js/legal-modal.js?v=65"></script>
+  <script src="vendor/maplibre-gl.js?v=66"></script>
+  <script src="vendor/supabase.min.js?v=66"></script>
+  <script src="js/config.js?v=66"></script>
+  <script src="js/analytics.js?v=66"></script>
+  <script src="js/oauth.js?v=66"></script>
+  <script src="js/geo.js?v=66"></script>
+  <script src="js/i18n.js?v=66"></script>
+  <script src="js/confirm.js?v=66"></script>
+  <script src="js/data.js?v=66"></script>
+  <script src="js/track.js?v=66"></script>
+  <script src="js/app.js?v=66"></script>
+  <script src="js/auth.js?v=66"></script>
+  <script src="js/describe-gen.js?v=66"></script>
+  <script src="js/publish.js?v=66"></script>
+  <script src="js/my-listings.js?v=66"></script>
+  <script src="js/agent-apply.js?v=66"></script>
+  <script src="js/legal-modal.js?v=66"></script>
 </body>
 </html>

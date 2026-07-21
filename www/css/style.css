@@ -30,16 +30,15 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .brand-logo { display: block; height: 56px; width: auto; }
 
 /* ---------- Mode toggle ---------- */
-#mode-toggle, #view-toggle, #account-btn, #lang-btn {
-  position: absolute; right: 16px; z-index: 5;
-  width: 50px; height: 50px; border-radius: 50%;
+#mode-toggle, #view-toggle, #account-btn, #lang-btn, #edu-toggle, #tools-toggle {
+  width: 50px; height: 50px; border-radius: 50%; flex: none;
   border: 1px solid transparent; background: var(--blue); color: #fff;
   cursor: pointer; box-shadow: 0 4px 14px rgba(0,56,184,.30);
 }
-#mode-toggle { top: 16px; font-size: 20px; }
-#view-toggle { top: 74px; font-weight: 800; font-size: 15px; }
-#account-btn { top: 132px; font-size: 19px; overflow: hidden; background-size: cover; background-position: center; }
-#lang-btn { top: 190px; font-size: 20px; }
+#mode-toggle { font-size: 20px; }
+#view-toggle { font-weight: 800; font-size: 15px; }
+#account-btn { font-size: 19px; overflow: hidden; background-size: cover; background-position: center; }
+#lang-btn { font-size: 20px; }
 
 /* ---------- zoom controls (left middle) ---------- */
 #zoom-ctrl {
@@ -482,8 +481,6 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 
 /* ---------- education POI toggle ---------- */
 #edu-toggle {
-  position: absolute; right: 16px; top: 248px; z-index: 5;
-  width: 50px; height: 50px; border-radius: 50%;
   border: 1px solid transparent; background: var(--blue); color: #fff;
   cursor: pointer; box-shadow: 0 4px 14px rgba(0,56,184,.30); font-size: 20px; line-height: 1;
   filter: grayscale(1); opacity: .6; transition: all .15s ease;
@@ -721,3 +718,42 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .ag-logo-preview { margin-top: 10px; }
 .ag-logo-preview img { width: 84px; height: 84px; object-fit: contain; border: 1px solid var(--line);
   border-radius: 12px; background: var(--surface); }
+
+
+/* ---------- map controls: a collapsing stack ----------
+   Five round buttons down the edge framed the map on a phone. They now sit
+   behind a chevron; on a wide screen there is room, so the chevron is hidden
+   and the stack is simply always open. */
+#tools {
+  position: absolute; right: 16px; top: 16px; z-index: 6;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+#tools-toggle {
+  border: 1px solid transparent; background: var(--blue); color: #fff;
+  cursor: pointer; box-shadow: 0 4px 14px rgba(0,56,184,.30);
+  display: grid; place-items: center;
+}
+#tools-toggle svg { width: 22px; height: 22px; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  transition: transform .22s ease; }
+#tools.open #tools-toggle svg { transform: rotate(180deg); }
+#tools-stack { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+
+/* collapsed: out of the way, and out of the tab order */
+#tools:not(.open) #tools-stack {
+  opacity: 0; pointer-events: none; visibility: hidden;
+  transform: translateY(-10px) scale(.94);
+}
+#tools-stack {
+  transition: opacity .2s ease, transform .22s ease;
+  transform-origin: top center;
+}
+.bv-dark #tools-toggle { background: #FFFFFF; color: var(--ink); box-shadow: 0 4px 16px rgba(0,0,0,.45); }
+
+/* desktop has room: no chevron, nothing to expand */
+@media (min-width: 561px) {
+  #tools-toggle { display: none; }
+  #tools:not(.open) #tools-stack {
+    opacity: 1; pointer-events: auto; visibility: visible; transform: none;
+  }
+}

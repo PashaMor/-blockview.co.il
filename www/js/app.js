@@ -324,6 +324,28 @@ map.on("load", () => {
   loadLiveData();          // swap the sample data for real listings from Supabase
   // let other scripts refresh the map after they change a listing
   window.reloadLiveData = loadLiveData;
+
+  /* ---- the map controls collapse behind a chevron on a phone ----
+     Desktop keeps them open (CSS hides the chevron there), so this only ever
+     runs for the small-screen / app layout. */
+  (function initTools() {
+    const tools = document.getElementById("tools");
+    const toggle = document.getElementById("tools-toggle");
+    if (!tools || !toggle) return;
+    function setOpen(open) {
+      tools.classList.toggle("open", open);
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    toggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setOpen(!tools.classList.contains("open"));
+    });
+    // tapping the map, or opening anything else, puts them away again
+    document.addEventListener("click", (e) => {
+      if (!tools.contains(e.target)) setOpen(false);
+    });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") setOpen(false); });
+  })();
   // interactions (query-based so they survive style switches)
   map.on("mousemove", (e) => {
     const hit = map.queryRenderedFeatures(e.point, { layers: ["bv-buildings"] });
