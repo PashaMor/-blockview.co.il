@@ -1,0 +1,54 @@
+<!-- BlockView — "Change email address" template.
+     Paste into Supabase: Authentication -> Emails -> Templates -> Change email address.
+     Subject: אישור כתובת האימייל החדשה שלך ב-BlockView
+     Variables: {{ .ConfirmationURL }} {{ .Email }} {{ .SiteURL }} -->
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F7F9;padding:28px 0;font-family:'Segoe UI',Arial,sans-serif;">
+  <tr><td align="center">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#fff;border:1px solid #E4E8ED;border-radius:16px;overflow:hidden;">
+
+      <tr><td align="center" style="padding:26px 24px 8px;">
+        <img src="https://www.blockview.co.il/logo.png" alt="BlockView"
+             width="170" height="47" style="display:block;border:0;width:170px;height:auto;max-width:70%;" />
+      </td></tr>
+
+      <tr><td dir="rtl" style="padding:8px 32px 4px;text-align:right;">
+        <h1 style="margin:0 0 10px;font-size:22px;color:#151C27;">אישור כתובת אימייל חדשה</h1>
+        <p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#263140;">
+          ביקשת לשנות את כתובת האימייל בחשבון. לחץ על הכפתור כדי לאשר את הכתובת החדשה.
+        </p>
+      </td></tr>
+
+      <tr><td align="center" style="padding:18px 32px 6px;">
+        <a href="{{ .ConfirmationURL }}"
+           style="display:inline-block;background:#0038B8;color:#ffffff;text-decoration:none;font-weight:700;font-size:16px;padding:14px 34px;border-radius:12px;">
+          אישור הכתובת החדשה
+        </a>
+      </td></tr>
+
+      <tr><td dir="rtl" style="padding:6px 32px 22px;text-align:right;">
+        <p style="margin:14px 0 0;font-size:12.5px;line-height:1.7;color:#8592A2;">
+          אם הכפתור לא עובד, העתק את הקישור הזה לדפדפן:<br />
+          <span dir="ltr" style="word-break:break-all;color:#0038B8;">{{ .ConfirmationURL }}</span>
+        </p>
+        <p style="margin:14px 0 0;font-size:12.5px;line-height:1.7;color:#8592A2;">
+          לא ביקשת לשנות כתובת? התעלם מההודעה ופנה אלינו ב-support@blockview.co.il.
+        </p>
+      </td></tr>
+
+      <tr><td style="border-top:1px solid #E4E8ED;padding:18px 32px;">
+        <p dir="ltr" style="margin:0;font-size:12.5px;line-height:1.7;color:#5A6879;text-align:left;">
+          <b style="color:#151C27;">Confirm your new email</b><br />
+          Tap the button above to confirm the new address on your BlockView account. If you didn’t request this, ignore it and contact support@blockview.co.il.
+        </p>
+      </td></tr>
+
+      <tr><td align="center" style="background:#F5F7F9;padding:16px;">
+        <p style="margin:0;font-size:11.5px;color:#8592A2;">
+          BlockView · <a href="{{ .SiteURL }}" style="color:#8592A2;">blockview.co.il</a> ·
+          <a href="https://blockview.co.il/privacy" style="color:#8592A2;">מדיניות פרטיות</a>
+        </p>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>

@@ -184,6 +184,8 @@
     $("g-signup").hidden = !up;
     $("g-consent").hidden = !up;
     $("g-consent-cb").checked = false;
+    $("g-forgot").hidden = up;          // nothing to recover before the account exists
+    $("g-legal").hidden = up;           // the consent checkbox already carries both links
     $("g-alt-tx").textContent = up ? "כבר יש לך חשבון?" : "עוד לא רשום כסוכן?";
     $("g-toggle").textContent = up ? "התחברות" : "הרשמה כסוכן";
     $("g-pw").setAttribute("autocomplete", up ? "new-password" : "current-password");
