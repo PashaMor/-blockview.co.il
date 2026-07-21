@@ -35,6 +35,62 @@
     try { localStorage.removeItem(CONSENT_KEY); } catch (e) {}
   }
 
+  /* ---------------------------------------------------- confirm dialog ----
+   * Browsers suppress window.confirm after a few in a row, and a silently
+   * cancelled action looks like a broken button. This asks inside the page.
+   *   opts.mustType — text the user has to retype (used before deleting) */
+  function askConfirm(opts) {
+    return new Promise((resolve) => {
+      const back = document.createElement("div");
+      back.className = "bv-modal-back";
+      const box = document.createElement("div");
+      box.className = "bv-modal" + (opts.danger ? " danger" : "");
+      const h = document.createElement("h3");
+      h.textContent = opts.title || "לאשר?";
+      box.appendChild(h);
+      (opts.lines || []).forEach((line) => {
+        const p = document.createElement("p"); p.textContent = line; box.appendChild(p);
+      });
+      let input = null;
+      if (opts.mustType) {
+        const lbl = document.createElement("p");
+        lbl.className = "bv-modal-hint";
+        lbl.textContent = "להמשך, הקלד: " + opts.mustType;
+        box.appendChild(lbl);
+        input = document.createElement("input");
+        input.className = "input";
+        input.setAttribute("autocomplete", "off");
+        box.appendChild(input);
+      }
+      const row = document.createElement("div");
+      row.className = "bv-modal-actions";
+      const cancel = document.createElement("button");
+      cancel.className = "btn-ghost"; cancel.textContent = "ביטול";
+      const ok = document.createElement("button");
+      ok.className = opts.danger ? "btn-danger" : "btn-primary";
+      ok.textContent = opts.okText || "אישור";
+      row.appendChild(cancel); row.appendChild(ok);
+      box.appendChild(row); back.appendChild(box); document.body.appendChild(back);
+      (input || ok).focus();
+
+      function close(v) { document.removeEventListener("keydown", onKey, true); back.remove(); resolve(v); }
+      function accept() {
+        if (opts.mustType && input.value.trim().toLowerCase() !== String(opts.mustType).toLowerCase()) {
+          input.classList.add("bad"); toast("הטקסט לא תואם"); return;
+        }
+        close(true);
+      }
+      function onKey(e) {
+        if (e.key === "Escape") { e.preventDefault(); close(false); }
+        else if (e.key === "Enter" && document.body.contains(back)) { e.preventDefault(); accept(); }
+      }
+      cancel.addEventListener("click", () => close(false));
+      ok.addEventListener("click", accept);
+      back.addEventListener("click", (e) => { if (e.target === back) close(false); });
+      document.addEventListener("keydown", onKey, true);
+    });
+  }
+
   let toastTimer;
   function toast(msg) {
     const t = $("toast"); t.textContent = msg; t.hidden = false;
@@ -78,6 +134,50 @@
   $("sm-security").addEventListener("click", () => { $("settings-menu").hidden = true; switchTab("security"); });
   $("sm-site").addEventListener("click", () => { window.location.href = "https://blockview.co.il"; });
   $("sm-signout").addEventListener("click", () => supa.auth.signOut());
+
+  /* ---- delete my agent account (supabase/20 + 22) ----
+   * delete_my_account() acts on auth.uid() only. Removing the auth user cascades
+   * to the profile, listings, their photos rows, contacts, enquiries and the
+   * agent application + branding. Files go through the Storage API first, since
+   * SQL is not allowed to delete from storage.objects. */
+  $("sm-delete").addEventListener("click", async () => {
+    $("settings-menu").hidden = true;
+    if (!state.user) return;
+    const mine = state.listings.length;
+    const go = await askConfirm({
+      title: "מחיקת חשבון הסוכן",
+      lines: [
+        state.user.email || "",
+        `יימחקו ${mine} נכסים שפרסמת, התמונות שלהם, הלידים שקיבלת ופרטי המשרד.`,
+        "הפעולה אינה הפיכה.",
+      ],
+      mustType: state.user.email || "",
+      okText: "מחק את החשבון", danger: true,
+    });
+    if (!go) return;
+
+    const uid = state.user.id;
+    for (const bucket of ["listing-photos", LOGO_BUCKET]) {
+      try {
+        const paths = [];
+        const { data: top } = await supa.storage.from(bucket).list(uid, { limit: 1000 });
+        for (const entry of top || []) {
+          if (entry.id) { paths.push(uid + "/" + entry.name); continue; }
+          const { data: inner } = await supa.storage.from(bucket).list(uid + "/" + entry.name, { limit: 1000 });
+          (inner || []).forEach((f) => paths.push(uid + "/" + entry.name + "/" + f.name));
+        }
+        if (paths.length) await supa.storage.from(bucket).remove(paths);
+      } catch (e) { console.warn("[BlockView] file cleanup failed:", e.message); }
+    }
+
+    const { error } = await supa.rpc("delete_my_account");
+    if (error) {
+      return toast(/LAST_ADMIN/.test(error.message)
+        ? "זהו חשבון המנהל האחרון ולכן אי אפשר למחוק אותו"
+        : "מחיקת החשבון נכשלה, נסה שוב");
+    }
+    await supa.auth.signOut();
+  });
   function showApp() { hideAll(); $("app").hidden = false; }
   function showMfa() { hideAll(); $("mfa").hidden = false; }
 
@@ -166,7 +266,7 @@
   }
   $("sec-enable").addEventListener("click", startEnroll);
   $("sec-disable").addEventListener("click", async () => {
-    if (!confirm("לכבות אימות דו-שלבי? החשבון יהיה מוגן פחות.")) return;
+    if (!(await askConfirm({ title: "כיבוי אימות דו-שלבי", lines: ["החשבון יהיה מוגן פחות."], okText: "כבה 2FA", danger: true }))) return;
     for (const f of (await listTotp())) { try { await supa.auth.mfa.unenroll({ factorId: f.id }); } catch (e) {} }
     toast("אימות דו-שלבי כובה"); refreshSecurity();
   });
@@ -643,7 +743,8 @@
   $("f-cancel").addEventListener("click", () => switchTab("listings"));
   $("f-delete").addEventListener("click", async () => {
     const id = $("f-id").value;
-    if (!id || !confirm("למחוק את הנכס לצמיתות?")) return;
+    if (!id) return;
+    if (!(await askConfirm({ title: "מחיקת נכס", lines: ["הנכס והתמונות שלו יימחקו לצמיתות."], okText: "מחק נכס", danger: true }))) return;
     const { error } = await supa.from("listings").delete().eq("id", id);
     if (error) return toast("שגיאה במחיקה");
     toast("הנכס נמחק"); await loadListings(); switchTab("listings");
@@ -684,7 +785,7 @@
   $("leads-list").addEventListener("click", async (e) => {
     const d = e.target.closest("[data-dellead]");
     if (d) {
-      if (!confirm("למחוק את הפנייה לצמיתות?")) return;
+      if (!(await askConfirm({ title: "מחיקת פנייה", lines: ["הפנייה תימחק לצמיתות."], okText: "מחק פנייה", danger: true }))) return;
       const res = await supa.from("leads").delete().eq("id", d.dataset.dellead);
       if (res.error) return toast("שגיאה במחיקה");
       toast("הפנייה נמחקה"); await loadLeads();
