@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>BlockView CRM — ניהול נכסים</title>
-  <link rel="stylesheet" href="crm.css?v=14" />
+  <link rel="stylesheet" href="crm.css?v=15" />
 </head>
 <body>
 
@@ -226,8 +226,12 @@
           <label class="field"><span>קישור לסיור וירטואלי</span><input id="f-tour" class="input" type="url" placeholder="https://..." /></label>
         </div>
 
-        <label class="field"><span>תיאור</span>
+        <label class="field">
+          <span class="field-head">תיאור
+            <button type="button" id="f-desc-gen" class="gen-btn">✨ נסח לי תיאור</button>
+          </span>
           <textarea id="f-desc" class="input" rows="4" maxlength="2000" placeholder="תיאור הנכס..."></textarea>
+          <div class="hint">הניסוח נבנה מהפרטים שמילאת — אפשר לערוך אותו כרצונך.</div>
         </label>
 
         <div class="field"><span>מאפיינים</span>
@@ -321,6 +325,7 @@
   <script src="../js/config.js?v=20"></script>
   <script src="../js/analytics.js?v=2"></script>
   <script src="../js/oauth.js?v=17"></script>
-  <script src="crm.js?v=14"></script>
+  <script src="../js/describe-gen.js?v=15"></script>
+  <script src="crm.js?v=15"></script>
 </body>
 </html>

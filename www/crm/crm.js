@@ -740,6 +740,100 @@
     }
   });
 
+  /* ---- description writer (js/describe-gen.js) ----
+   * Builds the text from the fields on this form, plus the measured walking
+   * distances for the building, so everything it writes is checkable. It never
+   * overwrites without asking. */
+  $("f-desc-gen").addEventListener("click", async () => {
+    if (!window.BVDescribe) return toast("מחולל הניסוח לא נטען");
+    const b = state.buildings.find((x) => x.id === $("f-building").value) || {};
+    const fields = {
+      deal: $("f-deal").value,
+      type: $("f-type").value,
+      rooms: $("f-rooms").value,
+      size: $("f-size").value,
+      floor: $("f-floor").value,
+      age: $("f-age").value,
+      elevator: $("f-elevator").checked,
+      parking: $("f-parking").checked,
+      furnished: $("f-furnished").checked,
+      pets: $("f-pets").checked,
+      address: b.address || "",
+      building: b.name || "",
+      nearby: await nearbyFor($("f-building").value),
+    };
+    if (!fields.rooms || !fields.size) return toast("מלא חדרים ושטח כדי לנסח תיאור");
+
+    const options = window.BVDescribe.variants(fields, "he");
+    const chosen = await chooseText("ניסוח תיאור", options);
+    if (chosen === null) return;
+    const current = $("f-desc").value.trim();
+    if (current && !(await askConfirm({
+      title: "להחליף את התיאור הקיים?",
+      lines: ["הטקסט שכתבת יוחלף בניסוח שנבחר."],
+      okText: "החלף", danger: true,
+    }))) return;
+    $("f-desc").value = chosen;
+    toast("התיאור עודכן — אפשר לערוך");
+  });
+
+  // nearest place per category for a building, cached (public read, no auth)
+  const nearbyCache = {};
+  async function nearbyFor(buildingId) {
+    if (!buildingId) return {};
+    if (nearbyCache[buildingId]) return nearbyCache[buildingId];
+    try {
+      const { data } = await supa.from("building_places")
+        .select("category, walk_minutes, rank").eq("building_id", buildingId).eq("rank", 1);
+      const out = {};
+      (data || []).forEach((r) => (out[r.category] = { minutes: r.walk_minutes }));
+      nearbyCache[buildingId] = out;
+      return out;
+    } catch (e) { return {}; }
+  }
+
+  /* a small chooser: same look as askConfirm, but the buttons are the options */
+  function chooseText(title, options) {
+    return new Promise((resolve) => {
+      const back = document.createElement("div");
+      back.className = "bv-modal-back";
+      const box = document.createElement("div");
+      box.className = "bv-modal wide";
+      const h = document.createElement("h3");
+      h.textContent = title;
+      box.appendChild(h);
+      const hint = document.createElement("p");
+      hint.className = "bv-modal-hint";
+      hint.textContent = "בחר ניסוח. הכל נבנה מהפרטים שמילאת ואפשר לערוך אחר כך.";
+      box.appendChild(hint);
+
+      options.forEach((text) => {
+        const opt = document.createElement("button");
+        opt.type = "button";
+        opt.className = "gen-option";
+        opt.textContent = text;
+        opt.addEventListener("click", () => close(text));
+        box.appendChild(opt);
+      });
+
+      const row = document.createElement("div");
+      row.className = "bv-modal-actions";
+      const cancel = document.createElement("button");
+      cancel.className = "btn-ghost";
+      cancel.textContent = "ביטול";
+      cancel.addEventListener("click", () => close(null));
+      row.appendChild(cancel);
+      box.appendChild(row);
+      back.appendChild(box);
+      document.body.appendChild(back);
+
+      function close(v) { document.removeEventListener("keydown", onKey, true); back.remove(); resolve(v); }
+      function onKey(e) { if (e.key === "Escape") { e.preventDefault(); close(null); } }
+      back.addEventListener("click", (e) => { if (e.target === back) close(null); });
+      document.addEventListener("keydown", onKey, true);
+    });
+  }
+
   $("f-cancel").addEventListener("click", () => switchTab("listings"));
   $("f-delete").addEventListener("click", async () => {
     const id = $("f-id").value;

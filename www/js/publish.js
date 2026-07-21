@@ -66,6 +66,58 @@
   function closePublish() { sheet().classList.remove("open"); sheet().setAttribute("aria-hidden", "true"); }
   $("pub-close").addEventListener("click", closePublish);
 
+  /* ---- write the description from the fields (js/describe-gen.js) ----
+   * No service call: it composes the text out of what the owner already typed,
+   * plus the measured walking distances for the building, so it cannot claim
+   * anything that isn't on the form. */
+  const genBtn = $("p-desc-gen");
+  if (genBtn) genBtn.addEventListener("click", async () => {
+    if (!window.BVDescribe) return;
+    const rooms = $("p-rooms").value, size = $("p-size").value;
+    if (!rooms || !size) {
+      if (window.bvToast) window.bvToast(T("write_need_fields", "מלא חדרים ושטח כדי לנסח תיאור"));
+      return;
+    }
+    const b = (state.buildings || []).find((x) => x.id === $("p-building").value) || {};
+    const lang = window.currentLang && window.currentLang() === "en" ? "en" : "he";
+    const text = window.BVDescribe.one({
+      deal: state.deal,
+      type: $("p-type").value,
+      rooms: rooms, size: size, floor: $("p-floor").value,
+      age: $("p-age").value,
+      elevator: !!state.amen.elevator,
+      parking: !!state.amen.parking,
+      furnished: !!state.amen.furnished,
+      pets: !!state.amen.pets,
+      address: b.address || "", building: b.name || "",
+      nearby: await nearbyFor($("p-building").value),
+    }, lang);
+
+    const box = $("p-desc");
+    if (box.value.trim() && !confirmReplace()) return;
+    box.value = text;
+    if (window.bvToast) window.bvToast(T("write_done", "נוסח תיאור — אפשר לערוך"));
+  });
+
+  function confirmReplace() {
+    return window.confirm(T("write_replace", "להחליף את התיאור שכתבת?"));
+  }
+
+  // nearest place per category, from the precomputed table (public read)
+  const nearbyCache = {};
+  async function nearbyFor(buildingId) {
+    if (!buildingId || !window.BVDB) return {};
+    if (nearbyCache[buildingId]) return nearbyCache[buildingId];
+    try {
+      const { data } = await window.BVDB.from("building_places")
+        .select("category, walk_minutes").eq("building_id", buildingId).eq("rank", 1);
+      const out = {};
+      (data || []).forEach((r) => (out[r.category] = { minutes: r.walk_minutes }));
+      nearbyCache[buildingId] = out;
+      return out;
+    } catch (e) { return {}; }
+  }
+
   async function loadBuildings() {
     if (state.buildings.length) return fillBuildings();
     const { data } = await supa().from("buildings").select("id,name,address").order("name");
