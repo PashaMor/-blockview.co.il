@@ -294,8 +294,11 @@ async function dbStats(day) {
   const to = encodeURIComponent(nextDay(day) + "T00:00:00+03:00");
 
   // HEAD + count=exact: Supabase returns only the number, never a row.
+  // No `select=` on purpose — agent_applications is keyed on user_id and has no
+  // id column, so naming a column here would 400 on it.
   async function count(table, query) {
-    const r = await fetch(base + table + "?select=id" + (query || ""), {
+    const qs = String(query || "").replace(/^&/, "");
+    const r = await fetch(base + table + (qs ? "?" + qs : ""), {
       method: "HEAD",
       headers: {
         apikey: key,
@@ -317,14 +320,16 @@ async function dbStats(day) {
   }
 
   const window_ = "&created_at=gte." + from + "&created_at=lt." + to;
-  const [listings, approved, leads, signups, pending] = await Promise.all([
+  const [listings, approved, leads, signups, pending, agentsNew, agentsPending] = await Promise.all([
     count("listings", window_),
     count("listings", window_ + "&status=eq.approved"),
     count("leads", window_),
     count("profiles", window_),
     count("listings", "&status=eq.pending"),
+    count("agent_applications", window_),
+    count("agent_applications", "&status=eq.pending"),
   ]);
-  return { listings, approved, leads, signups, pending };
+  return { listings, approved, leads, signups, pending, agentsNew, agentsPending };
 }
 
 function nextDay(day) {
@@ -375,7 +380,15 @@ function buildMessage(x) {
     L.push("🏠 נכסים חדשים: <b>" + x.db.listings + "</b> (אושרו: " + x.db.approved + ")");
     L.push("📬 פניות חדשות: <b>" + x.db.leads + "</b>");
     L.push("🙋 נרשמים חדשים: " + x.db.signups);
-    L.push("⏳ ממתינים לאישור: <b>" + x.db.pending + "</b>" + (x.db.pending > 0 ? " ← admin.blockview.co.il" : ""));
+    L.push("🧑‍💼 מתווכים שנרשמו: <b>" + x.db.agentsNew + "</b>");
+
+    // the two queues an admin has to act on — call them out together
+    const queue = x.db.pending + x.db.agentsPending;
+    L.push("");
+    L.push("<b>ממתין לאישור שלך</b>");
+    L.push("⏳ נכסים: <b>" + x.db.pending + "</b>");
+    L.push("⏳ מתווכים: <b>" + x.db.agentsPending + "</b>");
+    if (queue > 0) L.push("👉 admin.blockview.co.il");
   } else {
     L.push("<b>הפעילות במערכת</b>: ⚠️ " + esc(x.db ? x.db.error : "no data"));
   }
