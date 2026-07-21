@@ -94,7 +94,7 @@ async function googleToken(scopes) {
     return cachedToken.token;
   }
   const email = required("GOOGLE_CLIENT_EMAIL");
-  const key = required("GOOGLE_PRIVATE_KEY").replace(/\\n/g, "\n");
+  const key = normalizeKey(required("GOOGLE_PRIVATE_KEY"));
   const now = Math.floor(Date.now() / 1000);
 
   const header = b64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
@@ -121,6 +121,40 @@ async function googleToken(scopes) {
   if (!r.ok || !j.access_token) throw new Error("google auth failed: " + (j.error_description || j.error || r.status));
   cachedToken = { token: j.access_token, exp: Date.now() + 3500000, scopes: scopes };
   return j.access_token;
+}
+
+/* A PEM key pasted into a dashboard field arrives mangled in a handful of
+ * predictable ways, and every one of them fails as the same opaque
+ * "DECODER routines::unsupported". Rather than make the reader guess which,
+ * accept them all: wrapping quotes, escaped \n, the whole JSON key file, or a
+ * key whose line breaks were flattened to spaces or lost outright. */
+function normalizeKey(raw) {
+  let k = String(raw).trim();
+
+  // the whole service-account JSON file, pasted in
+  if (k.charAt(0) === "{") {
+    try { k = String(JSON.parse(k).private_key || ""); } catch (e) { /* not JSON after all */ }
+  }
+  // wrapping quotes copied along with the value
+  if (k.length > 1 && (k.charAt(0) === '"' || k.charAt(0) === "'") && k.charAt(k.length - 1) === k.charAt(0)) {
+    k = k.slice(1, -1);
+  }
+  k = k.replace(/\\r/g, "").replace(/\\n/g, "\n").replace(/\r/g, "").trim();
+
+  // line breaks flattened away — rebuild the PEM from the base64 body
+  if (k.indexOf("-----BEGIN") === 0 && k.indexOf("\n") === -1) {
+    const m = k.match(/^-----BEGIN ([A-Z0-9 ]+)-----([\s\S]*?)-----END \1-----$/);
+    if (m) {
+      const label = m[1];
+      const body = m[2].replace(/[^A-Za-z0-9+/=]/g, "");
+      const lines = body.match(/.{1,64}/g) || [];
+      k = "-----BEGIN " + label + "-----\n" + lines.join("\n") + "\n-----END " + label + "-----\n";
+    }
+  }
+  if (!/^-----BEGIN [A-Z0-9 ]+-----/.test(k)) {
+    throw new Error("GOOGLE_PRIVATE_KEY is not a PEM key — paste the private_key value, starting with -----BEGIN PRIVATE KEY-----");
+  }
+  return k;
 }
 
 function b64url(x) {
@@ -255,6 +289,12 @@ async function dbStats(day) {
         range: "0-0",
       },
     });
+    if (r.status === 401 || r.status === 403) {
+      // a HEAD reply has no body, so say what the status actually means here
+      throw new Error("db " + table + ": " + r.status + " — SUPABASE_SECRET_KEY rejected. " +
+                      "It must be the sb_secret_… key (Supabase → Settings → API Keys), " +
+                      "not the publishable key.");
+    }
     if (!r.ok) throw new Error("db " + table + ": " + r.status);
     const cr = r.headers.get("content-range") || "";
     const n = Number(cr.split("/")[1]);
