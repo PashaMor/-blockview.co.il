@@ -156,6 +156,9 @@
   function renderAccount() {
     // signing out fires onAuthStateChange while this sheet may still be open
     if (!state.user) { closeAccount(); return; }
+    // the listings this account published (js/my-listings.js); async, so it
+    // fills in a moment after the sheet paints
+    if (window.BVMyListings) window.BVMyListings.render();
     const lim = limits[state.plan] || limits.free;
     const favN = window.favCount ? window.favCount() : 0, folN = window.subCount ? window.subCount() : 0;
     $("acc-email").textContent = state.user.email || "";

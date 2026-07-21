@@ -558,3 +558,24 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .action-bar > * { flex: 1 1 auto; min-width: 96px; justify-content: center; }
 .action-bar .btn-lead { flex: 2 1 160px; }
 @media (max-width: 560px) { .action-bar { padding-inline: 16px; } }
+
+/* my properties (account sheet) */
+.acc-listings-wrap { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 12px; }
+.acc-sec-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800;
+  color: var(--text-soft); margin-bottom: 10px; }
+.acc-sec-head b { background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 1px 8px; font-size: 12px; }
+.acc-listings { display: grid; gap: 10px; }
+.ml-card { display: flex; gap: 12px; align-items: center; border: 1px solid var(--line);
+  border-radius: 12px; padding: 10px; }
+.ml-thumb { width: 64px; height: 52px; flex: none; border-radius: 9px; object-fit: cover;
+  background: var(--surface-2); display: grid; place-items: center; font-size: 22px; }
+.ml-main { flex: 1; min-width: 0; }
+.ml-title { font-size: 14.5px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ml-sub { font-size: 12.5px; color: var(--text-soft); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ml-meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--muted); margin-top: 5px; align-items: center; }
+.ml-actions { display: flex; flex-direction: column; gap: 6px; flex: none; }
+.ml-btn { font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; padding: 6px 12px;
+  border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.ml-btn:hover { border-color: var(--blue); color: var(--blue); }
+.ml-btn.danger { color: #B0322A; }
+.ml-btn.danger:hover { border-color: #B0322A; color: #B0322A; }

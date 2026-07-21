@@ -322,6 +322,8 @@ map.on("load", () => {
   updateTotal();
   applyTheme(mode, false); // sync the toggle icon to the loaded theme
   loadLiveData();          // swap the sample data for real listings from Supabase
+  // let other scripts refresh the map after they change a listing
+  window.reloadLiveData = loadLiveData;
   // interactions (query-based so they survive style switches)
   map.on("mousemove", (e) => {
     const hit = map.queryRenderedFeatures(e.point, { layers: ["bv-buildings"] });
