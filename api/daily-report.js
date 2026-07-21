@@ -23,7 +23,8 @@
  * Environment variables (Vercel -> Settings -> Environment Variables):
  *   CRON_SECRET               random string; also what Vercel Cron sends
  *   TELEGRAM_BOT_TOKEN        from @BotFather
- *   TELEGRAM_CHAT_ID          your chat / channel id
+ *   TELEGRAM_CHAT_ID          chat / group / channel id ("-100…" for a group)
+ *   TELEGRAM_TOPIC_ID         optional: forum topic to post into (omit for none)
  *   GA4_PROPERTY_ID           numeric GA4 property id (NOT the G-XXXX id)
  *   GSC_SITE_URL              e.g. "sc-domain:blockview.co.il"
  *   GOOGLE_CLIENT_EMAIL       service-account email
@@ -346,15 +347,19 @@ function esc(s) {
 async function telegram(text) {
   const token = required("TELEGRAM_BOT_TOKEN");
   const chat = required("TELEGRAM_CHAT_ID");
+  const topic = process.env.TELEGRAM_TOPIC_ID;      // optional: forum topic
+  const payload = {
+    chat_id: chat,
+    text: text.slice(0, 4000),
+    parse_mode: "HTML",
+    disable_web_page_preview: true,
+  };
+  if (topic) payload.message_thread_id = Number(topic);
+
   const r = await fetch("https://api.telegram.org/bot" + token + "/sendMessage", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chat,
-      text: text.slice(0, 4000),
-      parse_mode: "HTML",
-      disable_web_page_preview: true,
-    }),
+    body: JSON.stringify(payload),
   });
   if (!r.ok) {
     const body = await r.text();
