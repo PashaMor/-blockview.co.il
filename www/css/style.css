@@ -33,11 +33,11 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 #mode-toggle, #view-toggle, #account-btn, #lang-btn {
   position: absolute; right: 16px; z-index: 5;
   width: 46px; height: 46px; border-radius: 50%;
-  border: 1px solid var(--line); background: rgba(255,255,255,.92); backdrop-filter: blur(8px);
-  cursor: pointer; box-shadow: var(--shadow-sm);
+  border: 1px solid transparent; background: var(--blue); color: #fff;
+  cursor: pointer; box-shadow: 0 4px 14px rgba(0,56,184,.30);
 }
 #mode-toggle { top: 16px; font-size: 20px; }
-#view-toggle { top: 70px; font-weight: 800; font-size: 15px; color: var(--ink); }
+#view-toggle { top: 70px; font-weight: 800; font-size: 15px; }
 #account-btn { top: 124px; font-size: 19px; overflow: hidden; background-size: cover; background-position: center; }
 #lang-btn { top: 178px; font-size: 20px; }
 
@@ -48,12 +48,12 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 }
 #zoom-ctrl button {
   width: 46px; height: 46px; border-radius: 50%;
-  border: 1px solid var(--line); background: rgba(255,255,255,.92); backdrop-filter: blur(8px);
-  color: var(--ink); font-size: 22px; font-weight: 700; line-height: 1; cursor: pointer;
-  box-shadow: var(--shadow-sm); transition: transform .12s ease, border-color .12s ease;
+  border: 1px solid transparent; background: var(--blue);
+  color: #fff; font-size: 22px; font-weight: 700; line-height: 1; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,56,184,.30); transition: transform .12s ease, background .12s ease;
   display: grid; place-items: center;
 }
-#zoom-ctrl button:hover { border-color: var(--blue); color: var(--blue); transform: scale(1.06); }
+#zoom-ctrl button:hover { background: var(--blue-dk, #002C92); transform: scale(1.06); }
 #zoom-ctrl button:active { transform: scale(.96); }
 @media (max-width: 560px) { #zoom-ctrl button { width: 42px; height: 42px; font-size: 20px; } }
 
@@ -180,17 +180,18 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 }
 .bb-btn {
   font: inherit; font-weight: 700; font-size: 14px; cursor: pointer;
-  border: 1px solid var(--line); background: rgba(255,255,255,.95); color: var(--ink);
+  border: 1px solid transparent; background: var(--blue); color: #fff;
   height: 50px; padding: 0 20px; border-radius: 26px;
-  display: inline-flex; align-items: center; gap: 8px; box-shadow: var(--shadow-sm);
+  display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(0,56,184,.30);
   transition: transform .15s ease;
 }
+.bb-btn b { background: rgba(255,255,255,.22); border-radius: 11px; padding: 1px 8px; font-size: 12.5px; }
 .bb-btn:hover { transform: translateY(-1px); }
 .bb-btn.primary { background: var(--blue); color: #fff; border-color: transparent; }
 .bb-btn.primary b { background: rgba(255,255,255,.22); border-radius: 11px; padding: 1px 8px; font-size: 12.5px; }
-.bb-btn:not(.primary) { width: 50px; padding: 0; justify-content: center; font-size: 20px; color: var(--text-soft); }
+.bb-btn:not(.primary) { width: 50px; padding: 0; justify-content: center; font-size: 20px; }
 #open-favs, #open-alerts { width: auto; padding: 0 14px; gap: 6px; font-size: 14px; }
-#open-favs .heart { color: #E4426B; font-size: 16px; }
+#open-favs .heart { color: #FF8BA7; font-size: 16px; }   /* pink still reads on blue */
 .bb-ic { font-size: 15px; }
 
 /* favorite heart on cards */
@@ -472,11 +473,11 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 #edu-toggle {
   position: absolute; right: 16px; top: 232px; z-index: 5;
   width: 46px; height: 46px; border-radius: 50%;
-  border: 1px solid var(--line); background: rgba(255,255,255,.92); backdrop-filter: blur(8px);
-  cursor: pointer; box-shadow: var(--shadow-sm); font-size: 20px; line-height: 1;
+  border: 1px solid transparent; background: var(--blue); color: #fff;
+  cursor: pointer; box-shadow: 0 4px 14px rgba(0,56,184,.30); font-size: 20px; line-height: 1;
   filter: grayscale(1); opacity: .6; transition: all .15s ease;
 }
-#edu-toggle.on { filter: none; opacity: 1; border-color: var(--blue); }
+#edu-toggle.on { filter: none; opacity: 1; }
 #edu-toggle:hover { transform: scale(1.06); }
 
 /* ---- contact: masked for guests ---- */
@@ -644,3 +645,38 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .legal-body .toc a { color: var(--text); text-decoration: none; }
 .legal-loading { color: var(--muted); }
 .card-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ---------- dark map: the same buttons, inverted ----------
+   On the dark basemap a blue pill sinks into the background, so every control
+   flips to white with dark ink. Set by applyTheme() in js/app.js. */
+.bv-dark #mode-toggle, .bv-dark #view-toggle, .bv-dark #lang-btn,
+.bv-dark #zoom-ctrl button, .bv-dark .bb-btn, .bv-dark #publish-btn {
+  background: #FFFFFF; color: var(--ink); border-color: transparent;
+  box-shadow: 0 4px 16px rgba(0,0,0,.45);
+}
+.bv-dark #zoom-ctrl button:hover { background: #EDF2FC; }
+.bv-dark .bb-btn b { background: rgba(20,30,45,.10); color: var(--ink); }
+.bv-dark #open-favs .heart { color: #E4426B; }
+.bv-dark #account-btn { background: #FFFFFF; color: var(--ink); border-color: transparent; }
+.bv-dark #account-btn.in { background-color: var(--blue); color: #fff; }
+.bv-dark #edu-toggle { background: #FFFFFF; color: var(--ink); }
+
+/* ---------- inside the app: a finger is not a mouse pointer ----------
+   Everything grows by ~15%, and the bottom bar gets a little more room. */
+.bv-app #mode-toggle, .bv-app #view-toggle, .bv-app #account-btn, .bv-app #lang-btn {
+  width: 54px; height: 54px; font-size: 22px;
+}
+.bv-app #view-toggle { font-size: 17px; }
+.bv-app #mode-toggle { top: 16px; }
+.bv-app #view-toggle { top: 78px; }
+.bv-app #account-btn { top: 140px; }
+.bv-app #lang-btn { top: 202px; }
+.bv-app #zoom-ctrl button { width: 52px; height: 52px; font-size: 24px; }
+.bv-app #edu-toggle { width: 54px; height: 54px; font-size: 24px; top: 264px; }
+.bv-app .bb-btn { height: 56px; font-size: 15px; padding: 0 18px; }
+.bv-app .bb-btn:not(.primary) { width: 56px; font-size: 22px; }
+.bv-app #open-favs, .bv-app #open-alerts { width: auto; padding: 0 14px; font-size: 15px; }
+.bv-app #publish-btn { height: 50px; font-size: 15px; padding: 0 22px; }
+@media (max-width: 560px) {
+  .bv-app #publish-btn { bottom: calc(82px + env(safe-area-inset-bottom, 0px)); }
+}

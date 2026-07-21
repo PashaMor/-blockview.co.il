@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>BlockView — נדל"ן בתלת מימד</title>
   <script>
+    /* the app gets slightly larger controls: a finger is not a mouse pointer */
+    (function () {
+      if (window.Capacitor || /BlockViewApp/i.test(navigator.userAgent)) {
+        document.documentElement.classList.add("bv-app");
+      }
+    })();
     /* on-screen error log — turns a blank/black screen into a readable message */
     (function () {
       function show(msg) {
@@ -25,8 +31,8 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=58" />
-  <link rel="stylesheet" href="css/style.css?v=58" />
+  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=59" />
+  <link rel="stylesheet" href="css/style.css?v=59" />
 </head>
 <body>
   <div id="map"></div>
@@ -524,21 +530,21 @@
     </div>
   </div>
 
-  <script src="vendor/maplibre-gl.js?v=58"></script>
-  <script src="vendor/supabase.min.js?v=58"></script>
-  <script src="js/config.js?v=58"></script>
-  <script src="js/analytics.js?v=58"></script>
-  <script src="js/oauth.js?v=58"></script>
-  <script src="js/geo.js?v=58"></script>
-  <script src="js/i18n.js?v=58"></script>
-  <script src="js/confirm.js?v=58"></script>
-  <script src="js/data.js?v=58"></script>
-  <script src="js/track.js?v=58"></script>
-  <script src="js/app.js?v=58"></script>
-  <script src="js/auth.js?v=58"></script>
-  <script src="js/describe-gen.js?v=58"></script>
-  <script src="js/publish.js?v=58"></script>
-  <script src="js/my-listings.js?v=58"></script>
-  <script src="js/legal-modal.js?v=58"></script>
+  <script src="vendor/maplibre-gl.js?v=59"></script>
+  <script src="vendor/supabase.min.js?v=59"></script>
+  <script src="js/config.js?v=59"></script>
+  <script src="js/analytics.js?v=59"></script>
+  <script src="js/oauth.js?v=59"></script>
+  <script src="js/geo.js?v=59"></script>
+  <script src="js/i18n.js?v=59"></script>
+  <script src="js/confirm.js?v=59"></script>
+  <script src="js/data.js?v=59"></script>
+  <script src="js/track.js?v=59"></script>
+  <script src="js/app.js?v=59"></script>
+  <script src="js/auth.js?v=59"></script>
+  <script src="js/describe-gen.js?v=59"></script>
+  <script src="js/publish.js?v=59"></script>
+  <script src="js/my-listings.js?v=59"></script>
+  <script src="js/legal-modal.js?v=59"></script>
 </body>
 </html>

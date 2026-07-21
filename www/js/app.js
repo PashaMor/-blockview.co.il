@@ -344,6 +344,8 @@ function applyTheme(m, save) {
     map.setStyle(STYLES[mode]);
     map.once("styledata", () => addCustomLayers());
   }
+  // let the stylesheet follow the map: buttons invert to white on the dark map
+  document.documentElement.classList.toggle("bv-dark", mode === "dark");
   const btn = document.getElementById("mode-toggle");
   if (btn) btn.textContent = mode === "light" ? "☾" : "☀";
   try { localStorage.setItem("blockview_theme", mode); } catch (e) {}
