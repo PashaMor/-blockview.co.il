@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>BlockView CRM — ניהול נכסים</title>
-  <link rel="stylesheet" href="crm.css?v=19" />
+  <link rel="stylesheet" href="crm.css?v=20" />
 </head>
 <body>
 
@@ -195,13 +195,13 @@
           <div id="f-addr-results" class="addr-results" hidden></div>
           <div id="f-addr-picked" class="addr-picked" hidden></div>
           <div id="f-addr-match" class="addr-match" hidden></div>
-          <button type="button" id="f-pick-existing" class="linkish">או בחר מבניין קיים ברשימה</button>
         </div>
 
+        <!-- The building is decided by the address above. This stays only to
+             carry the current building while editing; it is never shown. -->
+        <select id="f-building" hidden></select>
+
         <div class="grid2">
-          <label class="field" id="f-building-wrap" hidden><span>בניין קיים</span>
-            <select id="f-building" class="input"></select>
-          </label>
           <label class="field"><span>סוג עסקה *</span>
             <select id="f-deal" class="input" required>
               <option value="sale">מכירה</option>
@@ -356,6 +356,6 @@
   <script src="../js/oauth.js?v=17"></script>
   <script src="../js/describe-gen.js?v=16"></script>
   <script src="../js/geo.js?v=48"></script>
-  <script src="crm.js?v=19"></script>
+  <script src="crm.js?v=20"></script>
 </body>
 </html>

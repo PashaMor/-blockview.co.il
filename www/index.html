@@ -398,11 +398,10 @@
         <!-- which building this will attach to — shown before submitting, so a
              wrong merge is visible instead of silent -->
         <div id="p-addr-match" class="addr-match" hidden></div>
-        <div class="hint-row">
-          <span class="field-hint" data-i18n="address_hint">חפש את הכתובת — הבניין ייווצר אוטומטית לפי מפת OpenStreetMap.</span>
-          <button type="button" id="p-pick-existing" class="linkish" data-i18n="pick_existing">בחירה מרשימת בניינים</button>
-        </div>
-        <select id="p-building" class="selectbox" hidden></select>
+        <span class="field-hint" data-i18n="address_hint">חפש את הכתובת — הבניין ייווצר אוטומטית לפי הכתובת שתבחר.</span>
+        <!-- The address decides the building. Kept only so the description
+             generator can read the current building; never shown. -->
+        <select id="p-building" hidden></select>
       </div>
       <div class="fgroup">
         <label data-i18n="deal_type">סוג עסקה</label>

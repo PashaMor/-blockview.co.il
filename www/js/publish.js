@@ -250,13 +250,6 @@
       box.hidden = false;
     } catch (e) { /* preview is a courtesy: never block publishing */ }
   }
-  // escape hatch: attach to one of the buildings already on the map
-  $("p-pick-existing").addEventListener("click", () => {
-    const sel = $("p-building");
-    sel.hidden = !sel.hidden;
-    if (!sel.hidden) { clearAddress(); $("p-address").value = ""; }
-  });
-
   // ₪99M ceiling — the DB enforces it too (26_price_cap.sql)
   const MAX_PRICE = 99000000;
   function checkedPrice(v) {
@@ -266,10 +259,8 @@
     return n;
   }
 
-  // the building id this listing will attach to (created on demand)
+  // the building id this listing will attach to (created on demand from the address)
   async function resolveBuilding() {
-    const sel = $("p-building");
-    if (!sel.hidden && sel.value) return sel.value;
     const a = state.address;
     if (!a) throw new Error(T("address_required", "נא לבחור את כתובת הנכס"));
     const fp = state.footprint;

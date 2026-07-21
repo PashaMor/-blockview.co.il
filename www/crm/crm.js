@@ -750,14 +750,7 @@
     } else {
       picked.hidden = true; picked.textContent = "";
     }
-    $("f-building-wrap").hidden = true;
   }
-
-  $("f-pick-existing").addEventListener("click", () => {
-    const wrap = $("f-building-wrap");
-    wrap.hidden = !wrap.hidden;
-    if (!wrap.hidden) { addr.picked = null; addr.footprint = null; $("f-address").value = ""; $("f-addr-match").hidden = true; }
-  });
 
   $("f-address").addEventListener("input", (e) => {
     const q = e.target.value;
@@ -827,13 +820,10 @@
   }
 
   /* The building id to save against.
-   * A freshly picked address always wins: choosing one is a deliberate act, and
-   * on an edit the dropdown still holds the OLD building, so letting it take
-   * priority silently threw the new address away. */
+   * The address decides. The only case that does not need one is editing a
+   * listing whose address the agent did not touch. */
   async function resolveBuilding() {
     if (!addr.picked) {
-      const wrap = $("f-building-wrap");
-      if (!wrap.hidden && $("f-building").value) return $("f-building").value;   // picked from the list
       if ($("f-id").value && $("f-building").value) return $("f-building").value; // editing, address untouched
       throw new Error("נא לבחור את כתובת הנכס");
     }
