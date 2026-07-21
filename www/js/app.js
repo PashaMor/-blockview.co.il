@@ -436,38 +436,6 @@ function onCardClick(e) {
 }
 document.getElementById("listings").addEventListener("click", onCardClick);
 
-/* ---- all-listings sheet: the accessible alternative to the 3D map ----
- * A fill-extrusion map cannot be read by a screen reader or driven by keyboard,
- * so every property that exists on the map has to be reachable as plain text
- * too. This lists everything matching the current filter, grouped by building.
- * Keep it in step with the map: if a property shows on the map it shows here. */
-const listSheet = document.getElementById("list-sheet");
-function allMatching() {
-  const out = [];
-  BUILDINGS.forEach((b) => {
-    buildingMatches(b.id).forEach((l) => out.push({ l: l, b: b }));
-  });
-  return out;
-}
-function renderAllList() {
-  const items = allMatching();
-  const list = document.getElementById("all-list"), empty = document.getElementById("all-empty");
-  if (items.length) {
-    list.innerHTML = items.map((it) =>
-      '<div class="list-row"><div class="list-where">' + escHtml(it.b.name) +
-      " · " + escHtml(it.b.address) + "</div>" + listingCard(it.l) + "</div>").join("");
-    empty.hidden = true;
-  } else { list.innerHTML = ""; empty.hidden = false; }
-}
-function openList() {
-  closeSheet(); closeListings(); closeFavs(); closeAlerts(); closeSearch(); closeAuthUI();
-  renderAllList();
-  listSheet.classList.add("open"); listSheet.setAttribute("aria-hidden", "false");
-}
-function closeList() { listSheet.classList.remove("open"); listSheet.setAttribute("aria-hidden", "true"); }
-document.getElementById("open-list").addEventListener("click", openList);
-document.getElementById("list-close").addEventListener("click", closeList);
-document.getElementById("all-list").addEventListener("click", onCardClick);
 
 /* ---- favorites sheet ---- */
 const favsSheet = document.getElementById("favs-sheet");
@@ -889,10 +857,6 @@ function updateTotal() {
   let n = 0; for (const id in LISTINGS) n += buildingMatches(id).length;
   document.getElementById("fcount").textContent = n;
   document.getElementById("apply-count").textContent = n;
-  const lc = document.getElementById("listcount");
-  if (lc) lc.textContent = n;
-  // keep the accessible list in step with the map when the filter changes
-  if (listSheet && listSheet.classList.contains("open")) renderAllList();
 }
 document.querySelectorAll("#deal-seg .seg-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -1039,7 +1003,32 @@ function openSheet() { closeListings(); closeFavs(); closeAlerts(); closeSearch(
 function closeSheet() { sheet.classList.remove("open"); sheet.setAttribute("aria-hidden", "true"); backdrop.hidden = true; }
 document.getElementById("open-filters").addEventListener("click", openSheet);
 document.getElementById("close-filters").addEventListener("click", closeSheet);
-document.getElementById("apply-filters").addEventListener("click", closeSheet);
+/* Pressing "show" should take you to the results, not leave you looking at
+ * wherever the camera happened to be. Frames every building that still has a
+ * matching listing — which lands on the chosen city when one is filtered. */
+function flyToMatches() {
+  const hits = BUILDINGS.filter((b) => buildingMatches(b.id).length);
+  if (!hits.length) return;                     // nothing matched: don't move
+  let minX = 180, minY = 90, maxX = -180, maxY = -90;
+  hits.forEach((b) => {
+    const x = +b.lng, y = +b.lat;
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+  });
+  if (hits.length === 1 || (maxX - minX < 0.002 && maxY - minY < 0.002)) {
+    map.flyTo({ center: [(minX + maxX) / 2, (minY + maxY) / 2], zoom: 16, duration: 900 });
+    return;
+  }
+  // keep the current tilt/bearing — refitting flat would undo the 3D view
+  map.fitBounds([[minX, minY], [maxX, maxY]], {
+    padding: { top: 90, bottom: 240, left: 60, right: 60 },
+    maxZoom: 16, duration: 900, pitch: map.getPitch(), bearing: map.getBearing(),
+  });
+}
+document.getElementById("apply-filters").addEventListener("click", () => {
+  closeSheet();
+  flyToMatches();
+});
 backdrop.addEventListener("click", () => { closeSheet(); if (window.closeAuthSheets) window.closeAuthSheets(); });
 
 syncFavUI(); // initialise favorites count on load

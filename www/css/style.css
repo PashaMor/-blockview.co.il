@@ -516,21 +516,12 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .danger-link { border: 0; background: transparent; color: #B0322A; font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; padding: 4px; }
 .danger-link:hover { text-decoration: underline; }
 
-/* ---- accessible all-listings sheet ----
-   The 3D map is unusable with a screen reader or keyboard alone, so the same
-   properties are listed here as text. Grouped by building so the address —
-   which the map conveys visually — is spoken too. */
-.list-row { margin-bottom: 14px; }
-.list-where { font-size: 12.5px; font-weight: 700; color: var(--text-soft, #6b7280);
-  margin-bottom: 6px; padding-inline-start: 2px; }
-
 /* opt-in consent row in the enquiry form — never pre-ticked */
 .lead-consent { display: flex; gap: 9px; align-items: flex-start; margin: 4px 0 10px;
   font-size: 12.5px; line-height: 1.5; color: var(--text-soft, #6b7280); cursor: pointer; }
 .lead-consent input { width: 17px; height: 17px; flex: none; margin-top: 1px; accent-color: var(--blue, #0038B8); }
 
-/* accessible list entry point, inside the filter sheet */
-.as-list-btn { display: block; width: 100%; margin: 2px 0 10px; padding: 11px 14px; font: inherit;
-  font-size: 13.5px; font-weight: 700; color: var(--blue, #0038B8); background: transparent;
-  border: 1px dashed var(--line, #d8dde5); border-radius: 11px; cursor: pointer; }
-.as-list-btn:hover { border-color: var(--blue, #0038B8); }
+.label-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.gen-btn { font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; color: var(--blue);
+  background: #EDF2FC; border: 1px solid transparent; border-radius: 8px; padding: 5px 10px; }
+.gen-btn:hover { border-color: var(--blue); }
