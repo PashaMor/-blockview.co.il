@@ -183,6 +183,29 @@
   $("account-btn").addEventListener("click", () => (state.user ? openAccount() : openAuth()));
   $("account-close").addEventListener("click", closeAccount);
   $("acc-signout").addEventListener("click", async () => { closeAccount(); await supa.auth.signOut(); });
+
+  /* ---------- delete my account (the right the privacy policy promises) ----------
+   * delete_my_account() runs in the database and removes the auth user, which
+   * cascades to the profile, saved properties, notes, listings, their photos and
+   * any enquiries. Irreversible, so it asks twice. */
+  $("acc-delete").addEventListener("click", async () => {
+    if (!state.user) return;
+    if (!confirm(t("delete_warn"))) return;
+    const typed = prompt(t("delete_prompt"));
+    if (typed === null) return;
+    if (typed.trim().toLowerCase() !== (state.user.email || "").toLowerCase()) {
+      if (window.bvToast) window.bvToast(t("delete_mismatch"));
+      return;
+    }
+    const { error } = await supa.rpc("delete_my_account");
+    if (error) {
+      if (window.bvToast) window.bvToast(/LAST_ADMIN/.test(error.message) ? t("delete_last_admin") : t("delete_failed"));
+      return;
+    }
+    closeAccount();
+    await supa.auth.signOut();
+    if (window.bvToast) window.bvToast(t("delete_done"));
+  });
   $("acc-upgrade").addEventListener("click", () => { closeAccount(); showUpgrade(); });
 
   // avatar upload — resized & compressed client-side, stored as a small data-URL (RLS-protected profile row)

@@ -513,3 +513,5 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .hint-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .hint-row .field-hint { flex: 1; min-width: 180px; }
 .linkish { border: 0; background: transparent; color: var(--blue); font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; padding: 4px; }
+.danger-link { border: 0; background: transparent; color: #B0322A; font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; padding: 4px; }
+.danger-link:hover { text-decoration: underline; }

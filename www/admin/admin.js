@@ -417,6 +417,7 @@
             <option value="free"${p.plan !== "pro" ? " selected" : ""}>מנוי: חינם</option>
             <option value="pro"${p.plan === "pro" ? " selected" : ""}>מנוי: Pro</option>
           </select>
+          ${p.id === state.user.id ? "" : `<button class="btn-bad" data-deluser="${esc(p.id)}">מחק משתמש</button>`}
         </div>
       </div>
       <div class="udetail" id="ud-${esc(p.id)}" hidden></div>
@@ -488,6 +489,33 @@
     if (error) return toast("שגיאה: " + error.message);
     toast("הרשאת הסוכן בוטלה"); loadAll();
   }
+  /* ---- delete a user for good ----
+   * admin_delete_user() re-checks is_admin() (admin + 2FA) in the database, so
+   * the confirmation below is a guard against slips, not the security boundary.
+   * The deletion cascades to the user's listings, photos, leads and enquiries. */
+  async function deleteUser(uid) {
+    const p = state.pmap[uid] || {};
+    const listings = state.listings.filter((l) => l.agent_id === uid).length;
+    const warn = `למחוק לצמיתות את ${p.email || uid}?\n\n` +
+      `יימחקו גם ${listings} נכסים, התמונות שלהם, הלידים והבקשות שלו.\n` +
+      `הפעולה אינה הפיכה.`;
+    if (!confirm(warn)) return;
+    // second gate: the email must be typed out, so a mis-click cannot do this
+    const typed = prompt(`לאישור סופי הקלד את כתובת האימייל של המשתמש:\n${p.email || uid}`);
+    if (typed === null) return;
+    if (typed.trim().toLowerCase() !== String(p.email || "").toLowerCase()) return toast("האימייל לא תואם — לא נמחק");
+
+    const { error } = await supa.rpc("admin_delete_user", { target: uid });
+    if (error) {
+      const m = error.message || "";
+      if (/LAST_ADMIN/.test(m)) return toast("זהו המנהל האחרון — אי אפשר למחוק");
+      if (/USE_SELF_DELETE/.test(m)) return toast("אי אפשר למחוק את עצמך מכאן");
+      if (/FORBIDDEN/.test(m)) return toast("נדרשת הרשאת מנהל עם אימות דו-שלבי");
+      return toast("שגיאה: " + m);
+    }
+    toast("המשתמש נמחק"); loadAll();
+  }
+
   document.addEventListener("click", (e) => {
     const ok = e.target.closest("[data-approveagent]");
     if (ok) return approveAgent(ok.dataset.approveagent);
@@ -495,6 +523,8 @@
     if (no) return reviewApp(no.dataset.rejectagent, "rejected");
     const rv = e.target.closest("[data-revokeagent]");
     if (rv) return revokeAgent(rv.dataset.revokeagent);
+    const del = e.target.closest("[data-deluser]");
+    if (del) return deleteUser(del.dataset.deluser);
   });
   const dt = (d) => (d ? new Date(d).toLocaleString("he-IL") : "—");
 
@@ -542,21 +572,34 @@
           .map(([k, v]) => `<div class="ud-f"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("")}
       </div>` : "";
 
-    // the approved branding actually printed on this agent's listings
+    // The branding printed on this agent's listings. Shown for every agent — an
+    // agent promoted by hand (not through the application form) has no row yet,
+    // so the admin can type the firm and licence in here.
     const ap = state.apmap[p.id];
-    const apBlock = ap ? `
-      <div class="ud-sec">פרטי סוכן מאושרים (מוצגים על הנכסים)</div>
-      <div class="ud-agent">
+    const isAgent = p.role === "agent" || p.role === "admin";
+    const f = (k, v) => `<div class="ud-f"><span>${esc(k)}</span><b>${esc(v)}</b></div>`;
+    const apBlock = !isAgent ? "" : `
+      <div class="ud-sec">פרטי סוכן — משרד ורישיון
+        <button class="linkish" data-editagent="${esc(p.id)}">${ap ? "עריכה" : "הזנה ידנית"}</button>
+      </div>
+      ${ap ? `<div class="ud-agent">
         ${ap.logo_path ? `<img class="ud-logo" src="${esc(logoUrl(ap.logo_path))}" alt="" />` : `<div class="ud-logo">🏢</div>`}
         <div class="ud-grid grow">
-          ${[["שם", ((ap.first_name || "") + " " + (ap.last_name || "")).trim() || "—"],
-             ["משרד / סוכנות", ap.agency || "—"],
-             ["מספר רישיון תיווך", ap.license_no || "—"],
-             ["טלפון", ap.phone || "—"],
-             ["עודכן", dt(ap.updated_at)]]
-            .map(([k, v]) => `<div class="ud-f"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("")}
+          ${f("שם", ((ap.first_name || "") + " " + (ap.last_name || "")).trim() || "—")}
+          ${f("משרד / סוכנות", ap.agency || "—")}
+          ${f("מספר רישיון תיווך", ap.license_no || "—")}
+          ${f("טלפון", ap.phone || "—")}
+          ${f("עודכן", dt(ap.updated_at))}
         </div>
-      </div>` : "";
+      </div>` : `<div class="ud-empty">לא הוזנו פרטי סוכן. המשתמש הוגדר כסוכן ידנית ולא מילא טופס בקשה.</div>`}
+      <form class="ud-form" data-agentform="${esc(p.id)}" hidden>
+        <input class="input a-first" maxlength="40" placeholder="שם פרטי" value="${esc(ap ? ap.first_name : "")}" />
+        <input class="input a-last" maxlength="40" placeholder="שם משפחה" value="${esc(ap ? ap.last_name : "")}" />
+        <input class="input a-agency" maxlength="80" placeholder="משרד / סוכנות" value="${esc(ap ? ap.agency : "")}" />
+        <input class="input a-license" maxlength="30" placeholder="מספר רישיון תיווך" value="${esc(ap ? ap.license_no : "")}" />
+        <input class="input a-phone" maxlength="20" placeholder="טלפון" value="${esc(ap && ap.phone ? ap.phone : "")}" />
+        <button type="submit" class="btn-ok">שמור</button>
+      </form>`;
 
     return `
       <div class="ud-sec">פרטי חשבון</div>
@@ -578,6 +621,12 @@
   }
 
   $("users-list").addEventListener("click", (e) => {
+    const ed = e.target.closest("[data-editagent]");
+    if (ed) {
+      const form = document.querySelector(`[data-agentform="${ed.dataset.editagent}"]`);
+      if (form) form.hidden = !form.hidden;
+      return;
+    }
     const b = e.target.closest("[data-userdet]");
     if (!b) return;
     const p = state.pmap[b.dataset.userdet];
@@ -601,6 +650,24 @@
     toast(plan === "pro" ? "המנוי שודרג ל-Pro ⭐" : "המנוי הוחזר לחינם");
     loadAll();
   }
+
+  // admin may write any agent_profiles row (09_agent_profile.sql)
+  $("users-list").addEventListener("submit", async (e) => {
+    const form = e.target.closest("[data-agentform]");
+    if (!form) return;
+    e.preventDefault();
+    const val = (c) => form.querySelector(c).value.trim();
+    const row = {
+      user_id: form.dataset.agentform,
+      first_name: val(".a-first"), last_name: val(".a-last"),
+      agency: val(".a-agency"), license_no: val(".a-license"),
+      phone: val(".a-phone") || null,
+    };
+    if (!row.first_name || !row.agency || !row.license_no) return toast("שם, משרד ומספר רישיון הם שדות חובה");
+    const res = await supa.from("agent_profiles").upsert(row, { onConflict: "user_id" });
+    if (res.error) return toast("שגיאה: " + res.error.message);
+    toast("פרטי הסוכן נשמרו"); loadAll();
+  });
 
   /* --------------------------------------------------------- buildings */
   function renderBuildings() {

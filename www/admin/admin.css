@@ -179,3 +179,8 @@ main { max-width: 1140px; margin: 0 auto; padding: 20px; }
 /* agent approval, in the users list */
 .approval-cell { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .btn-ok.sm, .btn-bad.sm { padding: 5px 10px; font-size: 12px; border-radius: 8px; }
+.ud-sec .linkish { border: 0; background: transparent; color: var(--blue); font: inherit; font-size: 12px;
+  font-weight: 700; cursor: pointer; margin-inline-start: 8px; }
+.ud-sec .linkish:hover { text-decoration: underline; }
+.ud-form { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.ud-form .input { flex: 1 1 150px; }

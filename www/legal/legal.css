@@ -21,9 +21,12 @@ body { margin: 0; background: var(--surface-2); color: var(--text); font-family:
   display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 10; }
 .brand img { height: 40px; display: block; }
 .top-right { display: flex; align-items: center; gap: 10px; }
-.lang-select { font: inherit; font-size: 14px; color: var(--ink); background: var(--surface);
-  border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; cursor: pointer; }
-.lang-select:focus { outline: none; border-color: var(--blue); }
+/* real links, so switching language works with JavaScript disabled */
+.lang-links { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 13px; }
+.lang-links a, .lang-links .lang-on { padding: 6px 9px; border-radius: 9px; text-decoration: none; white-space: nowrap; }
+.lang-links a { color: var(--text-soft); border: 1px solid transparent; }
+.lang-links a:hover { color: var(--blue); border-color: var(--line); }
+.lang-links .lang-on { color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); font-weight: 700; }
 .back-link { font-size: 14px; font-weight: 700; color: var(--blue); text-decoration: none; white-space: nowrap; }
 .back-link:hover { text-decoration: underline; }
 

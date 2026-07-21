@@ -80,6 +80,7 @@
   <nav id="bottombar">
     <button class="bb-btn primary" id="open-filters"><span class="bb-ic">⚙︎</span> <span data-i18n="filter">סינון</span> <b id="fcount">0</b></button>
     <button class="bb-btn" id="open-search" title="חיפוש"><span class="bb-ic">🔍</span></button>
+    <button class="bb-btn" id="open-list" title="רשימת נכסים"><span class="bb-ic">☰</span><b id="listcount">0</b></button>
     <button class="bb-btn" id="open-favs" title="מועדפים"><span class="bb-ic heart">♥</span><b id="favcount">0</b></button>
     <button class="bb-btn" id="open-alerts" title="התראות"><span class="bb-ic">🔔</span><b id="alertcount">0</b></button>
     <button class="bb-btn" id="reset-view" title="אפס תצוגה">⟲</button>
@@ -184,6 +185,21 @@
     <div id="no-match" class="no-match" hidden data-i18n="no_match">אין נכסים התואמים לסינון בבניין זה.</div>
   </section>
 
+  <!-- All-listings sheet — the accessible alternative to the 3D map.
+       A 3D map cannot be operated by a screen reader or by keyboard alone, so
+       every property on the map must also be reachable as plain text here. -->
+  <section id="list-sheet" class="sheet" aria-hidden="true" aria-labelledby="list-title">
+    <div class="sheet-handle"></div>
+    <button class="sheet-x" id="list-close" aria-label="סגור">✕</button>
+    <div class="building-head">
+      <div class="bh-eyebrow" data-i18n="all_properties">כל הנכסים</div>
+      <h2 id="list-title" data-i18n="list_title">רשימת נכסים</h2>
+      <div class="b-address" data-i18n="list_sub">כל הנכסים התואמים לסינון, כרשימה נגישה</div>
+    </div>
+    <div id="all-list" class="listings"></div>
+    <div id="all-empty" class="no-match" hidden data-i18n="list_empty">אין נכסים התואמים לסינון הנוכחי.</div>
+  </section>
+
   <!-- Favorites bottom sheet -->
   <section id="favs-sheet" class="sheet" aria-hidden="true">
     <div class="sheet-handle"></div>
@@ -273,6 +289,7 @@
       <button id="acc-upgrade" class="sheet-apply" data-i18n="upgrade_pro">⭐ שדרג ל-Pro</button>
       <button id="acc-password" class="auth-link" data-i18n="change_pw">🔑 שינוי סיסמה</button>
       <button id="acc-signout" class="auth-link" data-i18n="sign_out">התנתק</button>
+      <button id="acc-delete" class="danger-link" data-i18n="delete_account">מחיקת החשבון</button>
       <p class="legal-consent">
         <a href="legal/terms.html" target="_blank" rel="noopener" data-i18n="terms_link">תנאי השימוש</a>
         ·

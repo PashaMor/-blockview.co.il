@@ -396,7 +396,7 @@ function listingCard(l) {
       </div>
       <div class="card-body">
         <div class="card-price">${fmtPrice(l.price)}${per}</div>
-        <div class="card-title">${l.title}</div>
+        <div class="card-title">${escHtml(l.title)}</div>
         <div class="card-specs"><span><span class="ic">🚪</span>${l.rooms}</span><span><span class="ic">📐</span>${l.size} מ"ר</span><span><span class="ic">🏢</span>ק' ${l.floor}</span></div>
       </div>
     </article>`;
@@ -462,7 +462,7 @@ function renderAlerts() {
     const rows = buildingUpdates(bid).map((u) =>
       `<div class="alert-row"><span class="ar-ic">${u.icon}</span><span class="ar-tx">${u.text}</span><span class="ar-when">${u.when}</span></div>`).join("");
     return `<div class="alert-group">
-      <div class="alert-head"><b>${b.name}</b><button class="alert-unsub" data-unsub="${bid}">ביטול מעקב</button></div>
+      <div class="alert-head"><b>${escHtml(b.name)}</b><button class="alert-unsub" data-unsub="${bid}">ביטול מעקב</button></div>
       ${rows}
       <button class="alert-open" data-open="${bid}">צפייה בבניין ←</button>
     </div>`;
