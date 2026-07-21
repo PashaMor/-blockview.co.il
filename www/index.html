@@ -25,8 +25,8 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=43" />
-  <link rel="stylesheet" href="css/style.css?v=43" />
+  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=44" />
+  <link rel="stylesheet" href="css/style.css?v=44" />
 </head>
 <body>
   <div id="map"></div>
@@ -80,7 +80,6 @@
   <nav id="bottombar">
     <button class="bb-btn primary" id="open-filters"><span class="bb-ic">⚙︎</span> <span data-i18n="filter">סינון</span> <b id="fcount">0</b></button>
     <button class="bb-btn" id="open-search" title="חיפוש"><span class="bb-ic">🔍</span></button>
-    <button class="bb-btn" id="open-list" title="רשימת נכסים"><span class="bb-ic">☰</span><b id="listcount">0</b></button>
     <button class="bb-btn" id="open-favs" title="מועדפים"><span class="bb-ic heart">♥</span><b id="favcount">0</b></button>
     <button class="bb-btn" id="open-alerts" title="התראות"><span class="bb-ic">🔔</span><b id="alertcount">0</b></button>
     <button class="bb-btn" id="reset-view" title="אפס תצוגה">⟲</button>
@@ -157,6 +156,11 @@
       <button class="sheet-apply" id="apply-filters"><span data-i18n="show">הצג</span> <b id="apply-count">0</b> <span data-i18n="properties">נכסים</span></button>
       <button class="save-filter-btn" id="save-filter" title="שמור סינון זה כברירת מחדל">💾</button>
     </div>
+    <!-- The accessible equivalent of the 3D map. Must stay reachable without
+         signing in — the accessibility statement points here. -->
+    <button type="button" id="open-list" class="as-list-btn">
+      <span data-i18n="show_as_list">☰ הצג כרשימה</span> <b id="listcount">0</b>
+    </button>
   </section>
 
   <!-- Search bottom sheet -->
@@ -493,17 +497,17 @@
     </div>
   </div>
 
-  <script src="vendor/maplibre-gl.js?v=43"></script>
-  <script src="vendor/supabase.min.js?v=43"></script>
-  <script src="js/config.js?v=43"></script>
-  <script src="js/analytics.js?v=43"></script>
-  <script src="js/oauth.js?v=43"></script>
-  <script src="js/geo.js?v=43"></script>
-  <script src="js/i18n.js?v=43"></script>
-  <script src="js/data.js?v=43"></script>
-  <script src="js/track.js?v=43"></script>
-  <script src="js/app.js?v=43"></script>
-  <script src="js/auth.js?v=43"></script>
-  <script src="js/publish.js?v=43"></script>
+  <script src="vendor/maplibre-gl.js?v=44"></script>
+  <script src="vendor/supabase.min.js?v=44"></script>
+  <script src="js/config.js?v=44"></script>
+  <script src="js/analytics.js?v=44"></script>
+  <script src="js/oauth.js?v=44"></script>
+  <script src="js/geo.js?v=44"></script>
+  <script src="js/i18n.js?v=44"></script>
+  <script src="js/data.js?v=44"></script>
+  <script src="js/track.js?v=44"></script>
+  <script src="js/app.js?v=44"></script>
+  <script src="js/auth.js?v=44"></script>
+  <script src="js/publish.js?v=44"></script>
 </body>
 </html>
