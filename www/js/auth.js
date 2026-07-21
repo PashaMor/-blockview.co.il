@@ -159,6 +159,8 @@
     // the listings this account published (js/my-listings.js); async, so it
     // fills in a moment after the sheet paints
     if (window.BVMyListings) window.BVMyListings.render();
+    // agent status: CRM shortcut for approved agents, application for the rest
+    if (window.BVAgent) window.BVAgent.refresh(state.user);
     const lim = limits[state.plan] || limits.free;
     const favN = window.favCount ? window.favCount() : 0, folN = window.subCount ? window.subCount() : 0;
     $("acc-email").textContent = state.user.email || "";
