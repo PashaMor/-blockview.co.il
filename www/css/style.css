@@ -633,3 +633,4 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .legal-body .toc ol { font-size: 13.5px; margin: 0; }
 .legal-body .toc a { color: var(--text); text-decoration: none; }
 .legal-loading { color: var(--muted); }
+.card-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }

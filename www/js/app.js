@@ -392,7 +392,11 @@ function listingCard(l) {
   const note = hasNote(l.id) ? '<span class="badge note">📝</span>' : "";
   return `
     <article class="card" data-lid="${l.id}">
-      <div class="card-thumb" style="background:linear-gradient(150deg, ${hue});">🏠
+      <div class="card-thumb" style="background:linear-gradient(150deg, ${hue});">${
+        // the cover photo (listing_photos.sort = 0) when the listing has one
+        (l.photos && l.photos.length)
+          ? `<img class="card-photo" src="${l.photos[0]}" alt="" loading="lazy" />`
+          : "🏠"}
         <button class="fav-btn ${isFav(l.id) ? "on" : ""}" data-fav="${l.id}" aria-label="שמור למועדפים">♥</button>
         <div class="card-badges">${note}${tour}${dealBadge(l.deal)}</div>
       </div>
