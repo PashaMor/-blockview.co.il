@@ -688,11 +688,12 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
   display: flex; align-items: center; gap: 10px;
   position: absolute; top: 16px; left: 16px; right: 76px; z-index: 6;
 }
-.bv-app #brand { position: static; padding: 6px 10px; flex: 0 1 auto; min-width: 0; }
+.bv-app #brand { position: static; padding: 6px 10px; flex: 0 1 auto; min-width: 0; order: 2; }
 .bv-app .brand-logo { height: 34px; }
 .bv-app #publish-btn {
   position: static; transform: none; top: auto; bottom: auto; left: auto;
   height: 44px; padding: 0 14px; font-size: 13.5px; flex: none; white-space: nowrap;
+  order: 1;                      /* publish leads the row, logo follows */
 }
 .bv-app #publish-btn:hover { transform: none; }
 
