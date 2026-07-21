@@ -515,3 +515,16 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .linkish { border: 0; background: transparent; color: var(--blue); font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; padding: 4px; }
 .danger-link { border: 0; background: transparent; color: #B0322A; font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; padding: 4px; }
 .danger-link:hover { text-decoration: underline; }
+
+/* ---- accessible all-listings sheet ----
+   The 3D map is unusable with a screen reader or keyboard alone, so the same
+   properties are listed here as text. Grouped by building so the address —
+   which the map conveys visually — is spoken too. */
+.list-row { margin-bottom: 14px; }
+.list-where { font-size: 12.5px; font-weight: 700; color: var(--text-soft, #6b7280);
+  margin-bottom: 6px; padding-inline-start: 2px; }
+
+/* opt-in consent row in the enquiry form — never pre-ticked */
+.lead-consent { display: flex; gap: 9px; align-items: flex-start; margin: 4px 0 10px;
+  font-size: 12.5px; line-height: 1.5; color: var(--text-soft, #6b7280); cursor: pointer; }
+.lead-consent input { width: 17px; height: 17px; flex: none; margin-top: 1px; accent-color: var(--blue, #0038B8); }

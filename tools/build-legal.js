@@ -30,7 +30,9 @@ const LANGS = [
   { code: "ru", name: "Русский", flag: "🇷🇺" },
 ];
 const RTL = ["he", "ar"];
-const DOCS = ["terms", "privacy"];
+// "accessibility" is not translated everywhere yet; a pack without it simply
+// links to the Hebrew statement instead of getting its own file.
+const DOCS = ["terms", "privacy", "accessibility"];
 const CACHE_V = 2;
 
 /* ---------- load a language pack by running it in a sandbox ---------- */
@@ -65,6 +67,7 @@ function linkify(text) {
 }
 
 const fileFor = (doc, code) => (code === "he" ? doc + ".html" : doc + "." + code + ".html");
+const HAS = {};   // doc -> [lang codes that have it]; filled once the packs load
 
 /* ---------- render one document ---------- */
 function render(pack, doc, packs) {
@@ -74,9 +77,10 @@ function render(pack, doc, packs) {
   const dir = RTL.indexOf(code) >= 0 ? "rtl" : "ltr";
   const other = doc === "terms" ? "privacy" : "terms";
 
-  const alts = LANGS.map(
-    (l) => '  <link rel="alternate" hreflang="' + l.code + '" href="' + fileFor(doc, l.code) + '" />'
-  ).join("\n");
+  // only advertise a translation that actually exists, or the link 404s
+  const alts = LANGS.filter((l) => HAS[doc].indexOf(l.code) >= 0)
+    .map((l) => '  <link rel="alternate" hreflang="' + l.code + '" href="' + fileFor(doc, l.code) + '" />')
+    .join("\n");
 
   // language switcher: real links, so it works with JS disabled
   const langLinks = LANGS.map((l) =>
@@ -85,8 +89,8 @@ function render(pack, doc, packs) {
       : '<a href="' + fileFor(doc, l.code) + '" hreflang="' + l.code + '">' + l.flag + " " + esc(l.name) + "</a>"
   ).join("\n        ");
 
-  const docNav = DOCS.map((k) =>
-    '<a href="' + fileFor(k, code) + '"' + (k === doc ? ' class="on"' : "") + ">" + esc(packs[k]) + "</a>"
+  const docNav = DOCS.filter((k) => packs[k]).map((k) =>
+    '<a href="' + fileFor(k, packs[k].lang) + '"' + (k === doc ? ' class="on"' : "") + ">" + esc(packs[k].title) + "</a>"
   ).join("\n      ");
 
   const toc = d.sections
@@ -160,12 +164,21 @@ ${body}
 
 /* ---------- build ---------- */
 const packs = LANGS.map((l) => loadPack(l.code));
+const he = packs[0];
+// which languages actually have each document (used for the hreflang links)
+DOCS.forEach((d) => { HAS[d] = packs.filter((p) => p[d]).map((p) => p.code); });
 let n = 0;
 packs.forEach((pack) => {
-  const titles = { terms: pack.terms.title, privacy: pack.privacy.title };
+  // nav entry per doc: this language's own version, or Hebrew as the fallback
+  const nav = {};
+  DOCS.forEach((k) => {
+    if (pack[k]) nav[k] = { title: pack[k].title, lang: pack.code };
+    else if (he[k]) nav[k] = { title: he[k].title, lang: "he" };
+  });
   DOCS.forEach((doc) => {
+    if (!pack[doc]) return;                       // not translated yet — skip
     const file = path.join(LEGAL, fileFor(doc, pack.code));
-    fs.writeFileSync(file, render(pack, doc, titles), "utf8");
+    fs.writeFileSync(file, render(pack, doc, nav), "utf8");
     n++;
     console.log("  " + path.basename(file));
   });

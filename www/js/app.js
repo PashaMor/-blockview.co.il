@@ -436,6 +436,39 @@ function onCardClick(e) {
 }
 document.getElementById("listings").addEventListener("click", onCardClick);
 
+/* ---- all-listings sheet: the accessible alternative to the 3D map ----
+ * A fill-extrusion map cannot be read by a screen reader or driven by keyboard,
+ * so every property that exists on the map has to be reachable as plain text
+ * too. This lists everything matching the current filter, grouped by building.
+ * Keep it in step with the map: if a property shows on the map it shows here. */
+const listSheet = document.getElementById("list-sheet");
+function allMatching() {
+  const out = [];
+  BUILDINGS.forEach((b) => {
+    buildingMatches(b.id).forEach((l) => out.push({ l: l, b: b }));
+  });
+  return out;
+}
+function renderAllList() {
+  const items = allMatching();
+  const list = document.getElementById("all-list"), empty = document.getElementById("all-empty");
+  if (items.length) {
+    list.innerHTML = items.map((it) =>
+      '<div class="list-row"><div class="list-where">' + escHtml(it.b.name) +
+      " · " + escHtml(it.b.address) + "</div>" + listingCard(it.l) + "</div>").join("");
+    empty.hidden = true;
+  } else { list.innerHTML = ""; empty.hidden = false; }
+}
+function openList() {
+  closeSheet(); closeListings(); closeFavs(); closeAlerts(); closeSearch(); closeAuthUI();
+  renderAllList();
+  listSheet.classList.add("open"); listSheet.setAttribute("aria-hidden", "false");
+}
+function closeList() { listSheet.classList.remove("open"); listSheet.setAttribute("aria-hidden", "true"); }
+document.getElementById("open-list").addEventListener("click", openList);
+document.getElementById("list-close").addEventListener("click", closeList);
+document.getElementById("all-list").addEventListener("click", onCardClick);
+
 /* ---- favorites sheet ---- */
 const favsSheet = document.getElementById("favs-sheet");
 function renderFavs() {
@@ -819,11 +852,21 @@ document.getElementById("lead-form").addEventListener("submit", async (e) => {
   if (phone && phone.replace(/\D/g, "").length < 6) return fail(t("lead_phone_bad"));
 
   btn.disabled = true;
-  const res = await BVDB.from("leads").insert({
+  // opt-in only: unticked means the enquiry reaches the advertiser and nobody else
+  const shareBox = document.getElementById("lead-share");
+  const row = {
     listing_id: leadFor, name: name,
     phone: phone || null, email: email || null,
     message: message || null,
-  });
+  };
+  let res = await BVDB.from("leads").insert(
+    Object.assign({ share_consent: !!(shareBox && shareBox.checked) }, row));
+  // 20_lead_share_consent.sql may not have been run yet — never let that stop a
+  // real enquiry. Retrying without the column loses only the opt-in flag, and
+  // "no consent recorded" is the safe direction to fail in.
+  if (res.error && /share_consent/.test(res.error.message || "")) {
+    res = await BVDB.from("leads").insert(row);
+  }
   btn.disabled = false;
   if (res.error) {
     return fail(/TOO_MANY_LEADS/.test(res.error.message) ? t("lead_too_many") : t("lead_error"));
@@ -846,6 +889,10 @@ function updateTotal() {
   let n = 0; for (const id in LISTINGS) n += buildingMatches(id).length;
   document.getElementById("fcount").textContent = n;
   document.getElementById("apply-count").textContent = n;
+  const lc = document.getElementById("listcount");
+  if (lc) lc.textContent = n;
+  // keep the accessible list in step with the map when the filter changes
+  if (listSheet && listSheet.classList.contains("open")) renderAllList();
 }
 document.querySelectorAll("#deal-seg .seg-btn").forEach((btn) => {
   btn.addEventListener("click", () => {

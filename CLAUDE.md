@@ -50,6 +50,11 @@ Always default to the secure choice, even when it's more work.
   (see §6). Only native/config changes need a rebuild.
 - Bump the cache-busting `?v=N` in `www/index.html` on **every** web change,
   or browsers/WebViews serve stale files.
+- **The legal pages are generated.** `www/legal/*.html` is built from
+  `www/legal/lang/*.js` by `node tools/build-legal.js`. Editing a lang file
+  changes nothing on the site until you re-run it and commit the HTML — the
+  two can drift silently, and the HTML is what users and a court actually see.
+  Never hand-edit the generated HTML.
 
 ---
 
