@@ -32,7 +32,8 @@
   function db() { return window.BVSupa || window.BVDB; }
   function money(n) { return "₪" + Number(n || 0).toLocaleString("he-IL"); }
 
-  var state = { rows: [] };
+  var state = { rows: [], showAll: false };
+  var PREVIEW = 5;              // a long list is a wall; show a few and offer the rest
 
   async function load() {
     if (!db() || !window.BVAuth || !window.BVAuth.isLoggedIn()) return [];
@@ -75,18 +76,32 @@
     "</article>";
   }
 
-  async function render() {
+  async function render(keepShowAll) {
     var wrap = $("acc-listings-wrap");
     if (!wrap) return;
+    if (!keepShowAll) state.showAll = false;
     state.rows = await load();
     if (!state.rows.length) { wrap.hidden = true; return; }
     wrap.hidden = false;
     $("acc-listings-count").textContent = state.rows.length;
-    $("acc-listings").innerHTML = state.rows.map(card).join("");
+    draw();
+  }
+
+  function draw() {
+    var box = $("acc-listings");
+    var shown = state.showAll ? state.rows : state.rows.slice(0, PREVIEW);
+    var rest = state.rows.length - shown.length;
+    box.className = "acc-listings" + (state.showAll ? " capped" : "");
+    box.innerHTML = shown.map(card).join("") +
+      (rest > 0
+        ? '<button type="button" class="ml-more" id="ml-more">' +
+            esc(T("show_all", "הצג את כל הנכסים")) + " (" + state.rows.length + ")</button>"
+        : "");
   }
 
   /* ------------------------------------------------------------ actions ---- */
   document.addEventListener("click", async function (e) {
+    if (e.target && e.target.id === "ml-more") { state.showAll = true; draw(); return; }
     var ed = e.target.closest ? e.target.closest("[data-ml-edit]") : null;
     if (ed) {
       var row = findRow(ed.getAttribute("data-ml-edit"));
@@ -104,7 +119,7 @@
       return;
     }
     if (window.bvToast) window.bvToast(T("del_listing_ok", "הנכס נמחק"));
-    await render();
+    await render(true);
     if (window.reloadLiveData) window.reloadLiveData();
   });
 
