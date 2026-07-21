@@ -118,51 +118,101 @@
     }
   }
 
-  /* ---- coordinates -> building outline -------------------------------- */
-  // Asks Overpass for a building way/relation containing (or nearest to) the point.
-  async function fetchFootprint(lat, lng) {
-    var q =
-      "[out:json][timeout:10];" +
-      "is_in(" + lat + "," + lng + ")->.a;" +
-      "way(pivot.a)[building];" +
-      "out geom;" +
-      "way(around:25," + lat + "," + lng + ")[building];" +
-      "out geom;";
-    try {
-      var res = await withTimeout(OVERPASS, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain" },
-        body: q,
-      }, TIMEOUT_MS);
-      if (!res.ok) return null;
-      var ct = res.headers.get("content-type") || "";
-      if (ct.indexOf("json") === -1) return null;      // Overpass error page
-      var data = await res.json();
-      var ways = (data.elements || []).filter(function (e) {
-        return e.type === "way" && e.geometry && e.geometry.length > 3;
-      });
-      if (!ways.length) return null;
+  /* ---- coordinates -> building outline --------------------------------
+   * Without an outline the map falls back to a generic box around the address
+   * point, which visibly does not sit on the building — so it is worth some
+   * effort to get this right.
+   *
+   * Three things this has to survive:
+   *   - Overpass is slow and often overloaded, so we try more than one server
+   *     and give each a server-side timeout SHORTER than our own abort, or we
+   *     would kill every query that was merely slow rather than stuck;
+   *   - the address point is frequently an entrance or address node that sits
+   *     just off the outline, so "contains the point" alone is not enough;
+   *   - when nothing contains the point we must take the NEAREST building, not
+   *     whichever one the server happened to list first.
+   */
+  var OVERPASS_MIRRORS = [
+    OVERPASS,
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+  ];
 
-      // prefer the way that actually contains the point, else the first
-      var chosen = null;
-      for (var i = 0; i < ways.length && !chosen; i++) {
-        if (pointInRing(lng, lat, ways[i].geometry)) chosen = ways[i];
+  function ringOf(el) {
+    if (el.geometry && el.geometry.length > 3) return el.geometry;
+    // relation (multipolygon building): use its first outer way
+    if (el.members) {
+      for (var i = 0; i < el.members.length; i++) {
+        var m = el.members[i];
+        if (m.role === "outer" && m.geometry && m.geometry.length > 3) return m.geometry;
       }
-      if (!chosen) chosen = ways[0];
-
-      var ring = chosen.geometry.map(function (p) { return [p.lon, p.lat]; });
-      if (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1]) ring.push(ring[0]);
-      var tags = chosen.tags || {};
-      return {
-        osmId: "way/" + chosen.id,
-        polygon: { type: "Polygon", coordinates: [ring] },
-        height: heightFromTags(tags),
-        center: ringCenter(ring),
-      };
-    } catch (e) {
-      console.warn("[BlockView] footprint lookup failed:", e && e.message);
-      return null;
     }
+    return null;
+  }
+
+  async function overpassTry(url, q) {
+    var res = await withTimeout(url, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: q,
+    }, TIMEOUT_MS);
+    if (!res.ok) return null;
+    var ct = res.headers.get("content-type") || "";
+    if (ct.indexOf("json") === -1) return null;        // Overpass error page, not JSON
+    return await res.json();
+  }
+
+  async function fetchFootprint(lat, lng) {
+    // server timeout below our abort, so "slow" still returns instead of dying
+    var q =
+      "[out:json][timeout:6];(" +
+      "way(around:30," + lat + "," + lng + ")[building];" +
+      "relation(around:30," + lat + "," + lng + ")[building];" +
+      ");out geom;";
+
+    var data = null;
+    for (var m = 0; m < OVERPASS_MIRRORS.length && !data; m++) {
+      try {
+        data = await overpassTry(OVERPASS_MIRRORS[m], q);
+      } catch (e) {
+        console.warn("[BlockView] overpass mirror failed:", OVERPASS_MIRRORS[m], e && e.message);
+      }
+    }
+    if (!data) return null;
+
+    var cands = [];
+    (data.elements || []).forEach(function (el) {
+      var g = ringOf(el);
+      if (g) cands.push({ el: el, geom: g });
+    });
+    if (!cands.length) return null;
+
+    // 1) a building that actually contains the point wins
+    var chosen = null;
+    for (var i = 0; i < cands.length && !chosen; i++) {
+      if (pointInRing(lng, lat, cands[i].geom)) chosen = cands[i];
+    }
+    // 2) otherwise the closest one, by centre — never just the first returned
+    if (!chosen) {
+      var best = Infinity;
+      cands.forEach(function (c) {
+        var r = c.geom.map(function (p) { return [p.lon, p.lat]; });
+        var ctr = ringCenter(r);
+        var d = (ctr[0] - lng) * (ctr[0] - lng) + (ctr[1] - lat) * (ctr[1] - lat);
+        if (d < best) { best = d; chosen = c; }
+      });
+    }
+    if (!chosen) return null;
+
+    var ring = chosen.geom.map(function (p) { return [p.lon, p.lat]; });
+    if (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1]) ring.push(ring[0]);
+    var tags = chosen.el.tags || {};
+    return {
+      osmId: chosen.el.type + "/" + chosen.el.id,
+      polygon: { type: "Polygon", coordinates: [ring] },
+      height: heightFromTags(tags),
+      center: ringCenter(ring),
+    };
   }
 
   function heightFromTags(t) {

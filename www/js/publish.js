@@ -472,11 +472,30 @@
     try { return supa().storage.from("listing-photos").getPublicUrl(path).data.publicUrl; }
     catch (e) { return ""; }
   }
+  // The first photo is the cover — it is what the map card and the search results
+  // show. "★" promotes any photo to the front; the order is persisted as `sort`.
+  function coverMark(isCover) {
+    return isCover
+      ? `<span class="ph-cover">${T("cover", "תמונה ראשית")}</span>`
+      : "";
+  }
   function renderStrip() {
-    const saved = (state.savedPhotos || []).map((p) =>
-      `<div class="ph"><img src="${photoUrl(p.path)}" alt="" /><button type="button" data-rmsaved="${p.id}">✕</button></div>`);
-    const fresh = state.pending.map((p, i) =>
-      `<div class="ph"><img src="${p.preview}" alt="" /><button type="button" data-rm="${i}">✕</button></div>`);
+    let idx = 0;
+    const saved = (state.savedPhotos || []).map((p) => {
+      const first = idx++ === 0;
+      return `<div class="ph${first ? " is-cover" : ""}"><img src="${photoUrl(p.path)}" alt="" />` +
+        `<button type="button" class="ph-x" data-rmsaved="${p.id}">✕</button>` +
+        (first ? "" : `<button type="button" class="ph-star" data-coversaved="${p.id}" title="${T("make_cover", "הפוך לתמונה ראשית")}">★</button>`) +
+        coverMark(first) + `</div>`;
+    });
+    const canStarFresh = !(state.savedPhotos || []).length;   // no saved photos to order against
+    const fresh = state.pending.map((p, i) => {
+      const first = idx++ === 0;
+      return `<div class="ph${first ? " is-cover" : ""}"><img src="${p.preview}" alt="" />` +
+        `<button type="button" class="ph-x" data-rm="${i}">✕</button>` +
+        (first || !canStarFresh ? "" : `<button type="button" class="ph-star" data-cover="${i}" title="${T("make_cover", "הפוך לתמונה ראשית")}">★</button>`) +
+        coverMark(first) + `</div>`;
+    });
     $("p-strip").innerHTML = saved.concat(fresh).join("");
   }
   $("p-photos").addEventListener("change", async (e) => {
@@ -486,6 +505,34 @@
     renderStrip();
   });
   $("p-strip").addEventListener("click", async (e) => {
+    // promote an already-uploaded photo: reorder locally, persist the new sort
+    const cs = e.target.closest("[data-coversaved]");
+    if (cs) {
+      const id = cs.getAttribute("data-coversaved");
+      const arr = state.savedPhotos || [];
+      const at = arr.findIndex((p) => String(p.id) === String(id));
+      if (at > 0) {
+        arr.unshift(arr.splice(at, 1)[0]);
+        renderStrip();
+        for (let i = 0; i < arr.length; i++) {
+          const r = await supa().from("listing_photos").update({ sort: i }).eq("id", arr[i].id);
+          if (r.error) { if (window.bvToast) window.bvToast(T("cover_failed", "עדכון התמונה הראשית נכשל")); break; }
+          arr[i].sort = i;
+        }
+        if (window.BVMyListings) window.BVMyListings.render();
+        if (window.reloadLiveData) window.reloadLiveData();
+      }
+      return;
+    }
+    // promote one that has not been uploaded yet: it only has to lead the array,
+    // and it is uploaded with sort 0 (this branch only runs when nothing is saved)
+    const cp = e.target.closest("[data-cover]");
+    if (cp) {
+      const i = +cp.getAttribute("data-cover");
+      state.pending.unshift(state.pending.splice(i, 1)[0]);
+      renderStrip();
+      return;
+    }
     const b = e.target.closest("[data-rm]");
     if (b) { state.pending.splice(+b.dataset.rm, 1); renderStrip(); return; }
     const s2 = e.target.closest("[data-rmsaved]");

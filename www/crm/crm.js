@@ -678,15 +678,46 @@
     return out;
   }
 
+  // the first photo is the cover — what the map card and search results show
   function renderPhotoStrip() {
-    const saved = state.photos.map((p) =>
-      `<div class="ph"><img src="${esc(photoUrl(p.path))}" alt="" /><button type="button" data-delph="${esc(p.id)}">✕</button></div>`);
-    const pend = state.pending.map((p, i) =>
-      `<div class="ph"><img src="${esc(p.preview)}" alt="" /><button type="button" data-delpend="${i}">✕</button></div>`);
+    let idx = 0;
+    const saved = state.photos.map((p) => {
+      const first = idx++ === 0;
+      return `<div class="ph${first ? " is-cover" : ""}"><img src="${esc(photoUrl(p.path))}" alt="" />` +
+        `<button type="button" class="ph-x" data-delph="${esc(p.id)}">✕</button>` +
+        (first ? "" : `<button type="button" class="ph-star" data-cover="${esc(p.id)}" title="הפוך לתמונה ראשית">★</button>`) +
+        (first ? `<span class="ph-cover">תמונה ראשית</span>` : "") + `</div>`;
+    });
+    const canStar = !state.photos.length;   // mixing saved and unsaved order would be ambiguous
+    const pend = state.pending.map((p, i) => {
+      const first = idx++ === 0;
+      return `<div class="ph${first ? " is-cover" : ""}"><img src="${esc(p.preview)}" alt="" />` +
+        `<button type="button" class="ph-x" data-delpend="${i}">✕</button>` +
+        (first || !canStar ? "" : `<button type="button" class="ph-star" data-coverpend="${i}" title="הפוך לתמונה ראשית">★</button>`) +
+        (first ? `<span class="ph-cover">תמונה ראשית</span>` : "") + `</div>`;
+    });
     $("photo-strip").innerHTML = saved.concat(pend).join("");
   }
 
   $("photo-strip").addEventListener("click", async (e) => {
+    const c = e.target.closest("[data-cover]");
+    if (c) {
+      const at = state.photos.findIndex((p) => String(p.id) === String(c.dataset.cover));
+      if (at > 0) {
+        state.photos.unshift(state.photos.splice(at, 1)[0]);
+        renderPhotoStrip();
+        for (let i = 0; i < state.photos.length; i++) {
+          const r = await supa.from("listing_photos").update({ sort: i }).eq("id", state.photos[i].id);
+          if (r.error) { toast("עדכון התמונה הראשית נכשל"); break; }
+          state.photos[i].sort = i;
+        }
+        toast("התמונה הראשית עודכנה");
+        await loadListings();
+      }
+      return;
+    }
+    const cp = e.target.closest("[data-coverpend]");
+    if (cp) { const i = +cp.dataset.coverpend; state.pending.unshift(state.pending.splice(i, 1)[0]); renderPhotoStrip(); return; }
     const d = e.target.closest("[data-delph]");
     if (d) {
       const p = state.photos.find((x) => x.id === d.dataset.delph);
