@@ -18,6 +18,81 @@
   const state = { user: null, listings: [], profiles: [], pmap: {}, buildings: [], leadCount: 0, leads: [], apps: [], appsMissing: false, agentProfiles: [], apmap: {} };
 
   let tt; function toast(m) { const t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => (t.hidden = true), 2400); }
+
+  /* ---------------------------------------------------- confirm dialog ----
+   * Replaces window.confirm / window.prompt. The browser suppresses those after
+   * a few in a row ("prevent this page from creating additional dialogs"), and
+   * a silently-cancelled destructive action looks exactly like a broken button.
+   * Returns a promise: true when confirmed, false otherwise.
+   *   opts.mustType — the text the admin has to retype (e.g. an email address)
+   */
+  function askConfirm(opts) {
+    return new Promise((resolve) => {
+      const back = document.createElement("div");
+      back.className = "bv-modal-back";
+      const box = document.createElement("div");
+      box.className = "bv-modal" + (opts.danger ? " danger" : "");
+
+      const h = document.createElement("h3");
+      h.textContent = opts.title || "לאשר?";
+      box.appendChild(h);
+
+      (opts.lines || []).forEach((line) => {
+        const p = document.createElement("p");
+        p.textContent = line;
+        box.appendChild(p);
+      });
+
+      let input = null;
+      if (opts.mustType) {
+        const lbl = document.createElement("p");
+        lbl.className = "bv-modal-hint";
+        lbl.textContent = "להמשך, הקלד: " + opts.mustType;
+        box.appendChild(lbl);
+        input = document.createElement("input");
+        input.className = "input";
+        input.setAttribute("autocomplete", "off");
+        box.appendChild(input);
+      }
+
+      const row = document.createElement("div");
+      row.className = "bv-modal-actions";
+      const cancel = document.createElement("button");
+      cancel.className = "btn-ghost";
+      cancel.textContent = "ביטול";
+      const ok = document.createElement("button");
+      ok.className = opts.danger ? "btn-bad" : "btn-ok";
+      ok.textContent = opts.okText || "אישור";
+      row.appendChild(cancel); row.appendChild(ok);
+      box.appendChild(row);
+      back.appendChild(box);
+      document.body.appendChild(back);
+      (input || ok).focus();
+
+      function close(result) {
+        document.removeEventListener("keydown", onKey, true);
+        back.remove();
+        resolve(result);
+      }
+      function accept() {
+        if (opts.mustType &&
+            input.value.trim().toLowerCase() !== String(opts.mustType).toLowerCase()) {
+          input.classList.add("bad");
+          toast("הטקסט לא תואם");
+          return;
+        }
+        close(true);
+      }
+      function onKey(e) {
+        if (e.key === "Escape") { e.preventDefault(); close(false); }
+        else if (e.key === "Enter" && document.body.contains(back)) { e.preventDefault(); accept(); }
+      }
+      cancel.addEventListener("click", () => close(false));
+      ok.addEventListener("click", accept);
+      back.addEventListener("click", (e) => { if (e.target === back) close(false); });
+      document.addEventListener("keydown", onKey, true);
+    });
+  }
   const photoUrl = (p) => supa.storage.from(BUCKET).getPublicUrl(p).data.publicUrl;
 
   /* --------------------------------------------------------------- auth */
@@ -52,7 +127,7 @@
   $("sm-signout").addEventListener("click", () => supa.auth.signOut());
   // replace the authenticator device: drop existing factors, then re-enroll
   $("sm-reset2fa").addEventListener("click", async () => {
-    if (!confirm("להחליף מכשיר 2FA? תתבקש לסרוק קוד חדש כעת.")) return;
+    if (!(await askConfirm({ title: "החלפת מכשיר 2FA", lines: ["תתבקש לסרוק קוד חדש כעת."], okText: "החלף מכשיר" }))) return;
     $("settings-menu").hidden = true;
     const { data } = await supa.auth.mfa.listFactors();
     for (const f of ((data && data.totp) || [])) { try { await supa.auth.mfa.unenroll({ factorId: f.id }); } catch (e) {} }
@@ -233,7 +308,7 @@
       const r = prompt("סיבת הדחייה (תוצג למבקש):", "");
       if (r === null) return;
       note = r.trim();
-    } else if (!confirm("לאשר את המשתמש כסוכן? תיפתח לו גישה מלאה ל-CRM.")) return;
+    } else if (!(await askConfirm({ title: "אישור כסוכן", lines: ["תיפתח לו גישה מלאה ל-CRM."], okText: "אשר כסוכן" }))) return;
     const { error } = await supa.rpc("review_agent_application", { target: userId, decision, note });
     if (error) return toast("שגיאה: " + error.message);
     toast(decision === "approved" ? "אושר כסוכן ✓" : "הבקשה נדחתה");
@@ -361,7 +436,7 @@
     if (ap) return setStatus(ap.dataset.approve, "approved");
     if (rj) return setStatus(rj.dataset.reject, "rejected");
     if (dl) {
-      if (!confirm("למחוק את הנכס לצמיתות?")) return;
+      if (!(await askConfirm({ title: "מחיקת נכס", lines: ["הנכס והתמונות שלו יימחקו לצמיתות."], okText: "מחק נכס", danger: true }))) return;
       const { error } = await supa.from("listings").delete().eq("id", dl.dataset.del);
       if (error) return toast("שגיאה במחיקה");
       toast("הנכס נמחק"); loadAll();
@@ -472,7 +547,12 @@
   }
   async function confirmEmail(uid) {
     const p = state.pmap[uid] || {};
-    if (!confirm(`לאמת ידנית את האימייל של ${p.email || uid}?\n\nהמשתמש יוכל להתחבר בלי ללחוץ על הקישור שנשלח אליו.`)) return;
+    const go = await askConfirm({
+      title: "אימות אימייל ידני",
+      lines: [p.email || uid, "המשתמש יוכל להתחבר בלי ללחוץ על הקישור שנשלח אליו."],
+      okText: "אמת אימייל",
+    });
+    if (!go) return;
     const { error } = await supa.rpc("admin_confirm_email", { target: uid });
     if (error) {
       if (/FORBIDDEN/.test(error.message)) return toast("נדרשת הרשאת מנהל עם אימות דו-שלבי");
@@ -496,7 +576,12 @@
   async function approveAgent(uid) {
     const p = state.pmap[uid] || {};
     const app = state.apmap[uid];
-    if (!confirm(`לאשר את ${p.email || uid} כסוכן? תיפתח לו גישה מלאה ל-CRM.`)) return;
+    const go = await askConfirm({
+      title: "אישור כסוכן",
+      lines: [p.email || uid, "תיפתח לו גישה מלאה ל-CRM ולפרסום נכסים."],
+      okText: "אשר כסוכן",
+    });
+    if (!go) return;
     let error;
     if (app) {
       // the RPC flips the application, the role and the public branding together
@@ -512,7 +597,12 @@
   }
   async function revokeAgent(uid) {
     const p = state.pmap[uid] || {};
-    if (!confirm(`לבטל את הרשאת הסוכן של ${p.email || uid}? הנכסים שלו יישארו, אך לא יוכל לנהל אותם.`)) return;
+    const go = await askConfirm({
+      title: "ביטול הרשאת סוכן",
+      lines: [p.email || uid, "הנכסים שלו יישארו, אך הוא לא יוכל לנהל אותם."],
+      okText: "בטל הרשאה", danger: true,
+    });
+    if (!go) return;
     const { error } = await supa.from("profiles").update({ role: "user" }).eq("id", uid);
     if (error) return toast("שגיאה: " + error.message);
     toast("הרשאת הסוכן בוטלה"); loadAll();
@@ -545,14 +635,18 @@
   async function deleteUser(uid) {
     const p = state.pmap[uid] || {};
     const listings = state.listings.filter((l) => l.agent_id === uid).length;
-    const warn = `למחוק לצמיתות את ${p.email || uid}?\n\n` +
-      `יימחקו גם ${listings} נכסים, התמונות שלהם, הלידים והבקשות שלו.\n` +
-      `הפעולה אינה הפיכה.`;
-    if (!confirm(warn)) return;
-    // second gate: the email must be typed out, so a mis-click cannot do this
-    const typed = prompt(`לאישור סופי הקלד את כתובת האימייל של המשתמש:\n${p.email || uid}`);
-    if (typed === null) return;
-    if (typed.trim().toLowerCase() !== String(p.email || "").toLowerCase()) return toast("האימייל לא תואם — לא נמחק");
+    // one gate, but a deliberate one: the email has to be retyped
+    const go = await askConfirm({
+      title: "מחיקת משתמש לצמיתות",
+      lines: [
+        p.email || uid,
+        `יימחקו גם ${listings} נכסים, התמונות שלהם, הלידים והבקשות שלו.`,
+        "הפעולה אינה הפיכה.",
+      ],
+      mustType: p.email || "",
+      okText: "מחק לצמיתות", danger: true,
+    });
+    if (!go) return;
 
     await purgeUserFiles(uid);          // before the account goes, while we still know the id
     const { error } = await supa.rpc("admin_delete_user", { target: uid });
@@ -690,7 +784,8 @@
     b.textContent = "סגור";
   });
   async function setRole(id, role) {
-    if (id === state.user.id && role !== "admin" && !confirm("להוריד לעצמך הרשאות מנהל?")) return loadAll();
+    if (id === state.user.id && role !== "admin" &&
+        !(await askConfirm({ title: "הורדת הרשאות מנהל", lines: ["אתה עומד להוריד לעצמך את הרשאות הניהול."], okText: "המשך", danger: true }))) return loadAll();
     const { error } = await supa.from("profiles").update({ role }).eq("id", id);
     if (error) return toast("שגיאה: " + error.message);
     toast("ההרשאה עודכנה"); loadAll();
@@ -752,7 +847,7 @@
     }
     const d = e.target.closest("[data-delb]");
     if (!d) return;
-    if (!confirm("מחיקת בניין תמחק גם את כל הנכסים שבו. להמשיך?")) return;
+    if (!(await askConfirm({ title: "מחיקת בניין", lines: ["יימחקו גם כל הנכסים שבבניין."], okText: "מחק בניין", danger: true }))) return;
     const { error } = await supa.from("buildings").delete().eq("id", d.dataset.delb);
     if (error) return toast("שגיאה: " + error.message);
     toast("הבניין נמחק"); loadAll();
