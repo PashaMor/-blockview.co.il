@@ -589,3 +589,20 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .ml-btn:hover { border-color: var(--blue); color: var(--blue); }
 .ml-btn.danger { color: #B0322A; }
 .ml-btn.danger:hover { border-color: #B0322A; color: #B0322A; }
+
+/* ---- confirmation dialog (app design, replaces window.confirm) ---- */
+#confirm-modal { position: fixed; inset: 0; z-index: 40; background: rgba(20,30,45,.55); backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center; padding: 24px; }
+.confirm-card { background: var(--surface); width: min(380px, 100%); border-radius: 20px; padding: 26px 22px 20px;
+  text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+.confirm-ic { font-size: 40px; line-height: 1; }
+.confirm-card h2 { margin: 10px 0 6px; font-size: 20px; font-weight: 800; color: var(--ink); }
+.confirm-text { margin: 0 0 18px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+.confirm-actions { display: flex; gap: 10px; }
+.confirm-actions button { flex: 1; font: inherit; font-weight: 700; font-size: 15px; cursor: pointer;
+  padding: 12px; border-radius: 12px; border: 1px solid var(--line); }
+.confirm-cancel { background: var(--surface); color: var(--ink); }
+.confirm-cancel:hover { border-color: var(--blue); color: var(--blue); }
+.confirm-ok { background: var(--blue); color: #fff; border-color: transparent; }
+.confirm-ok.danger { background: #C0392B; }
+.confirm-ok:hover { opacity: .92; }

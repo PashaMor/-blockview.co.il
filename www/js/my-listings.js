@@ -112,7 +112,15 @@
     if (!del) return;
     var l = findRow(del.getAttribute("data-ml-del"));
     if (!l) return;
-    if (!window.confirm(T("del_listing_warn", "למחוק את הנכס לצמיתות? התמונות והפניות שהתקבלו יימחקו גם הם."))) return;
+    var ok = window.bvConfirm
+      ? await window.bvConfirm({
+          danger: true,
+          title: T("del_listing_q", "למחוק את הנכס?"),
+          text: T("del_listing_warn", "למחוק את הנכס לצמיתות? התמונות והפניות שהתקבלו יימחקו גם הם."),
+          okText: T("delete", "מחיקה"),
+        })
+      : window.confirm(T("del_listing_warn", "למחוק את הנכס לצמיתות? התמונות והפניות שהתקבלו יימחקו גם הם."));
+    if (!ok) return;
     var res = await db().from("listings").delete().eq("id", l.id);
     if (res.error) {
       if (window.bvToast) window.bvToast(T("del_listing_failed", "מחיקת הנכס נכשלה"));
