@@ -175,7 +175,8 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 
 /* ---------- Bottom bar ---------- */
 #bottombar {
-  position: absolute; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 7;
+  position: absolute; left: 50%; transform: translateX(-50%); z-index: 7;
+  bottom: max(18px, calc(14px + env(safe-area-inset-bottom, 0px)));
   display: flex; gap: 10px; align-items: center; max-width: calc(100vw - 12px);
 }
 .bb-btn {
@@ -679,6 +680,12 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .bv-app .bb-btn:not(.primary) { width: 56px; font-size: 22px; }
 .bv-app #open-favs, .bv-app #open-alerts { width: auto; padding: 0 14px; font-size: 15px; }
 .bv-app #publish-btn { height: 50px; font-size: 15px; padding: 0 22px; }
+/* the app draws edge to edge, so the gesture bar overlaps anything at the
+   bottom. env() only resolves with viewport-fit=cover (set in index.html), and
+   some WebViews still report 0 — hence a floor of 34px rather than a bare inset. */
+.bv-app #bottombar { bottom: max(34px, calc(20px + env(safe-area-inset-bottom, 0px))); }
+.bv-app .sheet { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
 /* in the app it lives under the logo, top-left, where nothing else sits */
 .bv-app #publish-btn {
   top: 104px; bottom: auto; left: 16px; transform: none;
