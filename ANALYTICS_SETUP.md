@@ -32,7 +32,7 @@ pasting the IDs. Do the steps in order — the daily report needs the first two.
    |---|---|---|
    | Data stream → Measurement ID | `G-B69ZV5EFZQ` | `GA4_ID` in config.js (already set) |
    | Data stream → Stream ID | `15294320588` | nothing we use |
-   | Admin → Property details | `481234567` | `GA4_PROPERTY_ID` env var |
+   | Admin → Property details | `546419338` | `GA4_PROPERTY_ID` env var |
 
 The "Data collection isn't active" warning on the stream page clears by itself
 once the first real page view arrives; it is not a sign of a broken tag.
@@ -115,7 +115,7 @@ Project → **Settings → Environment Variables** → add each for
 | `CRON_SECRET` | any long random string — generate with `openssl rand -hex 32` |
 | `TELEGRAM_BOT_TOKEN` | from BotFather |
 | `TELEGRAM_CHAT_ID` | your chat / channel id |
-| `GA4_PROPERTY_ID` | numeric property id from step 1.5 |
+| `GA4_PROPERTY_ID` | `546419338` |
 | `GSC_SITE_URL` | `sc-domain:blockview.co.il` |
 | `GOOGLE_CLIENT_EMAIL` | `client_email` from the JSON key |
 | `GOOGLE_PRIVATE_KEY` | `private_key` from the JSON key, pasted whole including `-----BEGIN PRIVATE KEY-----` |
