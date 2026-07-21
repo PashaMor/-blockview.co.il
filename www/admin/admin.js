@@ -15,7 +15,7 @@
   const ST = { pending: "ממתין", approved: "מאושר", rejected: "נדחה", sold: "נמכר", draft: "טיוטה" };
   const when = (d) => new Date(d).toLocaleDateString("he-IL");
 
-  const state = { user: null, listings: [], profiles: [], pmap: {}, buildings: [], leadCount: 0, apps: [], appsMissing: false };
+  const state = { user: null, listings: [], profiles: [], pmap: {}, buildings: [], leadCount: 0, leads: [], apps: [], appsMissing: false };
 
   let tt; function toast(m) { const t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => (t.hidden = true), 2400); }
   const photoUrl = (p) => supa.storage.from(BUCKET).getPublicUrl(p).data.publicUrl;
@@ -136,16 +136,17 @@
   async function loadAll() {
     const [L, P, B, Lead, A] = await Promise.all([
       supa.from("listings").select("*, buildings(name,address), listing_photos(path,sort), listing_contacts(name,phone,email,sort)").order("created_at", { ascending: false }),
-      supa.from("profiles").select("id,email,role,plan,created_at").order("created_at", { ascending: false }),
+      supa.from("profiles").select("*").order("created_at", { ascending: false }),
       supa.from("buildings").select("*").order("name"),
-      supa.from("leads").select("id"),
+      supa.from("leads").select("id,agent_id"),
       // 07_agent_applications.sql may not have been run yet — degrade gracefully
       supa.from("agent_applications").select("*").order("created_at", { ascending: false }),
     ]);
     state.listings = L.data || [];
     state.profiles = P.data || [];
     state.buildings = B.data || [];
-    state.leadCount = (Lead.data || []).length;
+    state.leads = Lead.data || [];
+    state.leadCount = state.leads.length;
     state.apps = A.data || [];
     state.appsMissing = !!A.error;
     state.pmap = {}; state.profiles.forEach((p) => (state.pmap[p.id] = p));
@@ -377,6 +378,7 @@
     const q = $("u-search").value.trim().toLowerCase();
     const rows = state.profiles.filter((p) => !q || String(p.email || "").toLowerCase().includes(q));
     $("users-list").innerHTML = rows.map((p) => `
+      <div class="urow" data-urow="${esc(p.id)}">
       <div class="row">
         <div class="uavatar">${esc(String(p.email || "?").charAt(0).toUpperCase())}</div>
         <div class="rmain">
@@ -389,6 +391,7 @@
           </div>
         </div>
         <div class="ractions">
+          <button class="btn-ghost" data-userdet="${esc(p.id)}">פרטים</button>
           <select class="input" data-role="${esc(p.id)}">
             <option value="user"${p.role === "user" ? " selected" : ""}>משתמש</option>
             <option value="agent"${p.role === "agent" ? " selected" : ""}>סוכן</option>
@@ -399,9 +402,84 @@
             <option value="pro"${p.plan === "pro" ? " selected" : ""}>מנוי: Pro</option>
           </select>
         </div>
+      </div>
+      <div class="udetail" id="ud-${esc(p.id)}" hidden></div>
       </div>`).join("") || `<div class="empty">לא נמצאו משתמשים.</div>`;
   }
   $("u-search").addEventListener("input", renderUsers);
+
+  /* ------------------------------------------------- one user's details */
+  const yesno = (v) => (v ? "כן" : "לא");
+  const dt = (d) => (d ? new Date(d).toLocaleString("he-IL") : "—");
+
+  function userDetailHtml(p) {
+    const mine = state.listings.filter((l) => l.agent_id === p.id);
+    const leads = state.leads.filter((x) => x.agent_id === p.id).length;
+    const app = (state.apps || []).find((a) => a.user_id === p.id);
+    const cnt = (st) => mine.filter((l) => l.status === st).length;
+
+    const facts = [
+      ["מזהה משתמש", p.id],
+      ["אימייל", p.email || "—"],
+      ["תפקיד", p.role],
+      ["מנוי", p.plan === "pro" ? "Pro" : "חינם"],
+      ["נרשם", dt(p.created_at)],
+      ["אישר תנאי שימוש", p.terms_accepted_at ? dt(p.terms_accepted_at) + (p.terms_version ? " (גרסה " + p.terms_version + ")" : "") : "לא"],
+      ["התראות פוש", yesno(p.notifications)],
+      ["סינון שמור", p.saved_filter ? "יש" : "אין"],
+      ["ערכת נושא", p.theme || "light"],
+    ];
+
+    const listRows = mine.length
+      ? mine.slice(0, 12).map((l) => `<div class="ud-listing">
+          <span class="badge ${esc(l.status)}">${esc(ST[l.status] || l.status)}</span>
+          <b>${esc(l.title)}</b>
+          <span>${nis(l.price)}</span>
+          <span>${esc(when(l.created_at))}</span>
+        </div>`).join("")
+      : `<div class="ud-empty">אין נכסים.</div>`;
+
+    const appBlock = app ? `
+      <div class="ud-sec">בקשת סוכן — <span class="badge ${esc(app.status)}">${esc(app.status)}</span></div>
+      <div class="ud-grid">
+        ${[["שם", (app.first_name || "") + " " + (app.last_name || "")],
+           ["משרד", app.agency || "—"],
+           ["רישיון", app.license || "—"],
+           ["טלפון", app.phone || "—"],
+           ["עיר", app.city || "—"],
+           ["הערה", app.note || "—"]]
+          .map(([k, v]) => `<div class="ud-f"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("")}
+      </div>` : "";
+
+    return `
+      <div class="ud-sec">פרטי חשבון</div>
+      <div class="ud-grid">
+        ${facts.map(([k, v]) => `<div class="ud-f"><span>${esc(k)}</span><b class="ltr-if-id">${esc(v)}</b></div>`).join("")}
+      </div>
+      ${appBlock}
+      <div class="ud-sec">פעילות</div>
+      <div class="ud-grid">
+        <div class="ud-f"><span>נכסים</span><b>${mine.length}</b></div>
+        <div class="ud-f"><span>מאושרים</span><b>${cnt("approved")}</b></div>
+        <div class="ud-f"><span>ממתינים</span><b>${cnt("pending")}</b></div>
+        <div class="ud-f"><span>נדחו</span><b>${cnt("rejected")}</b></div>
+        <div class="ud-f"><span>לידים שהתקבלו</span><b>${leads}</b></div>
+      </div>
+      <div class="ud-sec">הנכסים שלו</div>
+      ${listRows}`;
+  }
+
+  $("users-list").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-userdet]");
+    if (!b) return;
+    const p = state.pmap[b.dataset.userdet];
+    const box = $("ud-" + b.dataset.userdet);
+    if (!p || !box) return;
+    if (!box.hidden) { box.hidden = true; b.textContent = "פרטים"; return; }
+    box.innerHTML = userDetailHtml(p);
+    box.hidden = false;
+    b.textContent = "סגור";
+  });
   async function setRole(id, role) {
     if (id === state.user.id && role !== "admin" && !confirm("להוריד לעצמך הרשאות מנהל?")) return loadAll();
     const { error } = await supa.from("profiles").update({ role }).eq("id", id);

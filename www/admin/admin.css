@@ -155,3 +155,17 @@ main { max-width: 1140px; margin: 0 auto; padding: 20px; }
 
 /* phone / email inside RTL text must stay left-to-right */
 .ltr { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+
+/* ---- user details panel ---- */
+.urow { border-bottom: 1px solid var(--line); }
+.urow:last-child { border-bottom: 0; }
+.udetail { padding: 4px 16px 18px; background: var(--surface-2); border-radius: 0 0 12px 12px; }
+.ud-sec { font-size: 12.5px; font-weight: 800; color: var(--text-soft); margin: 14px 0 8px; }
+.ud-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
+.ud-f { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 11px; }
+.ud-f span { display: block; font-size: 11.5px; color: var(--muted); }
+.ud-f b { font-size: 13.5px; color: var(--ink); word-break: break-word; }
+.ud-listing { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 10px; padding: 8px 11px; margin-bottom: 6px; font-size: 13px; }
+.ud-listing b { color: var(--ink); }
+.ud-empty { font-size: 13px; color: var(--muted); padding: 6px 2px; }
