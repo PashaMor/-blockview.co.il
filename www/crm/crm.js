@@ -595,7 +595,9 @@
     fillTypes($("f-category").value, l ? l.type : "flat");
     $("f-website").value = l && l.website_url ? l.website_url : "";
     $("f-age").value = l ? l.age : "old";
+    // status is meaningless while creating — a new listing always goes to moderation
     $("f-status").value = l ? (["pending", "draft", "sold"].includes(l.status) ? l.status : "pending") : "pending";
+    $("f-status-field").hidden = !l;
     $("f-tour").value = l && l.tour_url ? l.tour_url : "";
     $("f-desc").value = l ? l.description : "";
     $("f-furnished").checked = !!(l && l.furnished);
@@ -732,7 +734,7 @@
         category: $("f-category").value,
         type: $("f-type").value,
         age: $("f-age").value,
-        status: $("f-status").value,
+        status: $("f-id").value ? $("f-status").value : "pending",
         tour_url: $("f-tour").value.trim() || null,
         website_url: $("f-website").value.trim() || null,
         description: $("f-desc").value.trim(),
