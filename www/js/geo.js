@@ -28,36 +28,90 @@
     return fetch(url, opts);
   }
 
-  /* ---- address -> candidates ---------------------------------------- */
-  // Israel only, in the app's language, a handful of results.
+  /* ---- address -> candidates ----------------------------------------
+   * Israel only, in the app's language.
+   *
+   * A free-text query hands the house number to a fuzzy matcher, which often
+   * answers with the middle of the street instead of the building — that is
+   * why "אלנבי 19" could come back with no precise outline. Nominatim's
+   * STRUCTURED query treats street and number properly, so we try that first
+   * and keep free text as the fallback for anything that is not a street
+   * address (a landmark, a neighbourhood, a place name).
+   *
+   * Results carry hasNumber/exact so the form can say plainly when a match is
+   * only street-level rather than a specific building.
+   */
+
+  // "אלנבי 19, תל אביב" -> { num: "19", street: "אלנבי", city: "תל אביב" }
+  function parseQuery(q) {
+    var parts = q.split(",");
+    var head = (parts.shift() || "").trim();
+    var city = parts.join(",").trim();
+    var m = head.match(/^(.*?)[\s,]+(\d+[א-ת]?)\s*$/) || head.match(/^(\d+[א-ת]?)[\s,]+(.*)$/);
+    var street = head, num = "";
+    if (m) {
+      if (/^\d/.test(m[1])) { num = m[1]; street = m[2]; }
+      else { street = m[1]; num = m[2]; }
+    }
+    return { street: street.trim(), num: num.trim(), city: city };
+  }
+
+  function shape(r) {
+    var a = r.address || {};
+    var city = a.city || a.town || a.village || a.municipality || a.suburb || "";
+    var street = a.road || a.pedestrian || "";
+    var num = a.house_number || "";
+    return {
+      label: r.display_name,
+      short: (street ? street + (num ? " " + num : "") : (r.name || String(r.display_name || "").split(",")[0])),
+      city: city,
+      houseNumber: num,
+      hasNumber: !!num,
+      lat: parseFloat(r.lat),
+      lng: parseFloat(r.lon),
+      osmId: r.osm_type && r.osm_id ? r.osm_type + "/" + r.osm_id : null,
+      isBuilding: r.category === "building" || (r.type === "house" || r.type === "residential" || r.type === "apartments"),
+    };
+  }
+
+  async function nominatim(params) {
+    var lang = window.currentLang ? window.currentLang() : "he";
+    var url = NOMINATIM + "?format=jsonv2&addressdetails=1&limit=8&countrycodes=il" +
+      "&accept-language=" + encodeURIComponent(lang) + "&" + params;
+    var res = await withTimeout(url, { headers: { Accept: "application/json" } }, TIMEOUT_MS);
+    if (!res.ok) return [];
+    var rows = await res.json();
+    return (rows || []).map(shape).filter(function (x) { return isFinite(x.lat) && isFinite(x.lng); });
+  }
+
   async function searchAddress(q) {
     q = String(q || "").trim();
     if (q.length < 3) return [];
-    var lang = window.currentLang ? window.currentLang() : "he";
-    var url = NOMINATIM +
-      "?format=jsonv2&addressdetails=1&limit=6&countrycodes=il" +
-      "&accept-language=" + encodeURIComponent(lang) +
-      "&q=" + encodeURIComponent(q);
+    var p = parseQuery(q);
+    var out = [];
     try {
-      var res = await withTimeout(url, { headers: { Accept: "application/json" } }, TIMEOUT_MS);
-      if (!res.ok) return [];
-      var rows = await res.json();
-      if (!rows || !rows.length) return [];
-      return rows.map(function (r) {
-        var a = r.address || {};
-        var city = a.city || a.town || a.village || a.municipality || a.suburb || "";
-        var street = a.road || a.pedestrian || "";
-        var num = a.house_number || "";
-        return {
-          label: r.display_name,
-          short: (street ? street + (num ? " " + num : "") : (r.name || r.display_name.split(",")[0])),
-          city: city,
-          lat: parseFloat(r.lat),
-          lng: parseFloat(r.lon),
-          osmId: r.osm_type && r.osm_id ? r.osm_type + "/" + r.osm_id : null,
-          isBuilding: r.category === "building" || (r.type === "house" || r.type === "residential" || r.type === "apartments"),
-        };
-      }).filter(function (x) { return isFinite(x.lat) && isFinite(x.lng); });
+      // structured first, but only when it looks like a street address
+      if (p.num && p.street) {
+        var sp = "street=" + encodeURIComponent(p.num + " " + p.street);
+        if (p.city) sp += "&city=" + encodeURIComponent(p.city);
+        out = await nominatim(sp);
+      }
+      // free text: the only option without a number, and a top-up otherwise
+      if (out.length < 3) {
+        var free = await nominatim("q=" + encodeURIComponent(q));
+        var seen = {};
+        out.concat(free).forEach(function (r) {
+          var k = r.short + "|" + r.city;
+          if (!seen[k]) { seen[k] = r; }
+        });
+        out = Object.keys(seen).map(function (k) { return seen[k]; });
+      }
+      // an exact house-number hit is what we actually want; float it to the top
+      out.forEach(function (r) { r.exact = !!(p.num && r.houseNumber === p.num); });
+      out.sort(function (a, b) {
+        return (b.exact - a.exact) || (b.hasNumber - a.hasNumber) || (b.isBuilding - a.isBuilding);
+      });
+      return out.slice(0, 6);
     } catch (e) {
       console.warn("[BlockView] address lookup failed:", e && e.message);
       return [];

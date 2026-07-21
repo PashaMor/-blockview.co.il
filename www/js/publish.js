@@ -17,7 +17,8 @@
   const supa = () => window.BVSupa;
   const T = (k, fb) => (window.t ? window.t(k) : fb) || fb;
 
-  const state = { deal: "sale", amen: {}, pending: [], buildings: [], address: null, footprint: null };
+  const state = { deal: "sale", amen: {}, pending: [], buildings: [], address: null, footprint: null,
+                  editId: null, savedPhotos: [] };
 
   /* ---------------------------------------------------- chooser modal ---- */
   btn.addEventListener("click", () => { $("who-modal").hidden = false; });
@@ -44,6 +45,8 @@
     if (window.closeAuthSheets) window.closeAuthSheets();
     $("p-err").hidden = true;
     state.pending = []; state.amen = {}; state.deal = "sale";
+    state.editId = null; state.savedPhotos = [];
+    setSheetMode(false);
     document.querySelectorAll("#p-amen .chip").forEach((c) => c.classList.remove("on"));
     document.querySelectorAll("#p-deal-seg .seg-btn").forEach((b) => b.classList.toggle("active", b.dataset.pdeal === "sale"));
     $("pub-form").reset();
@@ -59,6 +62,7 @@
     } catch (e) {}
     clearAddress();
     $("p-address").value = "";
+    $("p-address").disabled = false;
     $("p-building").hidden = true;
     resetContacts(myEmail);
     renderStrip();
@@ -67,6 +71,98 @@
     sheet().setAttribute("aria-hidden", "false");
   }
   function closePublish() { sheet().classList.remove("open"); sheet().setAttribute("aria-hidden", "true"); }
+
+  /* ---------------------------------------------------------- edit mode ----
+   * The owner manages their listings from the account sheet (js/my-listings.js)
+   * and edits them in this same form. Editing an approved listing sends it back
+   * for approval — the database decides that (26_listing_revisions.sql); here we
+   * only warn about it up front so it is not a surprise. */
+  function setSheetMode(editing, listing) {
+    const head = sheet().querySelector(".building-head");
+    if (head) {
+      const h2 = head.querySelector("h2"), sub = head.querySelector(".b-address");
+      if (h2) h2.textContent = editing ? T("edit_listing", "עריכת נכס") : T("publish_title", "פרסום נכס");
+      if (sub) {
+        sub.textContent = editing && listing && listing.status === "approved"
+          ? T("edit_bounce", "הנכס מאושר. שמירת שינוי תחזיר אותו לאישור לפני שיופיע שוב במפה.")
+          : T("publish_sub", "הנכס יישלח לאישור ויופיע במפה לאחר אישור.");
+      }
+    }
+    $("p-submit").textContent = editing
+      ? T("save_changes", "שמור שינויים")
+      : T("submit_listing", "שלח לאישור");
+  }
+
+  async function openEdit(l) {
+    if (window.closeAllSheets) window.closeAllSheets();
+    if (window.closeAuthSheets) window.closeAuthSheets();
+    $("p-err").hidden = true;
+    state.editId = l.id;
+    state.editStatus = l.status;
+    state.pending = [];
+    state.amen = { furnished: !!l.furnished, pets: !!l.pets, parking: !!l.parking, elevator: !!l.elevator };
+    state.deal = l.deal;
+    state.address = null; state.footprint = null;
+
+    $("pub-form").reset();
+    document.querySelectorAll("#p-deal-seg .seg-btn").forEach((b) =>
+      b.classList.toggle("active", b.dataset.pdeal === l.deal));
+    document.querySelectorAll("#p-amen .chip").forEach((c) =>
+      c.classList.toggle("on", !!state.amen[c.dataset.pamen]));
+
+    $("p-title").value = l.title || "";
+    $("p-price").value = l.price || "";
+    $("p-rooms").value = l.rooms || "";
+    $("p-size").value = l.size || "";
+    $("p-floor").value = l.floor || 0;
+    $("p-floors-total").value = l.floors_total || "";
+    $("p-category").value = l.category || "residential";
+    fillTypes();
+    $("p-type").value = l.type || "flat";
+    $("p-age").value = l.age || "old";
+    $("p-desc").value = l.description || "";
+
+    // the building is fixed while editing — moving a listing to another address
+    // is a new listing, not an edit
+    const b = l.buildings || {};
+    clearAddress();
+    $("p-address").value = [b.address, b.city].filter(Boolean).join(", ");
+    $("p-address").disabled = true;
+    $("p-building").hidden = true;
+    state.buildingId = l.building_id;
+
+    await loadContactsFor(l.id);
+    await loadPhotosFor(l.id);
+    setSheetMode(true, l);
+    sheet().classList.add("open");
+    sheet().setAttribute("aria-hidden", "false");
+  }
+
+  async function loadContactsFor(listingId) {
+    resetContacts("");
+    const res = await supa().from("listing_contacts")
+      .select("name,phone,email,whatsapp,sort").eq("listing_id", listingId).order("sort");
+    const rows = (res.data || []);
+    if (!rows.length) return;
+    $("p-contacts").innerHTML = "";
+    rows.forEach((c, i) => {
+      addContactRow("");
+      const row = $("p-contacts").children[i];
+      row.querySelector(".c-name").value = c.name || "";
+      row.querySelector(".c-phone").value = c.phone || "";
+      row.querySelector(".c-email").value = c.email || "";
+      row.querySelector(".c-wa").checked = !!c.whatsapp;
+    });
+  }
+
+  async function loadPhotosFor(listingId) {
+    const res = await supa().from("listing_photos")
+      .select("id,path,sort").eq("listing_id", listingId).order("sort");
+    state.savedPhotos = res.data || [];
+    renderStrip();
+  }
+
+  window.BVPublish = { openEdit: openEdit };
   $("pub-close").addEventListener("click", closePublish);
 
   /* ---- property types follow the category (25_listing_fields.sql) ---- */
@@ -209,8 +305,11 @@
     // a real outline is a bonus, not a requirement — Overpass is flaky by nature
     const fp = await BVGeo.fetchFootprint(it.lat, it.lng);
     state.footprint = fp;
+    // a match with no house number is the street, not the building — say so
     picked.textContent = "📍 " + it.short + " — " +
-      (fp ? T("address_ok", "נמצא מתאר בניין אמיתי") : T("address_nofp", "ללא מתאר מדויק, ימוקם לפי הכתובת"));
+      (fp ? T("address_ok", "נמצא מתאר בניין אמיתי")
+          : it.hasNumber ? T("address_nofp", "ללא מתאר מדויק, ימוקם לפי הכתובת")
+                         : T("address_street_only", "⚠️ התוצאה היא הרחוב בלבד, ללא מספר בית"));
     showBuildingMatch(it, fp);
   });
 
@@ -261,6 +360,9 @@
 
   // the building id this listing will attach to (created on demand from the address)
   async function resolveBuilding() {
+    // editing keeps the building it already has — the address field is disabled
+    // in that mode, so there is no new address to resolve
+    if (state.editId && state.buildingId) return state.buildingId;
     const a = state.address;
     if (!a) throw new Error(T("address_required", "נא לבחור את כתובת הנכס"));
     const fp = state.footprint;
@@ -361,9 +463,16 @@
       rd.readAsDataURL(file);
     });
   }
+  function photoUrl(path) {
+    try { return supa().storage.from("listing-photos").getPublicUrl(path).data.publicUrl; }
+    catch (e) { return ""; }
+  }
   function renderStrip() {
-    $("p-strip").innerHTML = state.pending.map((p, i) =>
-      `<div class="ph"><img src="${p.preview}" alt="" /><button type="button" data-rm="${i}">✕</button></div>`).join("");
+    const saved = (state.savedPhotos || []).map((p) =>
+      `<div class="ph"><img src="${photoUrl(p.path)}" alt="" /><button type="button" data-rmsaved="${p.id}">✕</button></div>`);
+    const fresh = state.pending.map((p, i) =>
+      `<div class="ph"><img src="${p.preview}" alt="" /><button type="button" data-rm="${i}">✕</button></div>`);
+    $("p-strip").innerHTML = saved.concat(fresh).join("");
   }
   $("p-photos").addEventListener("change", async (e) => {
     const files = Array.from(e.target.files || []).filter((f) => /^image\//.test(f.type));
@@ -371,9 +480,21 @@
     for (const f of files) state.pending.push(await compress(f));
     renderStrip();
   });
-  $("p-strip").addEventListener("click", (e) => {
+  $("p-strip").addEventListener("click", async (e) => {
     const b = e.target.closest("[data-rm]");
-    if (b) { state.pending.splice(+b.dataset.rm, 1); renderStrip(); }
+    if (b) { state.pending.splice(+b.dataset.rm, 1); renderStrip(); return; }
+    const s2 = e.target.closest("[data-rmsaved]");
+    if (!s2) return;
+    const id = s2.getAttribute("data-rmsaved");
+    const photo = (state.savedPhotos || []).filter((p) => String(p.id) === String(id))[0];
+    if (!photo) return;
+    // storage first: an orphaned row is worse than an orphaned file, because the
+    // row is what the listing renders from
+    try { await supa().storage.from("listing-photos").remove([photo.path]); } catch (err) {}
+    const res = await supa().from("listing_photos").delete().eq("id", photo.id);
+    if (res.error) { if (window.bvToast) window.bvToast(T("photo_del_failed", "מחיקת התמונה נכשלה")); return; }
+    state.savedPhotos = state.savedPhotos.filter((p) => String(p.id) !== String(id));
+    renderStrip();
   });
 
   /* ---------------------------------------------------------- submit ---- */
@@ -386,8 +507,9 @@
       const user = ures && ures.user;
       if (!user) throw new Error(T("login_to_publish", "התחבר כדי לפרסם נכס"));
 
+      const editing = !!state.editId;
       const row = {
-        building_id: await resolveBuilding(),
+        building_id: editing ? state.buildingId : await resolveBuilding(),
         agent_id: user.id,
         poster_type: "owner",
         deal: state.deal,
@@ -410,8 +532,25 @@
       const contacts = readContacts();
       if (!contacts.length) throw new Error(T("contact_name_bad", "נא למלא שם איש קשר"));
 
-      const { data, error } = await supa().from("listings").insert(row).select("id").single();
-      if (error) throw error;
+      let data, bouncedBack = false;
+      if (editing) {
+        // status is left alone: the DB decides whether this goes back for
+        // approval (26_listing_revisions.sql)
+        delete row.status;
+        delete row.poster_type;
+        const wasApproved = state.editStatus === "approved";
+        const up = await supa().from("listings").update(row).eq("id", state.editId).select("id,status").single();
+        if (up.error) throw up.error;
+        data = up.data;
+        bouncedBack = wasApproved && data.status === "pending";
+        // contacts are replaced wholesale — simpler and safer than diffing rows
+        const dres = await supa().from("listing_contacts").delete().eq("listing_id", state.editId);
+        if (dres.error) throw dres.error;
+      } else {
+        const ins = await supa().from("listings").insert(row).select("id").single();
+        if (ins.error) throw ins.error;
+        data = ins.data;
+      }
 
       // full details go to listing_contacts (RLS: signed-in users only); guests get
       // the masked view listing_contacts_public
@@ -419,15 +558,22 @@
         .insert(contacts.map((c, i) => ({ listing_id: data.id, name: c.name, phone: c.phone, email: c.email, whatsapp: !!c.whatsapp, sort: i })));
       if (cres.error) throw cres.error;
 
+      const sortFrom = (state.savedPhotos || []).length;
       for (let i = 0; i < state.pending.length; i++) {
         const path = `${user.id}/${data.id}/${Date.now()}_${i}.jpg`;
         const up = await supa().storage.from("listing-photos").upload(path, state.pending[i].blob, { contentType: "image/jpeg" });
         if (up.error) throw up.error;
-        await supa().from("listing_photos").insert({ listing_id: data.id, path, sort: i });
+        await supa().from("listing_photos").insert({ listing_id: data.id, path, sort: sortFrom + i });
       }
 
       closePublish();
-      if (window.bvToast) window.bvToast(T("pub_ok", "הנכס נשלח לאישור ✓"));
+      if (window.BVMyListings) window.BVMyListings.render();
+      if (window.reloadLiveData) window.reloadLiveData();
+      if (window.bvToast) {
+        window.bvToast(bouncedBack ? T("edit_bounced", "הנכס עודכן ונשלח לאישור מחדש")
+          : editing ? T("edit_saved", "הנכס עודכן ✓")
+          : T("pub_ok", "הנכס נשלח לאישור ✓"));
+      }
     } catch (err) {
       const el = $("p-err"); el.textContent = err.message || "שגיאה"; el.hidden = false;
     } finally {

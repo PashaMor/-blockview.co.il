@@ -784,7 +784,11 @@
     picked.hidden = false;
     const fp = await BVGeo.fetchFootprint(it.lat, it.lng);   // a bonus, not a requirement
     addr.footprint = fp;
-    picked.textContent = "📍 " + it.short + (fp ? " — נמצא מתאר בניין אמיתי" : " — ללא מתאר מדויק, ימוקם לפי הכתובת");
+    // a match with no house number is the street, not the building — say so
+    picked.textContent = "📍 " + it.short +
+      (fp ? " — נמצא מתאר בניין אמיתי"
+          : it.hasNumber ? " — ללא מתאר מדויק, ימוקם לפי הכתובת"
+                         : " — ⚠️ התוצאה היא הרחוב בלבד, ללא מספר בית. הנכס ימוקם באמצע הרחוב.");
     showAddrMatch(it, fp);
   });
 
