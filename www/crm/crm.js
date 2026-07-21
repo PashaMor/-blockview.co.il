@@ -584,6 +584,8 @@
     $("editor-title").textContent = l ? "עריכת נכס" : "נכס חדש";
     $("f-id").value = l ? l.id : "";
     $("f-building").value = l ? l.building_id : (state.buildings[0] || {}).id || "";
+    // editing keeps the building it already has; a new listing starts from an address
+    resetAddress(l ? (l.buildings || {}) : null);
     $("f-deal").value = l ? l.deal : "sale";
     $("f-title").value = l ? l.title : "";
     $("f-price").value = l ? l.price : "";
@@ -724,14 +726,131 @@
     renderPhotoStrip();
   });
 
+  /* ------------------------------------------------------------ address ----
+   * Until now an agent could only attach a listing to one of the buildings we
+   * already had, so anything else in the country was unpublishable. Same flow
+   * as the website: search the address (Nominatim), fetch the real outline
+   * (Overpass), and let ensure_building() dedupe-or-create server-side.
+   * The building dropdown stays as the fallback when the lookup is down. */
+  const addr = { picked: null, footprint: null };
+  let addrTimer = null;
+
+  function resetAddress(building) {
+    addr.picked = null; addr.footprint = null;
+    $("f-address").value = "";
+    $("f-addr-results").hidden = true; $("f-addr-results").innerHTML = "";
+    $("f-addr-match").hidden = true; $("f-addr-match").textContent = "";
+    const picked = $("f-addr-picked");
+    if (building && building.address) {
+      picked.textContent = "📍 " + building.address;
+      picked.hidden = false;
+      $("f-building-wrap").hidden = false;      // editing: show what it is attached to
+    } else {
+      picked.hidden = true; picked.textContent = "";
+      $("f-building-wrap").hidden = true;
+    }
+  }
+
+  $("f-pick-existing").addEventListener("click", () => {
+    const wrap = $("f-building-wrap");
+    wrap.hidden = !wrap.hidden;
+    if (!wrap.hidden) { addr.picked = null; addr.footprint = null; $("f-address").value = ""; $("f-addr-match").hidden = true; }
+  });
+
+  $("f-address").addEventListener("input", (e) => {
+    const q = e.target.value;
+    clearTimeout(addrTimer);
+    addr.picked = null;
+    if (q.trim().length < 3) { $("f-addr-results").hidden = true; return; }
+    addrTimer = setTimeout(async () => {           // debounce: Nominatim is shared
+      if (!window.BVGeo) return;
+      showAddrResults(await BVGeo.searchAddress(q));
+    }, 600);
+  });
+
+  function showAddrResults(items) {
+    const box = $("f-addr-results");
+    box._items = items || [];
+    if (!items || !items.length) { box.hidden = true; box.innerHTML = ""; return; }
+    box.innerHTML = items.map((it, i) =>
+      '<button type="button" class="ar-item" data-i="' + i + '">' + esc(it.label) + "</button>").join("");
+    box.hidden = false;
+  }
+
+  $("f-addr-results").addEventListener("click", async (e) => {
+    const b = e.target.closest(".ar-item");
+    if (!b) return;
+    const it = $("f-addr-results")._items[+b.dataset.i];
+    $("f-addr-results").hidden = true;
+    $("f-address").value = it.short + (it.city ? ", " + it.city : "");
+    addr.picked = it;
+    const picked = $("f-addr-picked");
+    picked.textContent = "מאתר את מתאר הבניין…";
+    picked.hidden = false;
+    const fp = await BVGeo.fetchFootprint(it.lat, it.lng);   // a bonus, not a requirement
+    addr.footprint = fp;
+    picked.textContent = "📍 " + it.short + (fp ? " — נמצא מתאר בניין אמיתי" : " — ללא מתאר מדויק, ימוקם לפי הכתובת");
+    showAddrMatch(it, fp);
+  });
+
+  // say which building this will attach to, before saving
+  async function showAddrMatch(a, fp) {
+    const box = $("f-addr-match");
+    box.hidden = true; box.className = "addr-match";
+    try {
+      const { data, error } = await supa.rpc("preview_building_match", {
+        p_address: a.label,
+        p_lat: fp && fp.center ? fp.center[1] : a.lat,
+        p_lng: fp && fp.center ? fp.center[0] : a.lng,
+        p_osm_id: (fp && fp.osmId) || a.osmId || null,
+      });
+      if (error || !data || !data.length) return;
+      const m = data[0];
+      if (m.reason === "new") {
+        box.textContent = "🏠 ייווצר בניין חדש בכתובת הזו.";
+      } else if (m.reason === "existing_hidden") {
+        box.textContent = "🏢 הנכס יצורף לבניין קיים בכתובת הזו.";
+      } else {
+        box.className = "addr-match warn";
+        box.textContent = '⚠️ הנכס יצורף לבניין הקיים "' + (m.name || "") + '" — ' + (m.address || "") +
+          (m.reason === "nearby" ? ". הכתובת שבחרת נמצאת במרחק של כמה מטרים ממנו." : ". זו אותה כתובת.");
+      }
+      box.hidden = false;
+    } catch (err) { /* the preview is a courtesy — never block saving */ }
+  }
+
+  // the building id to save against: the dropdown if it is in use, else the address
+  async function resolveBuilding() {
+    const wrap = $("f-building-wrap");
+    if (!wrap.hidden && $("f-building").value) return $("f-building").value;
+    if (!addr.picked) {
+      if ($("f-id").value && $("f-building").value) return $("f-building").value;  // editing, unchanged
+      throw new Error("נא לבחור את כתובת הנכס");
+    }
+    const a = addr.picked, fp = addr.footprint;
+    const { data, error } = await supa.rpc("ensure_building", {
+      p_name: a.short,
+      p_address: a.label,
+      p_city: a.city || null,
+      p_lat: fp && fp.center ? fp.center[1] : a.lat,
+      p_lng: fp && fp.center ? fp.center[0] : a.lng,
+      p_osm_id: (fp && fp.osmId) || a.osmId || null,
+      p_footprint: fp ? fp.polygon : null,
+      p_height: fp ? fp.height : null,
+    });
+    if (error) throw new Error(/TOO_MANY_BUILDINGS/.test(error.message) ? "נוספו יותר מדי בניינים בשעה האחרונה" : "לא הצלחנו לאתר את הבניין לכתובת הזו");
+    return data;
+  }
+
   $("listing-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     $("f-err").hidden = true;
     $("f-save").disabled = true;
     try {
       const contacts = readContacts();   // validated before anything is written
+      const buildingId = await resolveBuilding();
       const row = {
-        building_id: $("f-building").value,
+        building_id: buildingId,
         agent_id: state.user.id,
         deal: $("f-deal").value,
         title: $("f-title").value.trim(),
@@ -754,9 +873,15 @@
       };
       const id = $("f-id").value;
       let listingId = id;
+      let bouncedBack = false;
       if (id) {
-        const { error } = await supa.from("listings").update(row).eq("id", id);
+        // read the status back: editing a live listing sends it for re-approval
+        // (supabase/26_listing_revisions.sql), and the agent should hear that
+        // from us rather than notice it later
+        const was = (state.listings.find((l) => l.id === id) || {}).status;
+        const { data, error } = await supa.from("listings").update(row).eq("id", id).select("status").single();
         if (error) throw error;
+        bouncedBack = was === "approved" && data && data.status === "pending";
       } else {
         const { data, error } = await supa.from("listings").insert(row).select("id").single();
         if (error) throw error;
@@ -780,7 +905,7 @@
           contacts.map((c, i) => ({ listing_id: listingId, name: c.name, phone: c.phone, email: c.email, whatsapp: c.whatsapp, sort: i })));
         if (cins.error) throw cins.error;
       }
-      toast(id ? "הנכס עודכן" : "הנכס נוסף");
+      toast(bouncedBack ? "הנכס עודכן ונשלח לאישור מחדש" : id ? "הנכס עודכן" : "הנכס נוסף");
       await loadListings();
       switchTab("listings");
     } catch (err) {

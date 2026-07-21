@@ -209,7 +209,7 @@
 
   /* --------------------------------------------------------------- data */
   async function loadAll() {
-    const [L, P, B, Lead, A, AP, AU] = await Promise.all([
+    const [L, P, B, Lead, A, AP, AU, REV] = await Promise.all([
       supa.from("listings").select("*, buildings(name,address), listing_photos(path,sort), listing_contacts(name,phone,email,sort)").order("created_at", { ascending: false }),
       supa.from("profiles").select("*").order("created_at", { ascending: false }),
       supa.from("buildings").select("*").order("name"),
@@ -221,9 +221,18 @@
       // 21_admin_confirm_email.sql — email confirmation lives in auth.users,
       // which the browser cannot read, so an admin-only function returns it
       supa.rpc("admin_auth_status"),
+      // 26_listing_revisions.sql — what changed on each listing, newest first
+      supa.from("listing_revisions").select("*").order("changed_at", { ascending: false }).limit(400),
     ]);
     state.authmap = {};
     (AU.data || []).forEach((u) => (state.authmap[u.user_id] = u));
+    // keep the most recent edit per listing that a person actually made
+    state.revisions = {};
+    (REV.data || []).forEach((r) => {
+      if (state.revisions[r.listing_id]) return;                 // newer one already kept
+      if (!r.changes || !Object.keys(r.changes).length) return;  // status-only change
+      state.revisions[r.listing_id] = r;
+    });
     state.listings = L.data || [];
     state.profiles = P.data || [];
     state.buildings = B.data || [];
@@ -402,10 +411,53 @@
     if (e.key === "Escape" && !$("lightbox").hidden) { $("lightbox").hidden = true; $("lightbox-img").src = ""; }
   });
 
+  /* ---- what changed since the last approval (26_listing_revisions.sql) ----
+   * A listing that was already live and got edited comes back here. Showing the
+   * diff means re-reading only what moved, not the whole listing. */
+  const FIELD_HE = {
+    title: "כותרת", description: "תיאור", price: "מחיר", rooms: "חדרים", size: 'שטח (מ"ר)',
+    floor: "קומה", floors_total: "סך הקומות", type: "סוג נכס", category: "ייעוד",
+    deal: "סוג עסקה", age: "גיל הבניין", furnished: "מרוהט", pets: "חיות מחמד",
+    parking: "חניה", elevator: "מעלית", tour_url: "סיור וירטואלי",
+    website_url: "קישור לאתר", building_id: "בניין",
+  };
+  const VALUE_HE = {
+    sale: "מכירה", rent: "השכרה", flat: "דירה", house: "בית", penthouse: "פנטהאוז",
+    studio: "סטודיו", office: "משרד", shop: "חנות", warehouse: "מחסן", other: "אחר",
+    residential: "מגורים", commercial: "מסחרי", new: "חדש", old: "ישן",
+    true: "כן", false: "לא", null: "—", "": "—",
+  };
+  function showValue(field, v) {
+    if (v === null || v === undefined || v === "") return "—";
+    if (field === "price") return nis(v);
+    var key = String(v);
+    if (Object.prototype.hasOwnProperty.call(VALUE_HE, key)) return VALUE_HE[key];
+    // long text: enough to recognise the change, not the whole essay
+    return key.length > 90 ? key.slice(0, 90) + "…" : key;
+  }
+
+  function changesBlock(listingId) {
+    const rev = (state.revisions || {})[listingId];
+    if (!rev) return "";
+    const fields = Object.keys(rev.changes || {});
+    if (!fields.length) return "";
+    const rows = fields.map((f) => `
+      <div class="chg-row">
+        <span class="chg-field">${esc(FIELD_HE[f] || f)}</span>
+        <span class="chg-from">${esc(showValue(f, rev.changes[f].from))}</span>
+        <span class="chg-arrow">←</span>
+        <span class="chg-to">${esc(showValue(f, rev.changes[f].to))}</span>
+      </div>`).join("");
+    return `<div class="changes">
+      <div class="chg-head">✏️ שונה מאז האישור הקודם · ${esc(dt(rev.changed_at))}</div>
+      ${rows}
+    </div>`;
+  }
+
   function renderQueue() {
     const rows = state.listings.filter((l) => l.status === "pending");
     $("queue-empty").hidden = rows.length > 0;
-    $("queue-list").innerHTML = rows.map((l) => listingRow(l, true)).join("");
+    $("queue-list").innerHTML = rows.map((l) => listingRow(l, true) + changesBlock(l.id)).join("");
   }
 
   function renderAll() {

@@ -197,3 +197,15 @@ main { max-width: 1140px; margin: 0 auto; padding: 20px; }
 .bv-modal .input { width: 100%; margin-top: 4px; }
 .bv-modal .input.bad { border-color: var(--bad); }
 .bv-modal-actions { display: flex; gap: 8px; justify-content: flex-start; margin-top: 18px; }
+
+/* what changed since the last approval */
+.changes { border: 1px solid var(--warn); border-top: 0; border-radius: 0 0 12px 12px;
+  background: var(--warn-bg); padding: 10px 14px; margin: -6px 0 10px; }
+.chg-head { font-size: 12.5px; font-weight: 700; color: var(--warn); margin-bottom: 8px; }
+.chg-row { display: grid; grid-template-columns: 120px 1fr 18px 1fr; gap: 8px; align-items: baseline;
+  font-size: 13px; padding: 3px 0; }
+.chg-field { color: var(--text-soft); font-weight: 600; }
+.chg-from { color: var(--muted); text-decoration: line-through; word-break: break-word; }
+.chg-arrow { color: var(--muted); text-align: center; }
+.chg-to { color: var(--ink); font-weight: 600; word-break: break-word; }
+@media (max-width: 640px) { .chg-row { grid-template-columns: 1fr; } .chg-arrow { display: none; } }

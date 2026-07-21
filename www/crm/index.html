@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>BlockView CRM — ניהול נכסים</title>
-  <link rel="stylesheet" href="crm.css?v=16" />
+  <link rel="stylesheet" href="crm.css?v=17" />
 </head>
 <body>
 
@@ -186,9 +186,21 @@
       <form id="listing-form" class="form">
         <input type="hidden" id="f-id" />
 
+        <!-- Address first: the agent types the real address and we create the
+             building from OpenStreetMap. The old dropdown of existing buildings
+             stays as a fallback for when the lookup is down. -->
+        <div class="field addr-field">
+          <span>כתובת הנכס *</span>
+          <input id="f-address" class="input" autocomplete="off" placeholder="לדוגמה: אלנבי 20, תל אביב" />
+          <div id="f-addr-results" class="addr-results" hidden></div>
+          <div id="f-addr-picked" class="addr-picked" hidden></div>
+          <div id="f-addr-match" class="addr-match" hidden></div>
+          <button type="button" id="f-pick-existing" class="linkish">או בחר מבניין קיים ברשימה</button>
+        </div>
+
         <div class="grid2">
-          <label class="field"><span>בניין *</span>
-            <select id="f-building" class="input" required></select>
+          <label class="field" id="f-building-wrap" hidden><span>בניין קיים</span>
+            <select id="f-building" class="input"></select>
           </label>
           <label class="field"><span>סוג עסקה *</span>
             <select id="f-deal" class="input" required>
@@ -343,6 +355,7 @@
   <script src="../js/analytics.js?v=2"></script>
   <script src="../js/oauth.js?v=17"></script>
   <script src="../js/describe-gen.js?v=16"></script>
-  <script src="crm.js?v=16"></script>
+  <script src="../js/geo.js?v=48"></script>
+  <script src="crm.js?v=18"></script>
 </body>
 </html>
