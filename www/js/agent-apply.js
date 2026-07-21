@@ -18,6 +18,17 @@
   /* ------------------------------------------------------- the profile row */
   // Called by auth.js whenever the account sheet is rendered.
   window.BVAgent = {
+    // opens the application form; refreshes the state first so a pending or
+    // rejected application is prefilled rather than shown as a blank form
+    openApply: async function () {
+      try {
+        var u = await supa().auth.getUser();
+        var user = u && u.data ? u.data.user : null;
+        if (!user) { if (window.BVAuth) window.BVAuth.openAuth(); return; }
+        await window.BVAgent.refresh(user);
+      } catch (e) {}
+      open();
+    },
     refresh: async function (user) {
       state.user = user || null;
       var row = $("acc-agent-row");

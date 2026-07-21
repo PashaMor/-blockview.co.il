@@ -49,7 +49,13 @@
       const approved = await isApprovedAgent();
       $("who-modal").hidden = true;
       if (approved) { await openPublish("agent"); return; }
-      if (window.bvToast) window.bvToast(T("agent_apply_first", "יש להירשם כסוכן ולקבל אישור מנהל"));
+      // not an agent yet: register right here. Sending them to the CRM website
+      // would drop them out of the app with no way back to the map.
+      if (window.BVAgent) {
+        if (window.bvToast) window.bvToast(T("agent_apply_first", "יש להירשם כסוכן ולקבל אישור מנהל"));
+        await window.BVAgent.openApply();
+        return;
+      }
       openCrm();
     });
 
