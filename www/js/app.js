@@ -625,10 +625,16 @@ function openDetail(lid) {
         <div class="note-saved" id="note-saved" hidden>נשמר ✓</div>
         <div class="contact">
           <div id="contact-area" class="contact-area"></div>
-          <div class="contact-btns">${isDbListing(l.id) ? `<button class="btn-lead" data-lead="${l.id}">${t("lead_send")}</button>` : ""}<button class="btn-ghost fav-toggle ${isFav(l.id) ? "on" : ""}" data-fav="${l.id}">${t("save")}</button>${l.hasWhatsapp ? `<button class="btn-wa" data-wa="${l.id}">${t("wa_contact")}</button>` : ""}<button class="btn-ghost" data-share="${l.id}">${t("share")}</button></div>
           ${signedIn() ? "" : `<p class="contact-hint">${t("contact_locked")}</p>`}
         </div>
         <p class="disclaimer">נתונים לדוגמה — אב-טיפוס BlockView. התמונות להמחשה בלבד.</p>
+      </div>
+      <!-- always reachable: stays pinned while the card scrolls -->
+      <div class="action-bar">
+        ${isDbListing(l.id) ? `<button class="btn-lead" data-lead="${l.id}">${t("lead_send")}</button>` : ""}
+        <button class="btn-ghost fav-toggle ${isFav(l.id) ? "on" : ""}" data-fav="${l.id}">${t("save")}</button>
+        ${l.hasWhatsapp ? `<button class="btn-wa" data-wa="${l.id}">${t("wa_contact")}</button>` : ""}
+        <button class="btn-ghost" data-share="${l.id}">${t("share")}</button>
       </div>
     </div>`;
   el.hidden = false;
