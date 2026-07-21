@@ -682,9 +682,12 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
    row. It stops short of the right-hand button column so the two never meet. */
 #topleft { display: contents; }
 .bv-app #topleft {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
   position: absolute; top: 16px; left: 16px; right: 76px; z-index: 6;
 }
+/* the chevron is its own element, so line its centre up with the row rather
+   than with the top edge: the row is as tall as the logo card, not the button */
+.bv-app #tools { top: 15px; }
 .bv-app #brand { position: static; padding: 6px 10px; flex: 0 1 auto; min-width: 0; order: 2; }
 .bv-app .brand-logo { height: 34px; }
 .bv-app #publish-btn {
