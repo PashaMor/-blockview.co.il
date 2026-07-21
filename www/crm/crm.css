@@ -266,3 +266,22 @@ main { max-width: 1080px; margin: 0 auto; padding: 20px; }
 .floor-row { display: flex; align-items: center; gap: 8px; }
 .floor-row .input { width: 100%; min-width: 0; }
 .floor-row .of { font-size: 12.5px; color: var(--text-soft); white-space: nowrap; }
+
+/* ---- address search in the listing editor ----
+   Mirrors the website publish form: the agent types a real address, we create
+   the building from it, and we say which building it will attach to. */
+.addr-field { position: relative; margin-bottom: 14px; }
+.addr-field > span { display: block; font-size: 13px; color: var(--text-soft); margin-bottom: 7px; font-weight: 600; }
+.addr-results { position: absolute; z-index: 12; inset-inline: 0; top: 100%; margin-top: 4px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(20,30,45,.16); max-height: 260px; overflow-y: auto; }
+.addr-results .ar-item { display: block; width: 100%; text-align: start; font: inherit; font-size: 13.5px;
+  padding: 10px 13px; border: 0; border-bottom: 1px solid var(--line); background: transparent;
+  color: var(--ink); cursor: pointer; }
+.addr-results .ar-item:last-child { border-bottom: 0; }
+.addr-results .ar-item:hover { background: var(--surface-2); }
+.addr-picked { margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--blue);
+  background: #EDF2FC; border-radius: 10px; padding: 9px 12px; }
+.addr-match { margin-top: 8px; font-size: 12.5px; font-weight: 600; line-height: 1.6;
+  color: var(--text-soft); background: var(--surface-2); border-radius: 10px; padding: 9px 12px; }
+.addr-match.warn { color: #8A5A00; background: #FFF4DE; border: 1px solid #F0DCB0; }
