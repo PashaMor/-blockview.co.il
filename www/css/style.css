@@ -68,7 +68,17 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 }
 #publish-btn:hover { transform: translateX(-50%) translateY(-1px); }
 #publish-btn span:first-child { font-size: 18px; line-height: 1; }
-@media (max-width: 560px) { #publish-btn { top: 78px; height: 42px; padding: 0 16px; font-size: 13.5px; } }
+/* On a phone the top strip already carries the logo and four round buttons, and
+   the top-centre is the hardest place on the screen to reach one-handed. The
+   publish action sits just above the bottom bar instead, where the thumb is. */
+@media (max-width: 560px) {
+  #publish-btn {
+    top: auto; bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+    height: 44px; padding: 0 18px; font-size: 14px;
+    box-shadow: 0 6px 20px rgba(0,56,184,.34);
+  }
+  #publish-btn:hover { transform: translateX(-50%); }
+}
 
 /* owner / realtor chooser */
 #who-modal { position: fixed; inset: 0; z-index: 24; background: rgba(20,30,45,.55); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 24px; }

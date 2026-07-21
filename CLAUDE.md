@@ -103,10 +103,14 @@ capacitor.config.json  server.url points at the hosted site
 
 ## 8. Product decisions (don't undo these)
 
-- **Publish flow is website-only.** The "＋ פרסם נכס" button is `.remove()`d inside
-  the native app (detected via `window.Capacitor`).
+- **Publishing works on the website and in the app.** (Was website-only until
+  21.7.2026 — the app had no way to list a property at all, which is a strange
+  thing for a property app.) On a phone the button sits just above the bottom
+  bar, not top-centre, which is out of thumb reach.
 - Publish button → asks **owner vs realtor** → realtor goes to the CRM,
-  owner gets an inline form.
+  owner gets an inline form. In the app the CRM opens **outside** the WebView
+  (`Capacitor.Plugins.Browser`, falling back to `_system`) — navigating the
+  WebView to another host replaces the map with no way back.
 - **Roles:** `user` | `agent` | `admin`. Agents use the CRM; admins use the console.
 - **Plans:** free = 3 saves / 0 follows (following is Pro-only). Pro = ₪7.90/mo or ₪54.90/yr.
 - **2FA:** mandatory for admins (enforced via `aal2` in the DB), optional for agents.

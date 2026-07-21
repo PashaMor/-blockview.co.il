@@ -1,4 +1,4 @@
-/* BlockView — "publish a property" flow. WEBSITE ONLY (removed inside the app).
+/* BlockView — "publish a property" flow (website and app).
  * Owner  -> posts their own listing here (goes to 'pending' for approval).
  * Realtor -> redirected to the agent CRM.
  * Security: RLS lets a user insert only listings where agent_id = their own uid,
@@ -8,12 +8,10 @@
   const btn = document.getElementById("publish-btn");
   if (!btn) return;
 
-  // PUBLISHING is website-only (product decision): the app loses the "＋ פרסם נכס"
-  // button and the owner/realtor chooser. EDITING an existing listing still works
-  // there — an owner who can delete a listing must also be able to fix a typo —
-  // so the form itself is wired up either way and reached via BVPublish.openEdit().
+  // Publishing now works in the app too. The one thing that differs is the
+  // realtor branch: sending the WebView to crm.blockview.co.il would replace the
+  // map with no way back, so in the app the CRM opens outside the app instead.
   const isNativeApp = !!window.Capacitor || /BlockViewApp/i.test(navigator.userAgent);
-  if (isNativeApp) btn.remove();
 
   const CRM_URL = "https://crm.blockview.co.il";
   const $ = (id) => document.getElementById(id);
@@ -24,12 +22,19 @@
                   editId: null, savedPhotos: [] };
 
   /* ---------------------------------------------------- chooser modal ---- */
-  if (!isNativeApp) {
+  {
     btn.addEventListener("click", () => { $("who-modal").hidden = false; });
     $("who-close").addEventListener("click", () => ($("who-modal").hidden = true));
     $("who-modal").addEventListener("click", (e) => { if (e.target === $("who-modal")) $("who-modal").hidden = true; });
 
-    $("who-realtor").addEventListener("click", () => { window.location.href = CRM_URL; });
+    $("who-realtor").addEventListener("click", () => {
+      if (!isNativeApp) { window.location.href = CRM_URL; return; }
+      // outside the WebView, so the map is still here when they come back
+      var cap = window.Capacitor;
+      var browser = cap && cap.Plugins && cap.Plugins.Browser;
+      if (browser && browser.open) browser.open({ url: CRM_URL });
+      else window.open(CRM_URL, "_system");
+    });
 
     $("who-owner").addEventListener("click", async () => {
       $("who-modal").hidden = true;
