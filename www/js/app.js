@@ -1143,8 +1143,13 @@ document.querySelectorAll(".dl-store").forEach((a) => a.addEventListener("click"
   });
 })();
 
-/* ---- zoom buttons (left middle) ---- */
+/* ---- zoom buttons (left middle) ----
+ * Dropped inside the app: pinch-to-zoom is the natural gesture there and the
+ * buttons only eat map. The website keeps them (a mouse has no pinch). */
 (function () {
+  const ctrl = document.getElementById("zoom-ctrl");
+  const cap = window.Capacitor;
+  if (ctrl && cap && cap.isNativePlatform && cap.isNativePlatform()) { ctrl.remove(); return; }
   const zi = document.getElementById("zoom-in"), zo = document.getElementById("zoom-out");
   if (zi) zi.addEventListener("click", () => map.easeTo({ zoom: map.getZoom() + 1, duration: 300 }));
   if (zo) zo.addEventListener("click", () => map.easeTo({ zoom: map.getZoom() - 1, duration: 300 }));
