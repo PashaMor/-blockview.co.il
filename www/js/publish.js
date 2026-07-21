@@ -169,11 +169,13 @@
       (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
   function clearAddress() {
-    state.address = null; state.footprint = null;
+    state.address = null; state.footprint = null; state.matchedBuilding = null;
     $("p-addr-picked").hidden = true;
     $("p-addr-picked").textContent = "";
     $("p-addr-results").hidden = true;
     $("p-addr-results").innerHTML = "";
+    const m = $("p-addr-match");
+    if (m) { m.hidden = true; m.textContent = ""; m.className = "addr-match"; }
   }
   function showResults(items) {
     const box = $("p-addr-results");
@@ -209,7 +211,45 @@
     state.footprint = fp;
     picked.textContent = "📍 " + it.short + " — " +
       (fp ? T("address_ok", "נמצא מתאר בניין אמיתי") : T("address_nofp", "ללא מתאר מדויק, ימוקם לפי הכתובת"));
+    showBuildingMatch(it, fp);
   });
+
+  /* ---- say WHICH building this will attach to, before submitting ----
+   * ensure_building() dedupes silently (same OSM id, same address, or within
+   * ~30 m). On a dense street that can attach "אלנבי 21" to "אלנבי 40" next
+   * door. The owner has to see that while they can still back out. */
+  async function showBuildingMatch(addr, fp) {
+    const box = $("p-addr-match");
+    if (!box) return;
+    box.hidden = true;
+    box.className = "addr-match";
+    state.matchedBuilding = null;
+    try {
+      const { data, error } = await supa().rpc("preview_building_match", {
+        p_address: addr.label,
+        p_lat: fp && fp.center ? fp.center[1] : addr.lat,
+        p_lng: fp && fp.center ? fp.center[0] : addr.lng,
+        p_osm_id: (fp && fp.osmId) || addr.osmId || null,
+      });
+      // 25_preview_building_match.sql may not be applied yet — stay quiet then
+      if (error || !data || !data.length) return;
+      const m = data[0];
+      state.matchedBuilding = m;
+      if (m.reason === "new") {
+        box.textContent = "🏠 " + T("match_new", "ייווצר בניין חדש בכתובת הזו.");
+      } else if (m.reason === "existing_hidden") {
+        box.textContent = "🏢 " + T("match_hidden", "הנכס יצורף לבניין קיים בכתובת הזו.");
+      } else {
+        box.className = "addr-match warn";
+        box.textContent = "⚠️ " + T("match_existing", "הנכס יצורף לבניין הקיים") +
+          ' "' + (m.name || "") + '" — ' + (m.address || "") + ". " +
+          (m.reason === "nearby"
+            ? T("match_nearby", "הכתובת שבחרת נמצאת במרחק של כמה מטרים ממנו.")
+            : T("match_same", "זו אותה כתובת."));
+      }
+      box.hidden = false;
+    } catch (e) { /* preview is a courtesy: never block publishing */ }
+  }
   // escape hatch: attach to one of the buildings already on the map
   $("p-pick-existing").addEventListener("click", () => {
     const sel = $("p-building");

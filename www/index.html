@@ -25,8 +25,8 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=47" />
-  <link rel="stylesheet" href="css/style.css?v=47" />
+  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=48" />
+  <link rel="stylesheet" href="css/style.css?v=48" />
 </head>
 <body>
   <div id="map"></div>
@@ -395,6 +395,9 @@
         <input id="p-address" class="selectbox" autocomplete="off" placeholder="רחוב ומספר, עיר" data-i18n-ph="address_ph" />
         <div id="p-addr-results" class="addr-results" hidden></div>
         <div id="p-addr-picked" class="addr-picked" hidden></div>
+        <!-- which building this will attach to — shown before submitting, so a
+             wrong merge is visible instead of silent -->
+        <div id="p-addr-match" class="addr-match" hidden></div>
         <div class="hint-row">
           <span class="field-hint" data-i18n="address_hint">חפש את הכתובת — הבניין ייווצר אוטומטית לפי מפת OpenStreetMap.</span>
           <button type="button" id="p-pick-existing" class="linkish" data-i18n="pick_existing">בחירה מרשימת בניינים</button>
@@ -490,18 +493,18 @@
     </div>
   </div>
 
-  <script src="vendor/maplibre-gl.js?v=47"></script>
-  <script src="vendor/supabase.min.js?v=47"></script>
-  <script src="js/config.js?v=47"></script>
-  <script src="js/analytics.js?v=47"></script>
-  <script src="js/oauth.js?v=47"></script>
-  <script src="js/geo.js?v=47"></script>
-  <script src="js/i18n.js?v=47"></script>
-  <script src="js/data.js?v=47"></script>
-  <script src="js/track.js?v=47"></script>
-  <script src="js/app.js?v=47"></script>
-  <script src="js/auth.js?v=47"></script>
-  <script src="js/describe-gen.js?v=47"></script>
-  <script src="js/publish.js?v=47"></script>
+  <script src="vendor/maplibre-gl.js?v=48"></script>
+  <script src="vendor/supabase.min.js?v=48"></script>
+  <script src="js/config.js?v=48"></script>
+  <script src="js/analytics.js?v=48"></script>
+  <script src="js/oauth.js?v=48"></script>
+  <script src="js/geo.js?v=48"></script>
+  <script src="js/i18n.js?v=48"></script>
+  <script src="js/data.js?v=48"></script>
+  <script src="js/track.js?v=48"></script>
+  <script src="js/app.js?v=48"></script>
+  <script src="js/auth.js?v=48"></script>
+  <script src="js/describe-gen.js?v=48"></script>
+  <script src="js/publish.js?v=48"></script>
 </body>
 </html>

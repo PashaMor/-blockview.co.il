@@ -214,7 +214,9 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 
 /* filter sheet */
 #filter-sheet { padding-bottom: 18px; }
-.sheet-body { display: flex; flex-direction: column; gap: 20px; padding: 16px 20px; overflow-y: auto; }
+.sheet-body { display: flex; flex-direction: column; gap: 20px; padding: 16px 20px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .fgroup > label { display: block; font-size: 14px; color: var(--text-soft); margin-bottom: 11px; }
 .range { display: flex; align-items: center; gap: 10px; }
 .range input {
@@ -314,7 +316,12 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .stat-chip b { color: var(--ink); }
 .stat-chip.sale { color: var(--sale); background: #DCEEE8; border-color: transparent; }
 .stat-chip.rent { color: var(--rent); background: #DEE9F6; border-color: transparent; }
-.listings { overflow-y: auto; padding: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+/* flex child that scrolls: without min-height:0 it refuses to shrink below its
+   content, so the last cards are clipped by the sheet instead of scrolling.
+   The bottom padding keeps the last row clear of the phone's nav bar. */
+.listings { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 14px; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; }
 .no-match { padding: 34px 24px; text-align: center; color: var(--text-soft); font-size: 14px; }
 
 /* subscribe (follow building) */
@@ -515,6 +522,10 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .ar-item small { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
 .ar-empty { padding: 12px; font-size: 13px; color: var(--muted); }
 .addr-picked { margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--blue); background: #EDF2FC; border-radius: 10px; padding: 9px 12px; }
+/* which building the listing will attach to; .warn when it merges into another */
+.addr-match { margin-top: 8px; font-size: 12.5px; font-weight: 600; line-height: 1.6;
+  color: var(--text-soft); background: var(--surface-2); border-radius: 10px; padding: 9px 12px; }
+.addr-match.warn { color: #8A5A00; background: #FFF4DE; border: 1px solid #F0DCB0; }
 .hint-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .hint-row .field-hint { flex: 1; min-width: 180px; }
 .linkish { border: 0; background: transparent; color: var(--blue); font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; padding: 4px; }
