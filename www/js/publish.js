@@ -8,9 +8,12 @@
   const btn = document.getElementById("publish-btn");
   if (!btn) return;
 
-  // Hide the whole feature inside the native app (website-only per product decision)
+  // PUBLISHING is website-only (product decision): the app loses the "＋ פרסם נכס"
+  // button and the owner/realtor chooser. EDITING an existing listing still works
+  // there — an owner who can delete a listing must also be able to fix a typo —
+  // so the form itself is wired up either way and reached via BVPublish.openEdit().
   const isNativeApp = !!window.Capacitor || /BlockViewApp/i.test(navigator.userAgent);
-  if (isNativeApp) { btn.remove(); return; }
+  if (isNativeApp) btn.remove();
 
   const CRM_URL = "https://crm.blockview.co.il";
   const $ = (id) => document.getElementById(id);
@@ -21,21 +24,23 @@
                   editId: null, savedPhotos: [] };
 
   /* ---------------------------------------------------- chooser modal ---- */
-  btn.addEventListener("click", () => { $("who-modal").hidden = false; });
-  $("who-close").addEventListener("click", () => ($("who-modal").hidden = true));
-  $("who-modal").addEventListener("click", (e) => { if (e.target === $("who-modal")) $("who-modal").hidden = true; });
+  if (!isNativeApp) {
+    btn.addEventListener("click", () => { $("who-modal").hidden = false; });
+    $("who-close").addEventListener("click", () => ($("who-modal").hidden = true));
+    $("who-modal").addEventListener("click", (e) => { if (e.target === $("who-modal")) $("who-modal").hidden = true; });
 
-  $("who-realtor").addEventListener("click", () => { window.location.href = CRM_URL; });
+    $("who-realtor").addEventListener("click", () => { window.location.href = CRM_URL; });
 
-  $("who-owner").addEventListener("click", async () => {
-    $("who-modal").hidden = true;
-    if (!window.BVAuth || !window.BVAuth.isLoggedIn()) {
-      if (window.bvToast) window.bvToast(T("login_to_publish", "התחבר כדי לפרסם נכס"));
-      if (window.BVAuth) window.BVAuth.openAuth();
-      return;
-    }
-    await openPublish();
-  });
+    $("who-owner").addEventListener("click", async () => {
+      $("who-modal").hidden = true;
+      if (!window.BVAuth || !window.BVAuth.isLoggedIn()) {
+        if (window.bvToast) window.bvToast(T("login_to_publish", "התחבר כדי לפרסם נכס"));
+        if (window.BVAuth) window.BVAuth.openAuth();
+        return;
+      }
+      await openPublish();
+    });
+  }
 
   /* ------------------------------------------------------- publish UI ---- */
   const sheet = () => $("publish-sheet");
