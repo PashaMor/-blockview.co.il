@@ -37,13 +37,16 @@
 <body>
   <div id="map"></div>
 
-  <!-- Brand -->
-  <header id="brand">
-    <img class="brand-logo" src="logo.png" alt="BlockView — גע בבניין. גלה מה בפנים." />
-  </header>
+  <!-- Brand + publish. The wrapper is display:contents on the website, so both
+       keep their own absolute positions; in the app it becomes a flex row and
+       they sit side by side under the status bar. -->
+  <div id="topleft">
+    <header id="brand">
+      <img class="brand-logo" src="logo.png" alt="BlockView — גע בבניין. גלה מה בפנים." />
+    </header>
 
-  <!-- Publish (website only — removed inside the native app) -->
-  <button id="publish-btn"><span>＋</span> <span data-i18n="publish">פרסם נכס</span></button>
+    <button id="publish-btn"><span>＋</span> <span data-i18n="publish">פרסם נכס</span></button>
+  </div>
 
   <!-- Zoom controls -->
   <div id="zoom-ctrl">

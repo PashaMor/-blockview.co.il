@@ -679,18 +679,29 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .bv-app .bb-btn { height: 56px; font-size: 15px; padding: 0 18px; }
 .bv-app .bb-btn:not(.primary) { width: 56px; font-size: 22px; }
 .bv-app #open-favs, .bv-app #open-alerts { width: auto; padding: 0 14px; font-size: 15px; }
-.bv-app #publish-btn { height: 50px; font-size: 15px; padding: 0 22px; }
+/* ---------- app: logo and publish share the top-left row ----------
+   display:contents leaves the website untouched (both children keep the
+   absolute positions they already had); in the app the wrapper becomes the
+   row. It stops short of the right-hand button column so the two never meet. */
+#topleft { display: contents; }
+.bv-app #topleft {
+  display: flex; align-items: center; gap: 10px;
+  position: absolute; top: 16px; left: 16px; right: 76px; z-index: 6;
+}
+.bv-app #brand { position: static; padding: 6px 10px; flex: 0 1 auto; min-width: 0; }
+.bv-app .brand-logo { height: 34px; }
+.bv-app #publish-btn {
+  position: static; transform: none; top: auto; bottom: auto; left: auto;
+  height: 44px; padding: 0 14px; font-size: 13.5px; flex: none; white-space: nowrap;
+}
+.bv-app #publish-btn:hover { transform: none; }
+
 /* the app draws edge to edge, so the gesture bar overlaps anything at the
    bottom. env() only resolves with viewport-fit=cover (set in index.html), and
    some WebViews still report 0 — hence a floor of 34px rather than a bare inset. */
 .bv-app #bottombar { bottom: max(34px, calc(20px + env(safe-area-inset-bottom, 0px))); }
 .bv-app .sheet { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
-/* in the app it lives under the logo, top-left, where nothing else sits */
-.bv-app #publish-btn {
-  top: 104px; bottom: auto; left: 16px; transform: none;
-}
-.bv-app #publish-btn:hover { transform: none; }
 
 /* ---- agent status in the profile ---- */
 .acc-agent-row { display: flex; align-items: center; gap: 12px; justify-content: space-between;
