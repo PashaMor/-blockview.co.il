@@ -23,8 +23,19 @@ pasting the IDs. Do the steps in order — the daily report needs the first two.
    | Surface | User | `surface` |
    | App area | User | `app_area` |
 
-5. Copy the **numeric property ID** (Admin → Property details, looks like
-   `481234567`) — the report needs it, and it is *not* the `G-` id.
+5. Copy the **numeric property ID** — the report needs it. Get it from
+   **Admin → Property details**. Careful: this is *not* the `G-B69ZV5EFZQ`
+   measurement id, and *not* the Stream ID shown on the data-stream page. Three
+   different numbers live one click apart:
+
+   | Where you see it | Looks like | Used for |
+   |---|---|---|
+   | Data stream → Measurement ID | `G-B69ZV5EFZQ` | `GA4_ID` in config.js (already set) |
+   | Data stream → Stream ID | `15294320588` | nothing we use |
+   | Admin → Property details | `481234567` | `GA4_PROPERTY_ID` env var |
+
+The "Data collection isn't active" warning on the stream page clears by itself
+once the first real page view arrives; it is not a sign of a broken tag.
 
 What is measured: page views on the site, CRM and admin console (separated by
 `app_area`), plus the listing events already tracked internally —
@@ -46,6 +57,15 @@ Use a **Domain property**, not a URL prefix — it covers `blockview.co.il`,
 3. Back in Search Console → **Verify**.
 4. **Sitemaps → Add sitemap** → `sitemap.xml`
    ([www/sitemap.xml](www/sitemap.xml) is already deployed).
+
+   You have to do this by hand, because **Cloudflare serves its own managed
+   `robots.txt`** (AI-crawler blocks + content signals) and ours never reaches
+   Google — so the `Sitemap:` line in [www/robots.txt](www/robots.txt) is
+   ignored. That is fine otherwise: Cloudflare's version says `search=yes` and
+   `Allow: /`, and the CRM and admin console are kept out of the index by their
+   `<meta name="robots" content="noindex, nofollow">` tags rather than by
+   robots.txt. If you ever want our file to win, turn the managed robots.txt
+   off under Cloudflare → **AI Crawl Control**.
 
 `crm.` and `admin.` carry `<meta name="robots" content="noindex, nofollow">`
 and are disallowed in [www/robots.txt](www/robots.txt), so they stay out of the
