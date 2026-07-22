@@ -1,40 +1,147 @@
 {
   "redirects": [
-    { "source": "/crm", "destination": "https://crm.blockview.co.il", "permanent": true },
-    { "source": "/crm/", "destination": "https://crm.blockview.co.il", "permanent": true },
-    { "source": "/crm/(.*)", "destination": "https://crm.blockview.co.il/$1", "permanent": true },
-    { "source": "/admin", "destination": "https://admin.blockview.co.il", "permanent": true },
-    { "source": "/admin/", "destination": "https://admin.blockview.co.il", "permanent": true },
-    { "source": "/admin/(.*)", "destination": "https://admin.blockview.co.il/$1", "permanent": true }
+    {
+      "source": "/crm",
+      "destination": "https://crm.blockview.co.il",
+      "permanent": true
+    },
+    {
+      "source": "/crm/",
+      "destination": "https://crm.blockview.co.il",
+      "permanent": true
+    },
+    {
+      "source": "/crm/(.*)",
+      "destination": "https://crm.blockview.co.il/$1",
+      "permanent": true
+    },
+    {
+      "source": "/admin",
+      "destination": "https://admin.blockview.co.il",
+      "permanent": true
+    },
+    {
+      "source": "/admin/",
+      "destination": "https://admin.blockview.co.il",
+      "permanent": true
+    },
+    {
+      "source": "/admin/(.*)",
+      "destination": "https://admin.blockview.co.il/$1",
+      "permanent": true
+    }
   ],
   "crons": [
-    { "path": "/api/daily-report", "schedule": "0 5 * * *" }
+    {
+      "path": "/api/daily-report",
+      "schedule": "0 5 * * *"
+    }
   ],
   "headers": [
     {
       "source": "/",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     },
     {
       "source": "/(.*).html",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     }
   ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-
-    { "source": "/", "has": [{ "type": "host", "value": "crm.blockview.co.il" }], "destination": "/www/crm/index.html" },
-    { "source": "/crm.css", "has": [{ "type": "host", "value": "crm.blockview.co.il" }], "destination": "/www/crm/crm.css" },
-    { "source": "/crm.js", "has": [{ "type": "host", "value": "crm.blockview.co.il" }], "destination": "/www/crm/crm.js" },
-
-    { "source": "/", "has": [{ "type": "host", "value": "admin.blockview.co.il" }], "destination": "/www/admin/index.html" },
-    { "source": "/admin.css", "has": [{ "type": "host", "value": "admin.blockview.co.il" }], "destination": "/www/admin/admin.css" },
-    { "source": "/admin.js", "has": [{ "type": "host", "value": "admin.blockview.co.il" }], "destination": "/www/admin/admin.js" },
-
-    { "source": "/terms", "destination": "/www/legal/terms.html" },
-    { "source": "/privacy", "destination": "/www/legal/privacy.html" },
-
-    { "source": "/", "destination": "/www/index.html" },
-    { "source": "/(.*)", "destination": "/www/$1" }
-  ]
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "crm.blockview.co.il"
+        }
+      ],
+      "destination": "/www/crm/index.html"
+    },
+    {
+      "source": "/crm.css",
+      "has": [
+        {
+          "type": "host",
+          "value": "crm.blockview.co.il"
+        }
+      ],
+      "destination": "/www/crm/crm.css"
+    },
+    {
+      "source": "/crm.js",
+      "has": [
+        {
+          "type": "host",
+          "value": "crm.blockview.co.il"
+        }
+      ],
+      "destination": "/www/crm/crm.js"
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "admin.blockview.co.il"
+        }
+      ],
+      "destination": "/www/admin/index.html"
+    },
+    {
+      "source": "/admin.css",
+      "has": [
+        {
+          "type": "host",
+          "value": "admin.blockview.co.il"
+        }
+      ],
+      "destination": "/www/admin/admin.css"
+    },
+    {
+      "source": "/admin.js",
+      "has": [
+        {
+          "type": "host",
+          "value": "admin.blockview.co.il"
+        }
+      ],
+      "destination": "/www/admin/admin.js"
+    },
+    {
+      "source": "/terms",
+      "destination": "/www/legal/terms.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/www/legal/privacy.html"
+    },
+    {
+      "source": "/",
+      "destination": "/www/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/www/$1"
+    }
+  ],
+  "functions": {
+    "api/nearby.js": {
+      "maxDuration": 60
+    }
+  }
 }

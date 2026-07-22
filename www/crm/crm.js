@@ -91,6 +91,22 @@
     });
   }
 
+  /* ask the server to import nearby places for a building (no-op if it already
+     has them). Fire-and-forget: never awaited, never surfaced. */
+  async function primeNearby(buildingId) {
+    if (!buildingId) return;
+    try {
+      const s = await supa.auth.getSession();
+      const token = s && s.data && s.data.session && s.data.session.access_token;
+      if (!token) return;
+      fetch("/api/nearby", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ building_id: buildingId }),
+      }).catch(function () {});
+    } catch (e) { /* best effort */ }
+  }
+
   let toastTimer;
   function toast(msg) {
     const t = $("toast"); t.textContent = msg; t.hidden = false;
@@ -950,6 +966,9 @@
           contacts.map((c, i) => ({ listing_id: listingId, name: c.name, phone: c.phone, email: c.email, whatsapp: c.whatsapp, sort: i })));
         if (cins.error) throw cins.error;
       }
+      // fill in "what's nearby" for the building if it has none yet
+      // (api/nearby.js) — fire-and-forget, never blocks the save
+      primeNearby(row.building_id);
       toast(bouncedBack ? "הנכס עודכן ונשלח לאישור מחדש" : id ? "הנכס עודכן" : "הנכס נוסף");
       await loadListings();
       switchTab("listings");

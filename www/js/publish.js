@@ -120,6 +120,22 @@
   }
   function closePublish() { sheet().classList.remove("open"); sheet().setAttribute("aria-hidden", "true"); }
 
+  /* ask the server to import nearby places for this building (no-op if it
+     already has them). Fire-and-forget: never awaited, never surfaced. */
+  async function primeNearby(buildingId) {
+    if (!buildingId) return;
+    try {
+      const s = await supa().auth.getSession();
+      const token = s && s.data && s.data.session && s.data.session.access_token;
+      if (!token) return;
+      fetch("/api/nearby", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ building_id: buildingId }),
+      }).catch(function () {});
+    } catch (e) { /* best effort */ }
+  }
+
   /* ---------------------------------------------------------- edit mode ----
    * The owner manages their listings from the account sheet (js/my-listings.js)
    * and edits them in this same form. Editing an approved listing sends it back
@@ -683,6 +699,11 @@
         if (up.error) throw up.error;
         await supa().from("listing_photos").insert({ listing_id: data.id, path, sort: sortFrom + i });
       }
+
+      // a building created from a typed address has no "what's nearby" yet;
+      // fill it in server-side, fire-and-forget (api/nearby.js). Publishing has
+      // already succeeded — a slow or failed import must never block it.
+      primeNearby(row.building_id);
 
       closePublish();
       if (window.BVMyListings) window.BVMyListings.render();
