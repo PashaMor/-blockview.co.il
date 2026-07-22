@@ -13,7 +13,7 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g,
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const nis = (n) => "₪" + Number(n || 0).toLocaleString("he-IL");
-  const STATUS_HE = { pending: "ממתין לאישור", approved: "מאושר", rejected: "נדחה", sold: "נמכר", draft: "טיוטה" };
+  const STATUS_HE = { pending: "ממתין לאישור", approved: "מאושר", rejected: "נדחה", frozen: "מוקפא", sold: "נמכר", draft: "טיוטה" };
 
   const state = { user: null, role: "user", application: null, buildings: [], listings: [], leads: [], photos: [], pending: [],
                   logoPath: null, logoBlob: null, logoPreview: null, agent: null };
@@ -637,7 +637,7 @@
     $("f-website").value = l && l.website_url ? l.website_url : "";
     $("f-age").value = l ? l.age : "old";
     // status is meaningless while creating — a new listing always goes to moderation
-    $("f-status").value = l ? (["pending", "draft", "sold"].includes(l.status) ? l.status : "pending") : "pending";
+    $("f-status").value = l ? (["pending", "frozen"].includes(l.status) ? l.status : "pending") : "pending";
     $("f-status-field").hidden = !l;
     $("f-tour").value = l && l.tour_url ? l.tour_url : "";
     $("f-desc").value = l ? l.description : "";

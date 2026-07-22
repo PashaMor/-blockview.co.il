@@ -777,3 +777,16 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 /* ---- publish: balcony / yard size ---- */
 .amen-size { margin-top: 10px; }
 .amen-size label { display: block; font-size: 13px; color: var(--text-soft); margin-bottom: 7px; font-weight: 600; }
+
+/* listing status badges in the account sheet (my-listings.js) */
+.badge.approved { color: #1E6B4F; background: #DCEEE8; }
+.badge.pending  { color: #8A5A00; background: #FBF0DA; }
+.badge.rejected { color: #B0322A; background: #FBE9E7; }
+.badge.frozen   { color: #3A6DB0; background: #E3ECFA; }
+
+/* virtual-tour / website links on the listing detail */
+.ext-links { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 4px; }
+.ext-link { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13.5px;
+  color: var(--blue); background: #EDF2FC; border: 1px solid transparent; border-radius: 10px;
+  padding: 8px 14px; text-decoration: none; }
+.ext-link:hover { border-color: var(--blue); }

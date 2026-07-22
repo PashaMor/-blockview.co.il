@@ -223,6 +223,7 @@ async function loadLiveData() {
       (grouped[r.building_id] = grouped[r.building_id] || []).push({
         id: r.id, deal: r.deal, price: +r.price, rooms: +r.rooms, size: +r.size, floor: +r.floor,
         title: r.title, description: r.description || "", tour: !!r.tour_url,
+        tourUrl: r.tour_url || null, websiteUrl: r.website_url || null,
         type: r.type, age: r.age,
         category: r.category || "residential",
         rentTerm: r.rent_term || (r.deal === "rent" ? "long" : null),
@@ -761,6 +762,20 @@ function descFor(l) {
   return [`דירת ${l.rooms} חדרים בשטח ${l.size} מ"ר בקומה ${l.floor}.`, "מרווחת, מוארת ומאווררת עם כיווני אוויר טובים.",
     "קרובה לתחבורה ציבורית, בתי קפה ומרכזי קניות.", l.tour ? "כולל סיור וירטואלי תלת-מימדי." : "ניתן לתאם ביקור בתיאום מראש."];
 }
+/* virtual-tour + agent-website links, when the listing has them. Only http(s)
+   is rendered as a link — the DB constrains these, but the client double-checks
+   so a bad value can never become a live href. */
+function safeHttp(u) { return /^https?:\/\//i.test(String(u || "")) ? u : null; }
+function extLinks(l) {
+  const tour = safeHttp(l.tourUrl), site = safeHttp(l.websiteUrl);
+  if (!tour && !site) return "";
+  const a = (href, label) => `<a class="ext-link" href="${escHtml(href)}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+  return `<div class="ext-links">` +
+    (tour ? a(tour, "🎥 " + t("virtual_tour")) : "") +
+    (site ? a(site, "🌐 " + t("listing_website")) : "") +
+    `</div>`;
+}
+
 function openDetail(lid) {
   const l = LISTING_INDEX[lid]; if (!l) return;
   const imgs = imagesFor(l);
@@ -785,6 +800,7 @@ function openDetail(lid) {
         <div class="spec-grid">${specRows(l).map(([k, v]) => `<div class="spec"><span class="sk">${k}</span><span class="sv">${v}</span></div>`).join("")}</div>
         <h3 class="d-sec">${t("descr")}</h3>
         <ul class="d-desc">${descFor(l).map((d) => `<li>${escHtml(d)}</li>`).join("")}</ul>
+        ${extLinks(l)}
         <div id="nearby-box"></div>
         <h3 class="d-sec">${t("my_note")}</h3>
         <textarea id="note-input" class="note-input" placeholder="${t("note_ph")}"></textarea>
@@ -1336,6 +1352,20 @@ openSharedListing();
   if (!isNativeApp) return;
   document.querySelectorAll('.legal-consent a[target="_blank"]').forEach((a) => {
     a.removeAttribute("target");
+  });
+
+  // A tour / website link (target="_blank") is a dead tap inside the WebView —
+  // it must open in the system browser instead, so the map stays put behind it.
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest ? e.target.closest("a.ext-link") : null;
+    if (!a) return;
+    const href = a.getAttribute("href");
+    if (!href) return;
+    e.preventDefault();
+    const cap = window.Capacitor;
+    const browser = cap && cap.Plugins && cap.Plugins.Browser;
+    if (browser && browser.open) browser.open({ url: href });
+    else window.open(href, "_system");
   });
 })();
 

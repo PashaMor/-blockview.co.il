@@ -25,8 +25,7 @@
     approved: { cls: "approved", key: "st_approved", fb: "מאושר — מופיע במפה" },
     pending:  { cls: "pending",  key: "st_pending",  fb: "ממתין לאישור" },
     rejected: { cls: "rejected", key: "st_rejected", fb: "נדחה" },
-    sold:     { cls: "sold",     key: "st_sold",     fb: "נמכר" },
-    draft:    { cls: "draft",    key: "st_draft",    fb: "טיוטה" },
+    frozen:   { cls: "frozen",   key: "st_frozen",   fb: "מוקפא — מוסתר זמנית" },
   };
 
   function db() { return window.BVSupa || window.BVDB; }
