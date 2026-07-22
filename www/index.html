@@ -112,13 +112,25 @@
           <button class="seg-btn" data-deal="rent" data-i18n="rent">השכרה</button>
         </div>
       </div>
+      <!-- only meaningful for rentals; hidden while the filter is on "sale" -->
+      <div class="fgroup" id="term-group" hidden>
+        <label data-i18n="rent_term">תקופת השכירות</label>
+        <div class="seg" id="term-seg">
+          <button class="seg-btn active" data-term="all" data-i18n="all">הכל</button>
+          <button class="seg-btn" data-term="long" data-i18n="term_long">ארוך טווח</button>
+          <button class="seg-btn" data-term="short" data-i18n="term_short">קצר טווח</button>
+        </div>
+      </div>
       <div class="fgroup">
         <label data-i18n="prop_type">סוג נכס</label>
-        <div class="seg" id="type-seg">
-          <button class="seg-btn active" data-type="all" data-i18n="all">הכל</button>
-          <button class="seg-btn" data-type="flat" data-i18n="flat">דירה</button>
-          <button class="seg-btn" data-type="house" data-i18n="house">בית</button>
+        <div class="seg" id="cat-seg">
+          <button class="seg-btn active" data-cat="all" data-i18n="all">הכל</button>
+          <button class="seg-btn" data-cat="residential" data-i18n="residential">מגורים</button>
+          <button class="seg-btn" data-cat="commercial" data-i18n="commercial">מסחרי</button>
         </div>
+        <!-- the list follows the category above; a <select> because there are
+             now eight types and they will not fit as buttons -->
+        <select class="selectbox" id="type-select" style="margin-top:10px"></select>
       </div>
       <div class="fgroup">
         <label data-i18n="city">עיר</label>
@@ -501,6 +513,15 @@
           <button type="button" class="seg-btn active" data-pdeal="sale" data-i18n="sale">מכירה</button>
           <button type="button" class="seg-btn" data-pdeal="rent" data-i18n="rent">השכרה</button>
         </div>
+      </div>
+      <!-- shown only when the listing is a rental -->
+      <div class="fgroup" id="p-term-group" hidden>
+        <label data-i18n="rent_term">תקופת השכירות</label>
+        <div class="seg" id="p-term-seg">
+          <button type="button" class="seg-btn active" data-pterm="long" data-i18n="term_long">ארוך טווח</button>
+          <button type="button" class="seg-btn" data-pterm="short" data-i18n="term_short">קצר טווח</button>
+        </div>
+        <p class="field-hint" data-i18n="term_hint">קצר טווח — השכרה לימים או שבועות. ארוך טווח — חוזה שכירות רגיל.</p>
       </div>
       <div class="fgroup">
         <label data-i18n="pub_title_lbl">כותרת</label>

@@ -575,6 +575,13 @@
   }
   $("f-category").addEventListener("change", () => fillTypes($("f-category").value, $("f-type").value));
 
+  // rental term applies only to a rental; a sale hides it and saves null
+  function syncTermField() {
+    const w = $("f-term-wrap");
+    if (w) w.hidden = $("f-deal").value !== "rent";
+  }
+  $("f-deal").addEventListener("change", syncTermField);
+
   /* ---------------------------------------------------------- editor ---- */
   function openEditor(l) {
     switchTab("editor");
@@ -587,6 +594,8 @@
     // editing keeps the building it already has; a new listing starts from an address
     resetAddress(l ? (l.buildings || {}) : null);
     $("f-deal").value = l ? l.deal : "sale";
+    $("f-term").value = (l && l.rent_term) || "long";
+    syncTermField();
     $("f-title").value = l ? l.title : "";
     $("f-price").value = l ? l.price : "";
     $("f-rooms").value = l ? l.rooms : "";
@@ -888,6 +897,7 @@
         building_id: buildingId,
         agent_id: state.user.id,
         deal: $("f-deal").value,
+        rent_term: $("f-deal").value === "rent" ? $("f-term").value : null,
         title: $("f-title").value.trim(),
         price: checkedPrice($("f-price").value),
         rooms: +$("f-rooms").value,

@@ -94,6 +94,9 @@
     setSheetMode(false);
     document.querySelectorAll("#p-amen .chip").forEach((c) => c.classList.remove("on"));
     document.querySelectorAll("#p-deal-seg .seg-btn").forEach((b) => b.classList.toggle("active", b.dataset.pdeal === "sale"));
+    state.term = "long";
+    document.querySelectorAll("#p-term-seg .seg-btn").forEach((b) => b.classList.toggle("active", b.dataset.pterm === "long"));
+    syncTermGroup();
     $("pub-form").reset();
     $("p-floor").value = 0;
     $("p-floors-total").value = "";
@@ -156,6 +159,10 @@
     $("pub-form").reset();
     document.querySelectorAll("#p-deal-seg .seg-btn").forEach((b) =>
       b.classList.toggle("active", b.dataset.pdeal === l.deal));
+    state.term = l.rent_term || "long";
+    document.querySelectorAll("#p-term-seg .seg-btn").forEach((b) =>
+      b.classList.toggle("active", b.dataset.pterm === state.term));
+    syncTermGroup();
     document.querySelectorAll("#p-amen .chip").forEach((c) =>
       c.classList.toggle("on", !!state.amen[c.dataset.pamen]));
 
@@ -436,7 +443,21 @@
     b.addEventListener("click", () => {
       document.querySelectorAll("#p-deal-seg .seg-btn").forEach((x) => x.classList.remove("active"));
       b.classList.add("active"); state.deal = b.dataset.pdeal;
+      syncTermGroup();
     }));
+
+  /* rental term — a sale has none, so the group is hidden and the value goes
+   * to null (the DB rejects a rent_term on a sale, 28_rent_term.sql) */
+  function syncTermGroup() {
+    const g = $("p-term-group");
+    if (g) g.hidden = state.deal !== "rent";
+  }
+  document.querySelectorAll("#p-term-seg .seg-btn").forEach((b) =>
+    b.addEventListener("click", () => {
+      document.querySelectorAll("#p-term-seg .seg-btn").forEach((x) => x.classList.remove("active"));
+      b.classList.add("active"); state.term = b.dataset.pterm;
+    }));
+  function rentTerm() { return state.deal === "rent" ? (state.term || "long") : null; }
 
   document.querySelectorAll("#p-amen .chip").forEach((c) =>
     c.addEventListener("click", () => {
@@ -609,6 +630,7 @@
         agent_id: user.id,
         poster_type: state.posterType === "agent" ? "agent" : "owner",
         deal: state.deal,
+        rent_term: rentTerm(),
         title: $("p-title").value.trim(),
         price: checkedPrice($("p-price").value),
         rooms: +$("p-rooms").value,

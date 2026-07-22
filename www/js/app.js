@@ -12,7 +12,13 @@ try { mode = localStorage.getItem("blockview_theme") || "light"; } catch (e) {}
 let selectedId = null;
 const filter = {
   deal: "all", rooms: 0, floor: 0, type: "all", age: "all", city: "all",
+  category: "all", term: "all",
   priceMin: 0, priceMax: 0, pets: false, parking: false, elevator: false, furnished: false,
+};
+// property types per category — same split the publish forms use
+const FILTER_TYPES = {
+  residential: [["flat", "דירה"], ["house", "בית"], ["penthouse", "פנטהאוז"], ["studio", "סטודיו"]],
+  commercial: [["office", "משרד"], ["shop", "חנות"], ["warehouse", 'מחסן / לוגיסטיקה'], ["other", "אחר"]],
 };
 const DEFAULT_CITY = "תל אביב-יפו";
 
@@ -121,6 +127,10 @@ function cityOf(l) { var e = LISTING_INDEX[l.id]; return (e && e.building.city) 
 function passes(l) {
   const a = attrs(l);
   if (filter.deal !== "all" && l.deal !== filter.deal) return false;
+  // short vs long let: only a rental has a term, so this never hides a sale
+  if (filter.term !== "all" && l.deal === "rent" && (l.rentTerm || "long") !== filter.term) return false;
+  if (filter.term !== "all" && l.deal !== "rent") return false;
+  if (filter.category !== "all" && (l.category || "residential") !== filter.category) return false;
   if (filter.type !== "all" && a.type !== filter.type) return false;
   if (filter.age !== "all" && a.age !== filter.age) return false;
   if (filter.city !== "all" && cityOf(l) !== filter.city) return false;
@@ -204,6 +214,8 @@ async function loadLiveData() {
         id: r.id, deal: r.deal, price: +r.price, rooms: +r.rooms, size: +r.size, floor: +r.floor,
         title: r.title, description: r.description || "", tour: !!r.tour_url,
         type: r.type, age: r.age,
+        category: r.category || "residential",
+        rentTerm: r.rent_term || (r.deal === "rent" ? "long" : null),
         furnished: !!r.furnished, pets: !!r.pets, parking: !!r.parking, elevator: !!r.elevator,
         hasWhatsapp: waSet.has(r.id),
         photos,
@@ -408,7 +420,11 @@ function deselect() {
 }
 
 /* ------------------------------------------------------ listings sheet ---- */
-function dealBadge(d) { return d === "sale" ? `<span class="badge sale">${t("for_sale")}</span>` : `<span class="badge rent">${t("for_rent")}</span>`; }
+function dealBadge(d, term) {
+  if (d === "sale") return `<span class="badge sale">${t("for_sale")}</span>`;
+  const tt = term === "short" ? " · " + t("term_short") : term === "long" ? " · " + t("term_long") : "";
+  return `<span class="badge rent">${t("for_rent")}${tt}</span>`;
+}
 function listingCard(l) {
   const hue = l.deal === "sale" ? "#DCEEE8, #C9E4DB" : "#DEE9F6, #CFE0F1";
   const per = l.deal === "rent" ? ' <span class="per">/ לחודש</span>' : "";
@@ -422,7 +438,7 @@ function listingCard(l) {
           ? `<img class="card-photo" src="${l.photos[0]}" alt="" loading="lazy" />`
           : "🏠"}
         <button class="fav-btn ${isFav(l.id) ? "on" : ""}" data-fav="${l.id}" aria-label="שמור למועדפים">♥</button>
-        <div class="card-badges">${note}${tour}${dealBadge(l.deal)}</div>
+        <div class="card-badges">${note}${tour}${dealBadge(l.deal, l.rentTerm)}</div>
       </div>
       <div class="card-body">
         <div class="card-price">${fmtPrice(l.price)}${per}</div>
@@ -629,7 +645,7 @@ function openDetail(lid) {
   const l = LISTING_INDEX[lid]; if (!l) return;
   const imgs = imagesFor(l);
   const per = l.deal === "rent" ? ' <span class="per">/ לחודש</span>' : "";
-  const badge = dealBadge(l.deal);
+  const badge = dealBadge(l.deal, l.rentTerm);
   const el = document.getElementById("detail");
   el.innerHTML = `
     <div class="detail-card" role="dialog" aria-modal="true">
@@ -897,9 +913,52 @@ function updateTotal() {
 document.querySelectorAll("#deal-seg .seg-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll("#deal-seg .seg-btn").forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active"); filter.deal = btn.dataset.deal; setupPriceSlider(); refreshBuildings();
+    btn.classList.add("active"); filter.deal = btn.dataset.deal;
+    syncTermVisibility();
+    setupPriceSlider(); refreshBuildings();
   });
 });
+
+/* ---- rental term: short vs long let ----
+ * Only a rental has one, so the whole group disappears on "sale" and the
+ * choice is cleared with it — otherwise a stale "short term" would silently
+ * hide every sale on the map. */
+function syncTermVisibility() {
+  const g = document.getElementById("term-group");
+  if (!g) return;
+  const show = filter.deal !== "sale";
+  g.hidden = !show;
+  if (!show && filter.term !== "all") { filter.term = "all"; setSeg("term-seg", "term", "all"); }
+}
+document.querySelectorAll("#term-seg .seg-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#term-seg .seg-btn").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active"); filter.term = btn.dataset.term; refreshBuildings();
+  });
+});
+
+/* ---- category, and the type list that follows it ---- */
+function fillFilterTypes() {
+  const sel = document.getElementById("type-select");
+  if (!sel) return;
+  const groups = filter.category === "all"
+    ? FILTER_TYPES.residential.concat(FILTER_TYPES.commercial)
+    : (FILTER_TYPES[filter.category] || []);
+  sel.innerHTML = '<option value="all">' + t("all") + "</option>" +
+    groups.map((p) => '<option value="' + p[0] + '">' + p[1] + "</option>").join("");
+  // a type that no longer belongs to the chosen category cannot stay selected
+  if (!groups.some((p) => p[0] === filter.type)) filter.type = "all";
+  sel.value = filter.type;
+}
+document.querySelectorAll("#cat-seg .seg-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#cat-seg .seg-btn").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active"); filter.category = btn.dataset.cat;
+    fillFilterTypes(); refreshBuildings();
+  });
+});
+const typeSel = document.getElementById("type-select");
+if (typeSel) typeSel.addEventListener("change", (e) => { filter.type = e.target.value; refreshBuildings(); });
 document.querySelectorAll("#rooms-chips .chip").forEach((chip) => {
   chip.addEventListener("click", () => {
     document.querySelectorAll("#rooms-chips .chip").forEach((c) => c.classList.remove("on"));
@@ -909,8 +968,8 @@ document.querySelectorAll("#rooms-chips .chip").forEach((chip) => {
 document.getElementById("floor-min").addEventListener("input", (e) => {
   filter.floor = parseInt(e.target.value, 10) || 0; refreshBuildings();
 });
-// property type & building age (segmented)
-[["type-seg", "type"], ["age-seg", "age"]].forEach(([id, key]) => {
+// building age (segmented) — type is now a category-driven <select> above
+[["age-seg", "age"]].forEach(([id, key]) => {
   document.querySelectorAll(`#${id} .seg-btn`).forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(`#${id} .seg-btn`).forEach((b) => b.classList.remove("active"));
@@ -976,7 +1035,10 @@ function applyFilter(obj) {
   if (!obj) return;
   Object.assign(filter, obj);
   setSeg("deal-seg", "deal", filter.deal);
-  setSeg("type-seg", "type", filter.type);
+  setSeg("cat-seg", "cat", filter.category || "all");
+  setSeg("term-seg", "term", filter.term || "all");
+  syncTermVisibility();
+  fillFilterTypes();                    // rebuilds the list, then re-selects
   setSeg("age-seg", "age", filter.age);
   setChip("rooms-chips", "r", String(filter.rooms || 0));
   document.getElementById("floor-min").value = filter.floor || "";
@@ -996,7 +1058,13 @@ function applyFilter(obj) {
 function filterSummary(f) {
   const p = [];
   if (f.deal === "sale") p.push("מכירה"); else if (f.deal === "rent") p.push("השכרה");
-  if (f.type === "flat") p.push("דירה"); else if (f.type === "house") p.push("בית");
+  if (f.term === "short") p.push("קצר טווח"); else if (f.term === "long") p.push("ארוך טווח");
+  if (f.category === "residential") p.push("מגורים"); else if (f.category === "commercial") p.push("מסחרי");
+  if (f.type && f.type !== "all") {
+    const all = FILTER_TYPES.residential.concat(FILTER_TYPES.commercial);
+    const hit = all.find((x) => x[0] === f.type);
+    if (hit) p.push(hit[1]);
+  }
   if (f.rooms) p.push(f.rooms + "+ חד'");
   if (f.floor) p.push("קומה " + f.floor + "+");
   if (f.priceMin) p.push("מ־" + fmtPrice(f.priceMin));
@@ -1069,6 +1137,8 @@ backdrop.addEventListener("click", () => { closeSheet(); if (window.closeAuthShe
 
 syncFavUI(); // initialise favorites count on load
 syncSubUI(); // initialise alerts count on load
+fillFilterTypes();     // the type list is built from the category, not hard-coded
+syncTermVisibility();  // the rental-term group only applies to rentals
 
 /* ---- hooks used by auth.js (loaded after this file) ---- */
 window.onUserData = function (favIds, subIds, notesObj, plan) {

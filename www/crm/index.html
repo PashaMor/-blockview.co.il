@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>BlockView CRM — ניהול נכסים</title>
-  <link rel="stylesheet" href="crm.css?v=11" />
+  <link rel="stylesheet" href="crm.css?v=22" />
 </head>
 <body>
 
@@ -208,6 +208,13 @@
               <option value="rent">השכרה</option>
             </select>
           </label>
+          <!-- rentals only; a sale must leave this null (28_rent_term.sql) -->
+          <label class="field" id="f-term-wrap" hidden><span>תקופת השכירות *</span>
+            <select id="f-term" class="input">
+              <option value="long">ארוך טווח (חוזה שכירות)</option>
+              <option value="short">קצר טווח (ימים / שבועות)</option>
+            </select>
+          </label>
         </div>
 
         <label class="field"><span>כותרת *</span>
@@ -356,6 +363,6 @@
   <script src="../js/oauth.js?v=17"></script>
   <script src="../js/describe-gen.js?v=16"></script>
   <script src="../js/geo.js?v=53"></script>
-  <script src="crm.js?v=17"></script>
+  <script src="crm.js?v=22"></script>
 </body>
 </html>
