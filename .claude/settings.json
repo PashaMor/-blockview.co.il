@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git -c user.name=Pasha -c user.email=pasham1991@gmail.com commit -q -m 'Add vercel.json to serve www/ at site root *)"
+      "Bash(git -c user.name=Pasha -c user.email=pasham1991@gmail.com commit -q -m 'Add vercel.json to serve www/ at site root *)",
+      "Bash(git check-ignore *)",
+      "Bash(git pull *)"
     ]
   }
 }

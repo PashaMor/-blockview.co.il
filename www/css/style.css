@@ -617,6 +617,10 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .confirm-ic { font-size: 40px; line-height: 1; }
 .confirm-card h2 { margin: 10px 0 6px; font-size: 20px; font-weight: 800; color: var(--ink); }
 .confirm-text { margin: 0 0 18px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+.confirm-input { width: 100%; box-sizing: border-box; margin: 0 0 16px; padding: 12px 14px;
+  font: inherit; font-size: 15px; text-align: center; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.confirm-input:focus { outline: none; border-color: var(--blue); }
 .confirm-actions { display: flex; gap: 10px; }
 .confirm-actions button { flex: 1; font: inherit; font-weight: 700; font-size: 15px; cursor: pointer;
   padding: 12px; border-radius: 12px; border: 1px solid var(--line); }
@@ -625,6 +629,7 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .confirm-ok { background: var(--blue); color: #fff; border-color: transparent; }
 .confirm-ok.danger { background: #C0392B; }
 .confirm-ok:hover { opacity: .92; }
+.confirm-ok:disabled { opacity: .45; cursor: not-allowed; }
 
 /* ---- cover photo picker ---- */
 #p-strip .ph, #photo-strip .ph { position: relative; }

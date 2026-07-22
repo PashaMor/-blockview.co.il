@@ -215,10 +215,25 @@
    * any enquiries. Irreversible, so it asks twice. */
   $("acc-delete").addEventListener("click", async () => {
     if (!state.user) return;
-    if (!confirm(t("delete_warn"))) return;
-    const typed = prompt(t("delete_prompt"));
-    if (typed === null) return;
-    if (typed.trim().toLowerCase() !== (state.user.email || "").toLowerCase()) {
+    const email = state.user.email || "";
+    // one on-brand dialog: the irreversible warning plus a type-your-email
+    // confirmation. The OK button stays disabled until the email matches, so
+    // there is no separate mismatch path to fall through.
+    const typed = window.bvConfirm
+      ? await window.bvConfirm({
+          danger: true,
+          icon: "🗑️",
+          title: t("delete_account") || "מחיקת החשבון",
+          text: t("delete_warn"),
+          input: true,
+          inputType: "email",
+          inputPlaceholder: email,
+          requireMatch: email,
+          okText: t("delete_confirm_btn") || "מחק לצמיתות",
+        })
+      : (confirm(t("delete_warn")) ? prompt(t("delete_prompt")) : null);
+    if (typed === null || typed === false) return;
+    if (String(typed).trim().toLowerCase() !== email.toLowerCase()) {
       if (window.bvToast) window.bvToast(t("delete_mismatch"));
       return;
     }
