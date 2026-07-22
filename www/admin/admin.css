@@ -209,3 +209,7 @@ main { max-width: 1140px; margin: 0 auto; padding: 20px; }
 .chg-arrow { color: var(--muted); text-align: center; }
 .chg-to { color: var(--ink); font-weight: 600; word-break: break-word; }
 @media (max-width: 640px) { .chg-row { grid-template-columns: 1fr; } .chg-arrow { display: none; } }
+
+/* reassign-to-agent control on a listing row */
+.reassign-lbl { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--muted, #8592a2); }
+.reassign-lbl select { font-size: 12.5px; }

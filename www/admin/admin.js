@@ -332,6 +332,36 @@
 
   function agentLabel(id) { const p = state.pmap[id]; return p ? p.email : "—"; }
 
+  /* the accounts a listing may be moved to: agents and admins. The current
+     owner is kept selected (and added even if they are not an agent, so the
+     dropdown never silently changes who owns the listing). */
+  function agentOptions(currentId) {
+    const agents = state.profiles.filter((p) => p.role === "agent" || p.role === "admin");
+    const ids = {};
+    agents.forEach((a) => (ids[a.id] = true));
+    let opts = agents.map((p) =>
+      `<option value="${esc(p.id)}"${p.id === currentId ? " selected" : ""}>` +
+      `${esc(p.email)}${p.role === "admin" ? " (מנהל)" : ""}</option>`).join("");
+    if (currentId && !ids[currentId]) {
+      const p = state.pmap[currentId];
+      opts = `<option value="${esc(currentId)}" selected>${esc(p ? p.email : currentId)}</option>` + opts;
+    }
+    return opts;
+  }
+  async function reassignListing(listingId, agentId) {
+    const p = state.pmap[agentId] || {};
+    const ok = await askConfirm({
+      title: "העברת נכס לסוכן",
+      lines: ["הנכס יועבר לחשבון:", p.email || agentId, "הסוכן ינהל אותו מה-CRM שלו."],
+      okText: "העבר",
+    });
+    if (!ok) return loadAll();                 // cancelled — reset the dropdown
+    const { error } = await supa.rpc("admin_reassign_listing", { p_listing: listingId, p_agent: agentId });
+    if (error) return toast("שגיאה: " + (error.message || error));
+    toast("הנכס הועבר לסוכן");
+    loadAll();
+  }
+
   const sortedPhotos = (l) => (l.listing_photos || []).slice().sort((a, b) => a.sort - b.sort);
 
   /* Moderation needs to SEE the property: every photo, big enough to judge, and
@@ -391,6 +421,9 @@
         ${!withActions ? `<select class="input" data-status="${esc(l.id)}">
             ${Object.keys(ST).map((s) => `<option value="${s}"${s === l.status ? " selected" : ""}>${ST[s]}</option>`).join("")}
           </select>
+          <label class="reassign-lbl">העבר לסוכן
+            <select class="input" data-reassign="${esc(l.id)}" data-current="${esc(l.agent_id)}">${agentOptions(l.agent_id)}</select>
+          </label>
           <button class="btn-bad" data-del="${esc(l.id)}">מחק</button>` : ""}
       </div>
     </div>`;
@@ -497,6 +530,8 @@
   document.addEventListener("change", async (e) => {
     const s = e.target.closest("[data-status]");
     if (s) setStatus(s.dataset.status, s.value);
+    const rs = e.target.closest("[data-reassign]");
+    if (rs && rs.value !== rs.dataset.current) return reassignListing(rs.dataset.reassign, rs.value);
     const r = e.target.closest("[data-role]");
     if (r) setRole(r.dataset.role, r.value);
     const pl = e.target.closest("[data-plan]");
