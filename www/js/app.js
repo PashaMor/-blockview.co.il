@@ -1239,8 +1239,16 @@ document.getElementById("acc-filter-clear").addEventListener("click", async () =
   toast("הסינון השמור נמחק");
 });
 
+// reset flies to the user's saved home location when they have one, else the
+// default Tel Aviv framing (guests always get the default)
+let homeLoc = null;
+window.onHomeLocation = function (h) { homeLoc = h && isFinite(h.lat) && isFinite(h.lng) ? h : null; };
 document.getElementById("reset-view").addEventListener("click", () => {
-  deselect(); is3D = true; viewBtn.textContent = "2D"; map.easeTo({ ...TLV, duration: 900 });
+  deselect(); is3D = true; viewBtn.textContent = "2D";
+  const to = homeLoc
+    ? { center: [homeLoc.lng, homeLoc.lat], zoom: 15.4, pitch: TLV.pitch, bearing: TLV.bearing }
+    : TLV;
+  map.easeTo({ ...to, duration: 900 });
 });
 
 /* ---- filter sheet ---- */

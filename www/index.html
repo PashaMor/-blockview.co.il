@@ -31,8 +31,8 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=78" />
-  <link rel="stylesheet" href="css/style.css?v=79" />
+  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=81" />
+  <link rel="stylesheet" href="css/style.css?v=81" />
 </head>
 <body>
   <div id="map"></div>
@@ -291,6 +291,21 @@
         <span data-i18n="push_notif">התראות פוש</span>
         <label class="switch"><input type="checkbox" id="acc-notif" /><span class="slider"></span></label>
       </div>
+      <!-- home location: where "reset view" (⟲) flies to -->
+      <div class="acc-home">
+        <div class="acc-home-head">
+          <div>
+            <div class="acc-home-title" data-i18n="home_loc">מיקום הבית</div>
+            <div class="acc-home-sub" id="acc-home-label" data-i18n="home_loc_none">לא הוגדר — כפתור האיפוס חוזר למרכז תל אביב</div>
+          </div>
+          <button type="button" id="acc-home-clear" class="auth-link" data-i18n="clear" hidden>נקה</button>
+        </div>
+        <div class="acc-home-search">
+          <input id="acc-home-input" class="selectbox" autocomplete="off" placeholder="חפש כתובת להגדרת בית" data-i18n-ph="home_loc_ph" />
+          <div id="acc-home-results" class="addr-results" hidden></div>
+        </div>
+      </div>
+
       <div class="acc-filter-row" id="acc-filter-row" hidden>
         <div class="acc-filter-txt"><div class="acc-filter-title" data-i18n="saved_filter">סינון שמור</div><div id="acc-filter-summary" class="acc-filter-summary"></div></div>
         <button id="acc-filter-clear" class="auth-link" data-i18n="clear">נקה</button>
@@ -627,23 +642,24 @@
     </div>
   </div>
 
-  <script src="vendor/maplibre-gl.js?v=78"></script>
-  <script src="vendor/supabase.min.js?v=78"></script>
-  <script src="js/config.js?v=78"></script>
-  <script src="js/analytics.js?v=78"></script>
-  <script src="js/oauth.js?v=80"></script>
-  <script src="js/geo.js?v=78"></script>
-  <script src="js/i18n.js?v=79"></script>
-  <script src="js/confirm.js?v=78"></script>
-  <script src="js/data.js?v=78"></script>
-  <script src="js/track.js?v=78"></script>
-  <script src="js/app.js?v=80"></script>
-  <script src="js/auth.js?v=78"></script>
-  <script src="js/describe-gen.js?v=78"></script>
-  <script src="js/publish.js?v=78"></script>
-  <script src="js/my-listings.js?v=80"></script>
-  <script src="js/agent-apply.js?v=78"></script>
-  <script src="js/app-badge.js?v=78"></script>
-  <script src="js/legal-modal.js?v=78"></script>
+  <script src="vendor/maplibre-gl.js?v=81"></script>
+  <script src="vendor/supabase.min.js?v=81"></script>
+  <script src="js/config.js?v=81"></script>
+  <script src="js/analytics.js?v=81"></script>
+  <script src="js/oauth.js?v=81"></script>
+  <script src="js/geo.js?v=81"></script>
+  <script src="js/i18n.js?v=81"></script>
+  <script src="js/confirm.js?v=81"></script>
+  <script src="js/data.js?v=81"></script>
+  <script src="js/track.js?v=81"></script>
+  <script src="js/app.js?v=81"></script>
+  <script src="js/auth.js?v=81"></script>
+  <script src="js/home-loc.js?v=81"></script>
+  <script src="js/describe-gen.js?v=81"></script>
+  <script src="js/publish.js?v=81"></script>
+  <script src="js/my-listings.js?v=81"></script>
+  <script src="js/agent-apply.js?v=81"></script>
+  <script src="js/app-badge.js?v=81"></script>
+  <script src="js/legal-modal.js?v=81"></script>
 </body>
 </html>

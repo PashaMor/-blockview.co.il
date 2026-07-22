@@ -10,7 +10,7 @@
   if (window.BVOAuth && BVOAuth.shareSession) BVOAuth.shareSession(supa);   // share session across *.blockview.co.il
   window.BVSupa = supa; // shared client (publish.js reuses it)
   const limits = cfg.LIMITS;
-  const state = { user: null, plan: "free", avatar: null, notifications: false, termsAcceptedAt: null };
+  const state = { user: null, plan: "free", avatar: null, notifications: false, termsAcceptedAt: null, home: null };
   let consentPending = false;   // set when the user ticks the box on sign-up
   const $ = (id) => document.getElementById(id);
 
@@ -30,6 +30,9 @@
     state.avatar = p.avatar_url || null;
     state.notifications = !!p.notifications;
     state.termsAcceptedAt = p.terms_accepted_at || null;
+    state.home = (p.home_lat != null && p.home_lng != null)
+      ? { lat: +p.home_lat, lng: +p.home_lng, label: p.home_label || "" } : null;
+    if (window.onHomeLocation) window.onHomeLocation(state.home);
     const notesObj = {};
     (nt.data || []).forEach((r) => (notesObj[r.listing_id] = r.body));
     if (window.onUserData)
@@ -77,6 +80,22 @@
     async clearFilter() { if (state.user) await supa.from("profiles").update({ saved_filter: null }).eq("id", state.user.id); },
     async saveTheme(m) { if (state.user) await supa.from("profiles").update({ theme: m }).eq("id", state.user.id); },
     email: () => (state.user ? state.user.email || "" : ""),
+    home: () => state.home,
+    async saveHome(lat, lng, label) {
+      if (!state.user) return "auth";
+      const { error } = await supa.from("profiles")
+        .update({ home_lat: lat, home_lng: lng, home_label: label || null }).eq("id", state.user.id);
+      if (error) return "error";
+      state.home = { lat: lat, lng: lng, label: label || "" };
+      if (window.onHomeLocation) window.onHomeLocation(state.home);
+      return null;
+    },
+    async clearHome() {
+      if (!state.user) return;
+      await supa.from("profiles").update({ home_lat: null, home_lng: null, home_label: null }).eq("id", state.user.id);
+      state.home = null;
+      if (window.onHomeLocation) window.onHomeLocation(null);
+    },
     openAuth, showUpgrade,
   };
 
