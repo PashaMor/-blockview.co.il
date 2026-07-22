@@ -322,7 +322,11 @@ function matchBuildingHeights() {
     if (!feats.length) { b.heightMatched = true; return; }   // no base building here (e.g. empty lot)
     var h = 0;
     feats.forEach((f) => { var rh = +(f.properties && f.properties.render_height); if (isFinite(rh) && rh > h) h = rh; });
-    if (h > 2 && Math.abs(h - b.height) > 0.5) { b.height = h; changed = true; }
+    if (h > 2 && Math.abs(h - b.height) > 0.5) {
+      b.height = h; changed = true;
+      // save it once, so every later load reads the height instead of re-matching
+      try { fetch("/api/footprint?id=" + encodeURIComponent(b.id) + "&height=" + h, { method: "POST" }).catch(function () {}); } catch (e) {}
+    }
     b.heightMatched = true;
   });
   if (changed && map.getSource("blockview")) {
@@ -388,7 +392,10 @@ function addCustomLayers() {
   if (!map.getSource("blockview")) map.addSource("blockview", { type: "geojson", data: buildingsGeoJSON() });
   map.addLayer({ id: "bv-buildings", type: "fill-extrusion", source: "blockview",
     paint: {
-      "fill-extrusion-height": ["get", "height"], "fill-extrusion-base": 0, "fill-extrusion-opacity": 0.95,
+      // render half a metre above the stored (real) height so our roof clears
+      // the real building's roof — coplanar caps otherwise z-fight (the striped
+      // flicker). Imperceptible at building scale, but it stops the tearing.
+      "fill-extrusion-height": ["+", ["coalesce", ["get", "height"], 24], 0.5], "fill-extrusion-base": 0, "fill-extrusion-opacity": 0.95,
       "fill-extrusion-color": ["case",
         ["boolean", ["feature-state", "selected"], false], BLUE_HI,
         [">", ["get", "match"], 0], BLUE, WHITE],

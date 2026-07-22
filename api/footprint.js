@@ -29,6 +29,25 @@ module.exports = async function handler(req, res) {
   try {
     const id = String((req.query && req.query.id) || "").trim();
 
+    // save mode: POST /api/footprint?id=&height= stores the height the map
+    // rendered for the building under ours, so it is computed once (client-side)
+    // and then read from the DB on every later load instead of re-matched.
+    if (req.method === "POST") {
+      const height = parseFloat(req.query && req.query.height);
+      if (!id || !isFinite(height) || height < 2 || height > 400) {
+        return res.status(400).json({ error: "id and height (2-400) required" });
+      }
+      const base = env("SUPABASE_URL").replace(/\/+$/, "") + "/rest/v1/";
+      const key = env("SUPABASE_SECRET_KEY");
+      const up = await fetch(base + "buildings?id=eq." + encodeURIComponent(id), {
+        method: "PATCH",
+        headers: { apikey: key, Authorization: "Bearer " + key, "Content-Type": "application/json", Prefer: "return=minimal" },
+        body: JSON.stringify({ height: Math.round(height * 10) / 10 }),
+      });
+      if (!up.ok) return res.status(500).json({ error: "write failed", status: up.status });
+      return res.status(200).json({ ok: true });
+    }
+
     // read-only mode: /api/footprint?lat=&lng= just returns the outline and
     // writes nothing. Used by the publish forms so the outline lookup is
     // reliable (server-side) instead of the browser hitting flaky Overpass.
