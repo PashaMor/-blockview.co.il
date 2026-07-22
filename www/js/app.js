@@ -310,6 +310,37 @@ async function healBuildingFootprints() {
   }
 }
 
+/* ---- Israel Railways: real national rail lines + stations -----------------
+ * The heavy-rail network is large, so it lives in static GeoJSON files fetched
+ * once (www/data/*.geojson) rather than inlined. Loaded async and guarded, so a
+ * slow/missing file never blocks the map — the rail simply doesn't draw. */
+function addRailNetwork(before) {
+  fetch("data/israel-rail.geojson").then((r) => (r.ok ? r.json() : null)).then((geo) => {
+    if (!geo || map.getSource("rail")) return;
+    map.addSource("rail", { type: "geojson", data: geo });
+    // classic railway look: a solid casing with a dashed line on top
+    map.addLayer({ id: "rail-casing", type: "line", source: "rail", minzoom: 7,
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#5B6472", "line-width": ["interpolate", ["linear"], ["zoom"], 8, 1.2, 14, 3.4] } }, before);
+    map.addLayer({ id: "rail-dash", type: "line", source: "rail", minzoom: 7,
+      layout: { "line-cap": "butt", "line-join": "round" },
+      paint: { "line-color": "#EEF1F5", "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.8, 14, 2],
+               "line-dasharray": [2, 3] } }, before);
+  }).catch(function () {});
+
+  fetch("data/israel-rail-stations.geojson").then((r) => (r.ok ? r.json() : null)).then((geo) => {
+    if (!geo || map.getSource("rail-stn")) return;
+    map.addSource("rail-stn", { type: "geojson", data: geo });
+    map.addLayer({ id: "rail-stn-dot", type: "circle", source: "rail-stn", minzoom: 9,
+      paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 2.5, 14, 5],
+               "circle-color": "#0038B8", "circle-stroke-color": "#fff", "circle-stroke-width": 1.5 } });
+    map.addLayer({ id: "rail-stn-label", type: "symbol", source: "rail-stn", minzoom: 11,
+      layout: { "text-field": ["get", "name"], "text-size": 11, "text-offset": [0, 1.1],
+                "text-anchor": "top", "text-font": ["Noto Sans Regular"], "text-optional": true },
+      paint: { "text-color": "#0038B8", "text-halo-color": "#fff", "text-halo-width": 1.6 } });
+  }).catch(function () {});
+}
+
 /* ---- match our building to the real one under it -------------------------
  * Our blue building extrudes to its own `height`; the base-map buildings use
  * the real OSM `render_height`. A fixed 24 m box towers over (or sinks into) a
@@ -389,6 +420,8 @@ function addCustomLayers() {
   map.addLayer({ id: "transit-line", type: "line", source: "transit",
     layout: { "line-cap": "round", "line-join": "round" },
     paint: { "line-color": ["get", "color"], "line-width": 3.6 } }, before);
+
+  addRailNetwork(before);
 
   // all city buildings — white
   map.addLayer({ id: "city-3d", type: "fill-extrusion", source: "openmaptiles", "source-layer": "building", minzoom: 13,
