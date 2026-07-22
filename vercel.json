@@ -35,6 +35,10 @@
     {
       "path": "/api/daily-report",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/nearby-sweep",
+      "schedule": "30 3 * * *"
     }
   ],
   "headers": [
@@ -141,6 +145,9 @@
   ],
   "functions": {
     "api/nearby.js": {
+      "maxDuration": 60
+    },
+    "api/nearby-sweep.js": {
       "maxDuration": 60
     }
   }

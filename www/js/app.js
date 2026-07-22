@@ -33,9 +33,13 @@ async function toggleFav(id) {
   const err = await BVAuth.addFav(id);
   if (err) { favs.delete(id); syncFavUI(); err === "limit" ? BVAuth.showUpgrade("favorites") : toast("שגיאה, נסה שוב"); }
 }
+// favorites the user can actually see/open: a favorite of a listing that is no
+// longer approved (pending after an edit, sold, removed, or an old sample id)
+// exists in the set but isn't loaded, so it must not inflate the badge
+function visibleFavs() { return [...favs].filter((id) => LISTING_INDEX[id]); }
 function syncFavUI() {
   const c = document.getElementById("favcount");
-  if (c) c.textContent = favs.size;
+  if (c) c.textContent = visibleFavs().length;
   document.querySelectorAll("[data-fav]").forEach((b) => b.classList.toggle("on", isFav(b.dataset.fav)));
   const fs = document.getElementById("favs-sheet");
   if (fs && fs.classList.contains("open")) renderFavs();
@@ -233,6 +237,7 @@ async function loadLiveData() {
     if (map.getSource("blockview")) map.getSource("blockview").setData(buildingsGeoJSON());
     fillCities();
     updateTotal();
+    syncFavUI();   // favorites resolve now that listings are loaded
     if (selectedId) {
       const b = BUILDINGS.find((x) => x.id === selectedId);
       b ? renderListings(b) : deselect();
@@ -1257,7 +1262,7 @@ window.onUserData = function (favIds, subIds, notesObj, plan) {
   syncFavUI(); syncSubUI();
   if (selectedId) renderListings(BUILDINGS.find((b) => b.id === selectedId));
 };
-window.favCount = () => favs.size;
+window.favCount = () => visibleFavs().length;
 window.subCount = () => subs.size;
 window.bvToast = (m) => toast(m);
 // closeDetail too: the detail card sits above the sheets, so an auth sheet opened

@@ -1,142 +1,30 @@
 /* BlockView — fill in "what's nearby" for one building, on demand.
  *
- * A building created from a typed address has no nearby data until someone
- * imports it. The publish flow calls this endpoint (fire-and-forget) right
- * after creating a listing, so a new building fills itself in the first time a
- * property is published there.
+ * The publish flow (owner form and agent CRM) calls this right after creating a
+ * listing, so a building made from a typed address fills itself in the first
+ * time a property is published there.
  *
- * Why server-side: the browser can't do this. Overpass blocks cross-origin
- * requests, and building_places is admin-only under RLS — the write needs the
- * service key, which must never reach a browser.
+ * Server-side because the browser can't: Overpass blocks cross-origin requests
+ * and building_places is admin-only under RLS, so the write needs the service
+ * key, which must never reach a browser.
  *
  * SECURITY
  *   - Requires a valid Supabase user token (Authorization: Bearer <access
- *     token>). An unauthenticated request is refused, so this is not an open
- *     Overpass proxy.
- *   - Only-if-missing: if the building already has nearby data the endpoint
- *     returns immediately, so repeated calls (or a re-publish) cost nothing.
- *   - It only ever writes public geodata (places, building_places) — no PII,
- *     nothing a leak of this table could expose.
- *   - The service key lives only in Vercel's environment; this file is a
- *     serverless function and is never bundled into www/.
+ *     token>) so this is not an open Overpass proxy. If SUPABASE_ANON_KEY is
+ *     not set the token can't be verified and every call is refused — the
+ *     import simply doesn't run (publishing still succeeds); the nightly sweep
+ *     (api/nearby-sweep.js) then fills the gap.
+ *   - Only-if-missing: returns immediately if the building already has data.
+ *   - Writes public geodata only — nothing a leak could expose.
  *
- * Environment variables (Vercel -> Settings -> Environment Variables):
- *   SUPABASE_URL          https://<project>.supabase.co
- *   SUPABASE_SECRET_KEY   sb_secret_… (server only)
- *   SUPABASE_ANON_KEY     the browser publishable key (used only to verify the
- *                         caller's token; add if not already present)
+ * Env vars: SUPABASE_URL, SUPABASE_SECRET_KEY, SUPABASE_ANON_KEY.
  */
 
-const RADIUS_M = 1500;
-const PER_CATEGORY = 5;
-const DETOUR = 1.3;
-const WALK_M_PER_MIN = 80;
-const ENDPOINTS = [
-  "https://overpass-api.de/api/interpreter",
-  "https://overpass.kumi.systems/api/interpreter",
-];
-
-// Keep in sync with scripts/nearby-import.mjs and supabase/12_nearby_places.sql
-const CATEGORIES = {
-  education: [
-    ['node["amenity"~"^(kindergarten|school)$"]', "amenity"],
-    ['way["amenity"~"^(kindergarten|school)$"]', "amenity"],
-  ],
-  transit: [
-    ['node["highway"="bus_stop"]', "highway"],
-    ['node["railway"~"^(tram_stop|station|halt)$"]', "railway"],
-  ],
-  errands: [
-    ['node["shop"~"^(supermarket|convenience)$"]', "shop"],
-    ['way["shop"~"^(supermarket|convenience)$"]', "shop"],
-    ['node["amenity"~"^(pharmacy|clinic|doctors|bank)$"]', "amenity"],
-  ],
-  leisure: [
-    ['node["leisure"~"^(park|playground|fitness_centre)$"]', "leisure"],
-    ['way["leisure"~"^(park|playground|fitness_centre)$"]', "leisure"],
-    ['node["amenity"="cafe"]', "amenity"],
-  ],
-};
+const { importOneBuilding, makeRest } = require("../lib/nearby");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SECRET_KEY;
 const ANON_KEY = process.env.SUPABASE_ANON_KEY;
-
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-async function rest(path, opts) {
-  opts = opts || {};
-  const res = await fetch(SUPABASE_URL + "/rest/v1/" + path, {
-    method: opts.method || "GET",
-    headers: {
-      apikey: SERVICE_KEY,
-      Authorization: "Bearer " + SERVICE_KEY,
-      "Content-Type": "application/json",
-      Prefer: opts.prefer || "",
-    },
-    body: opts.body ? JSON.stringify(opts.body) : undefined,
-  });
-  if (!res.ok) throw new Error(path + " -> " + res.status + " " + (await res.text()));
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
-}
-
-function haversine(lng1, lat1, lng2, lat2) {
-  const R = 6371000, rad = Math.PI / 180;
-  const dLat = (lat2 - lat1) * rad, dLng = (lng2 - lng1) * rad;
-  const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(a));
-}
-
-function buildQuery(lng, lat) {
-  const around = "(around:" + RADIUS_M + "," + lat + "," + lng + ")";
-  const parts = [];
-  for (const selectors of Object.values(CATEGORIES)) {
-    for (const sel of selectors) parts.push(sel[0] + around + ";");
-  }
-  return "[out:json][timeout:50];(" + parts.join("") + ");out center tags;";
-}
-
-function classify(tags) {
-  for (const [category, selectors] of Object.entries(CATEGORIES)) {
-    for (const [sel, key] of selectors) {
-      const value = tags[key];
-      if (!value) continue;
-      const m = sel.match(/\["[a-z:]+"(?:~"\^?\(?([^"]+?)\)?\$?"|="([^"]+)")\]/);
-      if (!m) continue;
-      const allowed = m[2] ? [m[2]] : m[1].replace(/[()^$]/g, "").split("|");
-      if (allowed.includes(value)) return { category, kind: value };
-    }
-  }
-  return null;
-}
-
-// fewer, quicker attempts than the batch script: a serverless request can't sit
-// for minutes, and a miss is retried the next time someone publishes here
-async function overpass(query) {
-  let lastErr;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const url = ENDPOINTS[attempt % ENDPOINTS.length];
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain", "User-Agent": "BlockView/1.0 (nearby)" },
-        body: query,
-        signal: AbortSignal.timeout(25000),
-      });
-      const type = res.headers.get("content-type") || "";
-      const text = await res.text();
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      if (!type.includes("json")) throw new Error("non-JSON");
-      return JSON.parse(text);
-    } catch (e) {
-      lastErr = e;
-      if (attempt < 2) await sleep(3000 * (attempt + 1));
-    }
-  }
-  throw lastErr;
-}
 
 // verify the caller is a signed-in Supabase user (any user — the write is
 // idempotent public geodata, so we gate against anonymous abuse, not per-user)
@@ -161,61 +49,15 @@ module.exports = async function handler(req, res) {
   if (!buildingId) { res.status(400).json({ error: "building_id required" }); return; }
 
   try {
-    // already has data? nothing to do — this is what makes re-calls free
-    const existing = await rest("building_places?select=building_id&limit=1&building_id=eq." + encodeURIComponent(buildingId));
-    if (existing && existing.length) { res.status(200).json({ ok: true, skipped: "already has data" }); return; }
-
+    const rest = makeRest(SUPABASE_URL, SERVICE_KEY);
     const rows = await rest("buildings?select=id,lng,lat&id=eq." + encodeURIComponent(buildingId));
     if (!rows || !rows.length) { res.status(404).json({ error: "building not found" }); return; }
-    const b = rows[0], lng = +b.lng, lat = +b.lat;
 
-    const data = await overpass(buildQuery(lng, lat));
-
-    const byCat = { education: [], transit: [], errands: [], leisure: [] };
-    for (const el of data.elements || []) {
-      const tags = el.tags || {};
-      const elng = el.lon != null ? el.lon : (el.center && el.center.lon);
-      const elat = el.lat != null ? el.lat : (el.center && el.center.lat);
-      if (elng == null || elat == null) continue;
-      const hit = classify(tags);
-      if (!hit) continue;
-      const name = tags["name:he"] || tags.name || tags["name:en"];
-      if (!name) continue;
-      const meters = Math.round(haversine(lng, lat, elng, elat));
-      if (meters > RADIUS_M) continue;
-      byCat[hit.category].push({
-        id: el.type + "/" + el.id, category: hit.category, kind: hit.kind,
-        names: { he: tags["name:he"] || null, en: tags["name:en"] || null, ar: tags["name:ar"] || null, default: tags.name || name },
-        lng: elng, lat: elat, meters,
-      });
-    }
-
-    const chosen = [];
-    for (const [, list] of Object.entries(byCat)) {
-      list.sort((x, y) => x.meters - y.meters);
-      list.slice(0, PER_CATEGORY).forEach((p, i) => chosen.push(Object.assign({}, p, { rank: i + 1 })));
-    }
-    if (!chosen.length) { res.status(200).json({ ok: true, skipped: "nothing nearby" }); return; }
-
-    await rest("places?on_conflict=id", {
-      method: "POST",
-      prefer: "resolution=merge-duplicates,return=minimal",
-      body: chosen.map((p) => ({ id: p.id, category: p.category, kind: p.kind, names: p.names, lng: p.lng, lat: p.lat, updated_at: new Date().toISOString() })),
-    });
-    await rest("building_places?building_id=eq." + encodeURIComponent(buildingId), { method: "DELETE" });
-    await rest("building_places", {
-      method: "POST",
-      prefer: "return=minimal",
-      body: chosen.map((p) => ({
-        building_id: buildingId, place_id: p.id, category: p.category,
-        meters: p.meters, walk_minutes: Math.max(1, Math.ceil((p.meters * DETOUR) / WALK_M_PER_MIN)), rank: p.rank,
-      })),
-    });
-
-    res.status(200).json({ ok: true, saved: chosen.length });
+    const result = await importOneBuilding({ supabaseUrl: SUPABASE_URL, serviceKey: SERVICE_KEY }, rows[0]);
+    res.status(200).json(Object.assign({ ok: true }, result));
   } catch (err) {
     // best effort: publishing already succeeded, so a failed import must not
-    // read as an error to the caller. It retries on the next publish here.
-    res.status(200).json({ ok: false, error: String(err && err.message || err) });
+    // read as an error to the caller. The nightly sweep retries it.
+    res.status(200).json({ ok: false, error: String((err && err.message) || err) });
   }
 };
