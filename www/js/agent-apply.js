@@ -75,8 +75,21 @@
     btn.onclick = open;
   }
 
-  function openCrm() {
-    var url = "https://crm.blockview.co.il";
+  async function openCrm() {
+    var base = "https://crm.blockview.co.il";
+    // Hand the session to the CRM in the URL hash. The cross-subdomain cookie
+    // (oauth.js) can lose the race with the CRM's login gate; passing the tokens
+    // directly makes the hand-off deterministic. The hash never reaches the
+    // server, and the CRM wipes it from history the instant it reads it.
+    var url = base;
+    try {
+      var s = null;
+      if (supa()) { var r = await supa().auth.getSession(); s = r && r.data && r.data.session; }
+      if (s && s.access_token && s.refresh_token) {
+        url = base + "#bv_at=" + encodeURIComponent(s.access_token) + "&bv_rt=" + encodeURIComponent(s.refresh_token);
+      }
+    } catch (e) { /* fall back to the plain URL + cookie hand-off */ }
+
     var cap = window.Capacitor;
     var browser = cap && cap.Plugins && cap.Plugins.Browser;
     // in the app the CRM opens outside the WebView, so the map is still there

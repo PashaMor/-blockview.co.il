@@ -114,10 +114,32 @@
     clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 2400);
   }
 
+  /* ---- session hand-off from another *.blockview.co.il tab ----------------
+   * When the user comes from the main site's "מעבר ל-CRM", the tokens ride in
+   * the URL hash. Consume them and wipe the hash from history before the gate
+   * runs, so an already-signed-in agent is never bounced to the login screen. */
+  const hashHydration = (function () {
+    const m = (location.hash || "").match(/bv_at=([^&]+)&bv_rt=([^&]+)/);
+    if (!m) return Promise.resolve(false);
+    return supa.auth.setSession({
+      access_token: decodeURIComponent(m[1]),
+      refresh_token: decodeURIComponent(m[2]),
+    }).then(() => true).catch(() => false).then((ok) => {
+      try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+      return ok;
+    });
+  })();
+
   /* ------------------------------------------------------------ auth ---- */
   supa.auth.onAuthStateChange(async (_e, session) => {
     state.user = session ? session.user : null;
-    if (!state.user) return showGate();
+    if (!state.user) {
+      // don't flash the login gate while a hash hand-off is still resolving
+      if (location.hash.indexOf("bv_at=") >= 0) return;
+      const ok = await hashHydration;      // resolves instantly once consumed
+      if (ok) return;                      // setSession will re-fire this handler
+      return showGate();
+    }
     const { data } = await supa.from("profiles").select("role, terms_accepted_at").eq("id", state.user.id).single();
     state.role = (data && data.role) || "user";
     // record the sign-up consent; with email verification on it lands at first sign-in
