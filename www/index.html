@@ -24,6 +24,14 @@
         d.textContent += "\n" + msg;
       }
       window.addEventListener("error", function (e) {
+        // A failed RESOURCE (a script/img/link that 404'd or was blocked by an
+        // ad-blocker like Brave — e.g. any file named analytics.js trips filter
+        // lists) fires here with an element target and no message. That is not a
+        // page crash: ignore it so a blocked tracker can't blank the whole app.
+        if (e && e.target && e.target !== window && e.target.nodeName) {
+          if (window.console) console.warn("[BlockView] resource blocked/failed:", e.target.src || e.target.href || e.target.nodeName);
+          return;
+        }
         show("[ERR] " + (e.message || (e.error && e.error.message) || "?") + " @ " + String(e.filename || "").split("/").pop() + ":" + (e.lineno || ""));
       }, true);
       window.addEventListener("unhandledrejection", function (e) {
