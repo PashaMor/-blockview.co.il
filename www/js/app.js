@@ -168,6 +168,12 @@ function indexData() {
     LISTINGS[bid].forEach((l) => (LISTING_INDEX[l.id] = { ...l, building: b }));
   }
 }
+// Start empty. The map, search and city filter show ONLY real data from the
+// database — the sample set in data.js is a structural reference, never drawn,
+// so old demo properties can't flash on load or linger in search. If the DB is
+// unreachable the map stays empty, which is honest, rather than showing fakes.
+BUILDINGS = [];
+LISTINGS = {};
 indexData();
 
 /* ---------------------------------------------- live data (Supabase) ----
@@ -189,7 +195,7 @@ async function loadLiveData() {
     ]);
     if (B.error) throw B.error;
     if (L.error) throw L.error;
-    if (!(B.data || []).length) { console.warn("[BlockView] no buildings in DB — keeping sample data"); return; }
+    if (!(B.data || []).length) { console.warn("[BlockView] no buildings in DB — map stays empty"); return; }
 
     BUILDINGS = B.data.map((b) => ({
       id: b.id, name: b.name, address: b.address, city: b.city,
@@ -534,6 +540,7 @@ function searchItems(q) {
   q = q.trim().toLowerCase();
   const res = [];
   BUILDINGS.forEach((b) => {
+    if (!(LISTINGS[b.id] || []).length) return;   // only buildings that actually have properties
     if (!q || (b.name + " " + b.address).toLowerCase().includes(q))
       res.push({ kind: "building", id: b.id, icon: "🏢", title: b.name, sub: b.address });
   });
@@ -1013,11 +1020,17 @@ psMax.addEventListener("input", () => onPriceInput("max"));
 setupPriceSlider();
 // city
 function fillCities() {
-  const cities = [...new Set(BUILDINGS.map((b) => b.city || DEFAULT_CITY))];
+  // only cities that actually have a property — not every building on the map
+  const withProps = new Set();
+  BUILDINGS.forEach((b) => { if ((LISTINGS[b.id] || []).length) withProps.add(b.city || DEFAULT_CITY); });
+  const cities = [...withProps].sort((a, b) => a.localeCompare(b, "he"));
   const sel = document.getElementById("city-select");
-  const keep = sel.value;
-  sel.innerHTML = `<option value="all">${t("all_cities")}</option>` + cities.map((c) => `<option value="${c}">${c}</option>`).join("");
-  if (keep) sel.value = keep;
+  if (!sel) return;
+  // a filtered-to city that no longer has any property falls back to "all"
+  if (filter.city !== "all" && !withProps.has(filter.city)) filter.city = "all";
+  sel.innerHTML = `<option value="all">${t("all_cities")}</option>` +
+    cities.map((c) => `<option value="${c}">${c}</option>`).join("");
+  sel.value = filter.city || "all";
 }
 fillCities();
 document.getElementById("city-select")
