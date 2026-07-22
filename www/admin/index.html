@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>BlockView — ניהול מערכת</title>
-  <link rel="stylesheet" href="admin.css?v=20" />
+  <link rel="stylesheet" href="admin.css?v=12" />
 </head>
 <body>
 
@@ -188,10 +188,61 @@
   <!-- full-size photo viewer (moderation) -->
   <div id="lightbox" hidden><img id="lightbox-img" alt="" /></div>
 
+  <!-- edit a listing (admin) -->
+  <div id="edit-modal" hidden>
+    <div class="edit-card" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+      <div class="edit-head">
+        <h2 id="edit-title">עריכת נכס</h2>
+        <button class="edit-x" id="edit-close" aria-label="סגור">✕</button>
+      </div>
+      <form id="edit-form" class="edit-body">
+        <input type="hidden" id="e-id" />
+        <label class="ef"><span>כותרת</span><input id="e-title" class="input" maxlength="120" required /></label>
+        <div class="edit-grid">
+          <label class="ef"><span>סוג עסקה</span>
+            <select id="e-deal" class="input"><option value="sale">מכירה</option><option value="rent">השכרה</option></select>
+          </label>
+          <label class="ef"><span>מחיר (₪)</span><input id="e-price" class="input" type="number" min="0" max="99000000" required /></label>
+          <label class="ef"><span>קטגוריה</span>
+            <select id="e-category" class="input"><option value="residential">מגורים</option><option value="commercial">מסחרי</option></select>
+          </label>
+          <label class="ef"><span>סוג נכס</span><select id="e-type" class="input"></select></label>
+          <label class="ef"><span>חדרים</span><input id="e-rooms" class="input" type="number" min="0" step="0.5" /></label>
+          <label class="ef"><span>שטח (מ"ר)</span><input id="e-size" class="input" type="number" min="0" /></label>
+          <label class="ef"><span>קומה</span><input id="e-floor" class="input" type="number" /></label>
+          <label class="ef"><span>מתוך קומות</span><input id="e-floors-total" class="input" type="number" min="1" max="200" /></label>
+          <label class="ef"><span>גיל הבניין</span>
+            <select id="e-age" class="input"><option value="old">ישן</option><option value="new">חדש</option></select>
+          </label>
+          <label class="ef"><span>סטטוס</span>
+            <select id="e-status" class="input">
+              <option value="pending">ממתין</option><option value="approved">מאושר</option>
+              <option value="rejected">נדחה</option><option value="sold">נמכר</option><option value="draft">טיוטה</option>
+            </select>
+          </label>
+        </div>
+        <div class="edit-amen">
+          <label><input type="checkbox" id="e-furnished" /> 🛋️ מרוהט</label>
+          <label><input type="checkbox" id="e-pets" /> 🐾 חיות מחמד</label>
+          <label><input type="checkbox" id="e-parking" /> 🅿️ חניה</label>
+          <label><input type="checkbox" id="e-elevator" /> 🛗 מעלית</label>
+        </div>
+        <label class="ef"><span>קישור לסיור וירטואלי</span><input id="e-tour" class="input" type="url" placeholder="https://..." /></label>
+        <label class="ef"><span>אתר הנכס</span><input id="e-website" class="input" type="url" placeholder="https://..." /></label>
+        <label class="ef"><span>תיאור</span><textarea id="e-desc" class="input" rows="4" maxlength="2000"></textarea></label>
+        <div id="e-err" class="err" hidden></div>
+        <div class="edit-actions">
+          <button type="submit" class="btn-ok" id="e-save">שמור שינויים</button>
+          <button type="button" class="btn-ghost" id="e-cancel">ביטול</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="../vendor/supabase.min.js?v=1"></script>
   <script src="../js/config.js?v=17"></script>
   <script src="../js/analytics.js?v=2"></script>
   <script src="../js/oauth.js?v=17"></script>
-  <script src="admin.js?v=20"></script>
+  <script src="admin.js?v=16"></script>
 </body>
 </html>

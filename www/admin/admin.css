@@ -213,3 +213,25 @@ main { max-width: 1140px; margin: 0 auto; padding: 20px; }
 /* reassign-to-agent control on a listing row */
 .reassign-lbl { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--muted, #8592a2); }
 .reassign-lbl select { font-size: 12.5px; }
+
+/* ---- edit listing modal ---- */
+#edit-modal { position: fixed; inset: 0; z-index: 60; background: rgba(20,30,45,.55); backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center; padding: 20px; }
+.edit-card { background: var(--surface); width: min(680px, 100%); max-height: 92vh; overflow-y: auto;
+  border-radius: 18px; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+.edit-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px 6px; }
+.edit-head h2 { margin: 0; font-size: 20px; font-weight: 800; color: var(--ink); }
+.edit-x { border: 1px solid var(--line); background: var(--surface); color: var(--text-soft); cursor: pointer;
+  width: 34px; height: 34px; border-radius: 10px; font-size: 15px; }
+.edit-body { padding: 8px 22px 22px; display: flex; flex-direction: column; gap: 12px; }
+.edit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.ef { display: flex; flex-direction: column; gap: 5px; }
+.ef > span { font-size: 12.5px; font-weight: 600; color: var(--text-soft); }
+.ef .input, .ef textarea.input { width: 100%; }
+.edit-amen { display: flex; flex-wrap: wrap; gap: 14px; font-size: 14px; color: var(--ink); }
+.edit-amen label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.edit-actions { display: flex; gap: 10px; margin-top: 4px; }
+.edit-actions button { flex: 1; }
+.btn-edit { font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; padding: 8px 12px;
+  border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--blue); }
+.btn-edit:hover { border-color: var(--blue); }

@@ -418,6 +418,7 @@
       <div class="ractions">
         ${withActions ? `<button class="btn-ok" data-approve="${esc(l.id)}">אשר</button>
                          <button class="btn-bad" data-reject="${esc(l.id)}">דחה</button>` : ""}
+        <button class="btn-edit" data-editlisting="${esc(l.id)}">✏️ ערוך</button>
         ${!withActions ? `<select class="input" data-status="${esc(l.id)}">
             ${Object.keys(ST).map((s) => `<option value="${s}"${s === l.status ? " selected" : ""}>${ST[s]}</option>`).join("")}
           </select>
@@ -513,8 +514,85 @@
       `<div class="empty">אין פעילות עדיין.</div>`;
   }
 
+  /* ------------------------------------------------------ edit a listing */
+  // residential vs commercial decide the allowed property types (25_listing_fields.sql)
+  const TYPE_OPTS = {
+    residential: [["flat", "דירה"], ["house", "בית"], ["penthouse", "פנטהאוז"], ["studio", "סטודיו"]],
+    commercial: [["office", "משרד"], ["shop", "חנות"], ["warehouse", "מחסן"], ["other", "אחר"]],
+  };
+  function fillTypeOptions(category, selected) {
+    const opts = TYPE_OPTS[category === "commercial" ? "commercial" : "residential"];
+    $("e-type").innerHTML = opts.map(([v, t]) => `<option value="${v}"${v === selected ? " selected" : ""}>${t}</option>`).join("");
+  }
+  $("e-category").addEventListener("change", () => fillTypeOptions($("e-category").value, ""));
+
+  function openEdit(id) {
+    const l = state.listings.find((x) => String(x.id) === String(id));
+    if (!l) return;
+    $("e-err").hidden = true;
+    $("e-id").value = l.id;
+    $("e-title").value = l.title || "";
+    $("e-deal").value = l.deal || "sale";
+    $("e-price").value = l.price != null ? l.price : "";
+    $("e-category").value = l.category || "residential";
+    fillTypeOptions(l.category || "residential", l.type || "flat");
+    $("e-rooms").value = l.rooms != null ? l.rooms : "";
+    $("e-size").value = l.size != null ? l.size : "";
+    $("e-floor").value = l.floor != null ? l.floor : "";
+    $("e-floors-total").value = l.floors_total != null ? l.floors_total : "";
+    $("e-age").value = l.age || "old";
+    $("e-status").value = l.status || "pending";
+    $("e-furnished").checked = !!l.furnished;
+    $("e-pets").checked = !!l.pets;
+    $("e-parking").checked = !!l.parking;
+    $("e-elevator").checked = !!l.elevator;
+    $("e-tour").value = l.tour_url || "";
+    $("e-website").value = l.website_url || "";
+    $("e-desc").value = l.description || "";
+    $("edit-modal").hidden = false;
+  }
+  function closeEdit() { $("edit-modal").hidden = true; }
+  $("edit-close").addEventListener("click", closeEdit);
+  $("e-cancel").addEventListener("click", closeEdit);
+  $("edit-modal").addEventListener("click", (e) => { if (e.target.id === "edit-modal") closeEdit(); });
+
+  const numOrNull = (v) => (String(v).trim() === "" ? null : +v);
+  $("edit-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    $("e-err").hidden = true;
+    const price = +$("e-price").value;
+    if (!isFinite(price) || price < 0 || price > 99000000) { $("e-err").textContent = "מחיר לא תקין (עד ₪99,000,000)"; $("e-err").hidden = false; return; }
+    const row = {
+      title: $("e-title").value.trim(),
+      deal: $("e-deal").value,
+      price: price,
+      category: $("e-category").value,
+      type: $("e-type").value,
+      rooms: numOrNull($("e-rooms").value),
+      size: numOrNull($("e-size").value),
+      floor: numOrNull($("e-floor").value),
+      floors_total: numOrNull($("e-floors-total").value),
+      age: $("e-age").value,
+      status: $("e-status").value,
+      furnished: $("e-furnished").checked,
+      pets: $("e-pets").checked,
+      parking: $("e-parking").checked,
+      elevator: $("e-elevator").checked,
+      tour_url: $("e-tour").value.trim() || null,
+      website_url: $("e-website").value.trim() || null,
+      description: $("e-desc").value.trim(),
+    };
+    const btn = $("e-save"); btn.disabled = true;
+    const { error } = await supa.from("listings").update(row).eq("id", $("e-id").value);
+    btn.disabled = false;
+    if (error) { $("e-err").textContent = error.message; $("e-err").hidden = false; return; }
+    closeEdit(); toast("הנכס עודכן"); loadAll();
+  });
+
   /* ---------------------------------------------------- listing actions */
   document.addEventListener("click", async (e) => {
+    const edl = e.target.closest("[data-editlisting]");
+    if (edl) return openEdit(edl.dataset.editlisting);
     const ap = e.target.closest("[data-approve]");
     const rj = e.target.closest("[data-reject]");
     const dl = e.target.closest("[data-del]");
