@@ -210,7 +210,7 @@
   /* --------------------------------------------------------------- data */
   async function loadAll() {
     const [L, P, B, Lead, A, AP, AU, REV] = await Promise.all([
-      supa.from("listings").select("*, buildings(name,address), listing_photos(path,sort), listing_contacts(name,phone,email,sort)").order("created_at", { ascending: false }),
+      supa.from("listings").select("*, buildings(name,address), listing_photos(id,path,sort), listing_contacts(name,phone,email,sort)").order("created_at", { ascending: false }),
       supa.from("profiles").select("*").order("created_at", { ascending: false }),
       supa.from("buildings").select("*").order("name"),
       supa.from("leads").select("id,agent_id"),
@@ -526,10 +526,109 @@
   }
   $("e-category").addEventListener("change", () => fillTypeOptions($("e-category").value, ""));
 
+  // furniture & pets are a rental concern — hide them on a sale
+  function syncEditDeal() {
+    const sale = $("e-deal").value === "sale";
+    ["e-furnished", "e-pets"].forEach((id) => {
+      const cb = $(id), lbl = cb && cb.closest("label");
+      if (lbl) lbl.hidden = sale;
+      if (cb && sale) cb.checked = false;
+    });
+  }
+  $("e-deal").addEventListener("change", syncEditDeal);
+
+  /* photos on the edited listing. A separate copy so edits are live but the row
+     in state.listings only refreshes on the next loadAll(). */
+  let editPhotos = [];
+  function renderEditPhotos() {
+    const box = $("e-photos");
+    if (!editPhotos.length) { box.innerHTML = `<div class="e-nophoto">אין תמונות</div>`; return; }
+    box.innerHTML = editPhotos.map((p, i) =>
+      `<div class="e-ph${i === 0 ? " is-cover" : ""}">` +
+        `<img src="${esc(photoUrl(p.path))}" alt="" />` +
+        `<button type="button" class="e-ph-x" data-delphoto="${esc(p.id)}" title="מחק">✕</button>` +
+        (i === 0 ? `<span class="e-ph-cover">ראשית</span>`
+                 : `<button type="button" class="e-ph-star" data-coverphoto="${esc(p.id)}" title="הפוך לראשית">★</button>`) +
+      `</div>`).join("");
+  }
+  // compress in the browser before upload, like the CRM / publish forms
+  function compressImg(file) {
+    return new Promise((resolve) => {
+      const rd = new FileReader();
+      rd.onload = (ev) => {
+        const im = new Image();
+        im.onload = () => {
+          const max = 1400, sc = Math.min(1, max / Math.max(im.width, im.height));
+          const c = document.createElement("canvas");
+          c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+          c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+          c.toBlob((b) => resolve(b), "image/jpeg", 0.82);
+        };
+        im.src = ev.target.result;
+      };
+      rd.readAsDataURL(file);
+    });
+  }
+
+  $("e-photos").addEventListener("click", async (e) => {
+    const del = e.target.closest("[data-delphoto]");
+    if (del) {
+      const p = editPhotos.find((x) => String(x.id) === String(del.dataset.delphoto));
+      if (!p) return;
+      // the row is authoritative for what the listing shows; the storage object
+      // may belong to the owner's folder, so removing it is best-effort
+      const r = await supa.from("listing_photos").delete().eq("id", p.id);
+      if (r.error) return toast("שגיאה במחיקת התמונה");
+      try { await supa.storage.from(BUCKET).remove([p.path]); } catch (er) {}
+      editPhotos = editPhotos.filter((x) => x.id !== p.id).map((x, i) => ({ ...x, sort: i }));
+      renderEditPhotos(); toast("התמונה נמחקה"); scheduleListReload();
+      return;
+    }
+    const cov = e.target.closest("[data-coverphoto]");
+    if (cov) {
+      const at = editPhotos.findIndex((x) => String(x.id) === String(cov.dataset.coverphoto));
+      if (at <= 0) return;
+      editPhotos.unshift(editPhotos.splice(at, 1)[0]);
+      renderEditPhotos();
+      for (let i = 0; i < editPhotos.length; i++) {
+        const r = await supa.from("listing_photos").update({ sort: i }).eq("id", editPhotos[i].id);
+        if (r.error) { toast("עדכון התמונה הראשית נכשל"); break; }
+        editPhotos[i].sort = i;
+      }
+      toast("התמונה הראשית עודכנה"); scheduleListReload();
+    }
+  });
+
+  $("e-photo-file").addEventListener("change", async (e) => {
+    const files = Array.from(e.target.files || []).filter((f) => /^image\//.test(f.type));
+    e.target.value = "";
+    if (!files.length) return;
+    const listingId = $("e-id").value;
+    let sort = editPhotos.length;
+    for (const f of files) {
+      const blob = await compressImg(f);
+      // admin uploads under their own uid folder (storage insert policy), the
+      // listing_photos row is what binds the file to the listing
+      const path = `${state.user.id}/${listingId}/${Date.now()}_${sort}.jpg`;
+      const up = await supa.storage.from(BUCKET).upload(path, blob, { contentType: "image/jpeg" });
+      if (up.error) { toast("העלאת התמונה נכשלה: " + up.error.message); continue; }
+      const ins = await supa.from("listing_photos").insert({ listing_id: listingId, path, sort }).select("id,path,sort").single();
+      if (ins.error) { toast("שמירת התמונה נכשלה"); continue; }
+      editPhotos.push(ins.data); sort++;
+    }
+    renderEditPhotos(); toast("התמונות נוספו"); scheduleListReload();
+  });
+
+  // reload the lists once after a burst of photo changes (keeps the map fresh too)
+  let listReloadTimer = null;
+  function scheduleListReload() { clearTimeout(listReloadTimer); listReloadTimer = setTimeout(loadAll, 800); }
+
   function openEdit(id) {
     const l = state.listings.find((x) => String(x.id) === String(id));
     if (!l) return;
     $("e-err").hidden = true;
+    editPhotos = sortedPhotos(l).map((p) => ({ id: p.id, path: p.path, sort: p.sort }));
+    renderEditPhotos();
     $("e-id").value = l.id;
     $("e-title").value = l.title || "";
     $("e-deal").value = l.deal || "sale";
@@ -549,6 +648,7 @@
     $("e-tour").value = l.tour_url || "";
     $("e-website").value = l.website_url || "";
     $("e-desc").value = l.description || "";
+    syncEditDeal();
     $("edit-modal").hidden = false;
   }
   function closeEdit() { $("edit-modal").hidden = true; }

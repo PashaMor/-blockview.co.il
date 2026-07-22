@@ -113,6 +113,7 @@
     $("p-address").disabled = false;
     $("p-building").hidden = true;
     resetContacts(myEmail);
+    syncTermGroup();
     renderStrip();
     await loadBuildings();
     sheet().classList.add("open");
@@ -467,6 +468,15 @@
   function syncTermGroup() {
     const g = $("p-term-group");
     if (g) g.hidden = state.deal !== "rent";
+    // furniture & pets are a rental concern; a sale has neither, so hide them
+    // and drop any value that was set before the deal was switched
+    const sale = state.deal === "sale";
+    ["furnished", "pets"].forEach((k) => {
+      const chip = document.querySelector(`#p-amen .chip[data-pamen="${k}"]`);
+      if (!chip) return;
+      chip.hidden = sale;
+      if (sale) { chip.classList.remove("on"); state.amen[k] = false; }
+    });
   }
   document.querySelectorAll("#p-term-seg .seg-btn").forEach((b) =>
     b.addEventListener("click", () => {

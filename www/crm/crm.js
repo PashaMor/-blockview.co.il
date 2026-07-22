@@ -595,6 +595,13 @@
   function syncTermField() {
     const w = $("f-term-wrap");
     if (w) w.hidden = $("f-deal").value !== "rent";
+    // furniture & pets apply to rentals only
+    const sale = $("f-deal").value === "sale";
+    ["f-furnished", "f-pets"].forEach((id) => {
+      const cb = $(id), lbl = cb && cb.closest("label");
+      if (lbl) lbl.hidden = sale;
+      if (cb && sale) cb.checked = false;
+    });
   }
   $("f-deal").addEventListener("change", syncTermField);
 
@@ -627,6 +634,7 @@
     $("f-status-field").hidden = !l;
     $("f-tour").value = l && l.tour_url ? l.tour_url : "";
     $("f-desc").value = l ? l.description : "";
+    syncTermField();
     $("f-furnished").checked = !!(l && l.furnished);
     $("f-pets").checked = !!(l && l.pets);
     $("f-parking").checked = !!(l && l.parking);
