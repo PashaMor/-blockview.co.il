@@ -11,6 +11,7 @@
   var elIc = document.getElementById("confirm-ic");
   var elTitle = document.getElementById("confirm-title");
   var elText = document.getElementById("confirm-text");
+  var elInputLabel = document.getElementById("confirm-input-label");
   var elInput = document.getElementById("confirm-input");
   var btnOk = document.getElementById("confirm-ok");
   var btnCancel = document.getElementById("confirm-cancel");
@@ -59,8 +60,11 @@
       elInput.type = opts.inputType || "text";
       elInput.value = "";
       elInput.placeholder = opts.inputPlaceholder || "";
+      elInputLabel.textContent = opts.inputLabel || "";
+      elInputLabel.hidden = !opts.inputLabel;
     } else {
       elInput.hidden = true;
+      elInputLabel.hidden = true;
     }
     btnOk.textContent = opts.okText || T("confirm", "אישור");
     btnCancel.textContent = opts.cancelText || T("cancel", "ביטול");

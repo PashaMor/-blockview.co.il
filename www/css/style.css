@@ -617,6 +617,7 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .confirm-ic { font-size: 40px; line-height: 1; }
 .confirm-card h2 { margin: 10px 0 6px; font-size: 20px; font-weight: 800; color: var(--ink); }
 .confirm-text { margin: 0 0 18px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+.confirm-input-label { display: block; margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--text-soft); text-align: center; }
 .confirm-input { width: 100%; box-sizing: border-box; margin: 0 0 16px; padding: 12px 14px;
   font: inherit; font-size: 15px; text-align: center; color: var(--ink);
   background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }

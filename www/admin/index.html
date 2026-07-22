@@ -246,13 +246,9 @@
           <label class="ef"><span>גיל הבניין</span>
             <select id="e-age" class="input"><option value="old">ישן</option><option value="new">חדש</option></select>
           </label>
-          <label class="ef"><span>סטטוס</span>
-            <select id="e-status" class="input">
-              <option value="pending">ממתין</option><option value="approved">מאושר</option>
-              <option value="rejected">נדחה</option><option value="frozen">מוקפא</option>
-            </select>
-          </label>
         </div>
+        <!-- status is set per-row (the dropdown on each listing + approve/reject
+             in the queue), so it isn't repeated here; editing leaves it as-is -->
         <div class="edit-amen">
           <label><input type="checkbox" id="e-furnished" /> 🛋️ מרוהט</label>
           <label><input type="checkbox" id="e-pets" /> 🐾 חיות מחמד</label>

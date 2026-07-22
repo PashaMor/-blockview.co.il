@@ -227,6 +227,7 @@
           text: t("delete_warn"),
           input: true,
           inputType: "email",
+          inputLabel: t("delete_prompt"),
           inputPlaceholder: email,
           requireMatch: email,
           okText: t("delete_confirm_btn") || "מחק לצמיתות",
