@@ -26,3 +26,6 @@ Thumbs.db
 # never commit secrets (publishable key is fine; secret key must NOT be here)
 .env
 .env.*
+
+# Importer handoff guide (contains a password — never commit)
+IMPORTER-GUIDE.md
