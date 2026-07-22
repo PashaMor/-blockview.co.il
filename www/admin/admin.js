@@ -1133,8 +1133,95 @@
   /* -------------------------------------------------------------- tabs */
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("active", x === t));
-    ["overview", "queue", "agents", "listings", "users", "buildings"].forEach((n) => ($("tab-" + n).hidden = n !== t.dataset.tab));
+    ["overview", "queue", "agents", "listings", "users", "buildings", "new"].forEach((n) => ($("tab-" + n).hidden = n !== t.dataset.tab));
   }));
+
+  /* ---- create a listing from a pasted JSON blob (no SQL) ----------------
+   * Runs entirely on the admin's own session: is_agent() is true for an admin,
+   * so buildings_insert and listings_insert both pass, and enforce_listing_status
+   * keeps it 'pending' unless the admin explicitly approves it later. The
+   * building is inserted with a fresh id (not ensure_building) so two vague
+   * same-city addresses do NOT merge onto one building. */
+  function fillFromJson() {
+    let d;
+    try { d = JSON.parse($("nl-json").value); } catch (e) { return nlErr("JSON לא תקין: " + e.message); }
+    const set = (id, v) => { if (v !== undefined && v !== null) $(id).value = v; };
+    set("nl-title", d.title); set("nl-deal", d.deal); set("nl-price", d.price);
+    set("nl-rooms", d.rooms); set("nl-size", d.size); set("nl-floor", d.floor);
+    set("nl-type", d.type); set("nl-age", d.age); set("nl-city", d.city);
+    set("nl-address", d.address); set("nl-lat", d.lat); set("nl-lng", d.lng);
+    set("nl-desc", d.description);
+    if (d.contact) { set("nl-cname", d.contact.name); set("nl-cphone", d.contact.phone); $("nl-wa").checked = !!d.contact.whatsapp; }
+    $("nl-err").hidden = true;
+    // stash the amenities/extras that have no visible field
+    $("nl-json").dataset.extra = JSON.stringify({
+      category: d.category, parking: d.parking, elevator: d.elevator,
+      furnished: d.furnished, pets: d.pets, floors_total: d.floors_total,
+      rent_term: d.rent_term, contact_role: d.contact && d.contact.role,
+    });
+  }
+  $("nl-json").addEventListener("input", () => { if ($("nl-json").value.trim()) fillFromJson(); });
+  function nlErr(m) { const e = $("nl-err"); e.textContent = m; e.hidden = false; }
+
+  $("nl-create").addEventListener("click", async () => {
+    $("nl-err").hidden = true;
+    const num = (id) => Number($(id).value);
+    const title = $("nl-title").value.trim();
+    const rooms = num("nl-rooms"), size = num("nl-size");
+    const lat = num("nl-lat"), lng = num("nl-lng");
+    const address = $("nl-address").value.trim(), city = $("nl-city").value.trim();
+    if (!title) return nlErr("חסרה כותרת");
+    if (!(rooms > 0)) return nlErr("חדרים חייב להיות גדול מ-0");
+    if (!(size > 0)) return nlErr('שטח (מ"ר) חייב להיות גדול מ-0');
+    if (!address || !city) return nlErr("חסרה כתובת או עיר");
+    if (!isFinite(lat) || !isFinite(lng)) return nlErr("חסרות קואורדינטות (lat/lng)");
+    let extra = {};
+    try { extra = JSON.parse($("nl-json").dataset.extra || "{}"); } catch (e) {}
+
+    $("nl-create").disabled = true;
+    try {
+      const bid = "bv-" + (window.crypto && crypto.randomUUID
+        ? crypto.randomUUID().replace(/-/g, "")
+        : Date.now().toString(36) + Math.random().toString(36).slice(2));
+      const bIns = await supa.from("buildings").insert({
+        id: bid, name: title, address: address, city: city,
+        lat: lat, lng: lng, verified: false, source: "manual",
+      });
+      if (bIns.error) throw bIns.error;
+
+      const deal = $("nl-deal").value;
+      const row = {
+        building_id: bid, agent_id: state.user.id, deal: deal,
+        price: num("nl-price") || 0, rooms: rooms, size: size, floor: num("nl-floor") || 0,
+        floors_total: extra.floors_total || null,
+        title: title, description: $("nl-desc").value.trim(),
+        type: $("nl-type").value, category: extra.category || "residential",
+        age: $("nl-age").value, parking: !!extra.parking, elevator: !!extra.elevator,
+        furnished: !!extra.furnished, pets: !!extra.pets,
+        rent_term: deal === "rent" ? (extra.rent_term || "long") : null,
+        poster_type: "agent", status: "pending",
+      };
+      const lIns = await supa.from("listings").insert(row).select("id").single();
+      if (lIns.error) throw lIns.error;
+
+      const cname = $("nl-cname").value.trim();
+      if (cname) {
+        await supa.from("listing_contacts").insert({
+          listing_id: lIns.data.id, name: cname, phone: $("nl-cphone").value.trim() || null,
+          email: null, role: extra.contact_role || "מתווך נדל״ן", whatsapp: $("nl-wa").checked, sort: 0,
+        });
+      }
+      toast("הנכס נוצר כממתין לאישור ✓");
+      ["nl-json", "nl-title", "nl-price", "nl-rooms", "nl-size", "nl-city", "nl-address",
+       "nl-lat", "nl-lng", "nl-desc", "nl-cname", "nl-cphone"].forEach((id) => ($(id).value = ""));
+      $("nl-wa").checked = false;
+      loadAll();
+    } catch (e) {
+      nlErr("שגיאה: " + (e.message || e));
+    } finally {
+      $("nl-create").disabled = false;
+    }
+  });
 })();
 
 /* ---- password reset (shared /reset page) ---- */

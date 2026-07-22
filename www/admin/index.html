@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>BlockView — ניהול מערכת</title>
-  <link rel="stylesheet" href="admin.css?v=13" />
+  <link rel="stylesheet" href="admin.css?v=23" />
 </head>
 <body>
 
@@ -88,6 +88,7 @@
       <button class="tab" data-tab="listings">כל הנכסים</button>
       <button class="tab" data-tab="users">משתמשים</button>
       <button class="tab" data-tab="buildings">בניינים</button>
+      <button class="tab" data-tab="new">➕ נכס חדש</button>
     </nav>
 
     <!-- overview -->
@@ -181,6 +182,38 @@
       <div id="b-err" class="err" hidden></div>
       <div id="buildings-list" class="rows"></div>
     </section>
+
+    <!-- create a listing from a parsed post (no SQL) -->
+    <section class="panel" id="tab-new" hidden>
+      <div class="panel-head"><h2>נכס חדש</h2></div>
+      <p class="muted" style="margin:0 0 12px">הדבק את ה-JSON שקיבלת, בדוק את השדות, ולחץ "צור נכס ממתין". הנכס נוצר על החשבון שלך ומחכה לאישור.</p>
+      <textarea id="nl-json" class="input" rows="6" placeholder='הדבק כאן JSON של הנכס' style="font-family:monospace;direction:ltr;text-align:left"></textarea>
+      <div class="bform" style="margin-top:12px">
+        <input id="nl-title" class="input" placeholder="כותרת *" />
+        <select id="nl-deal" class="input"><option value="sale">מכירה</option><option value="rent">השכרה</option></select>
+        <input id="nl-price" class="input" type="number" placeholder="מחיר (₪)" />
+        <input id="nl-rooms" class="input" type="number" step="0.5" placeholder="חדרים *" />
+        <input id="nl-size" class="input" type="number" placeholder='שטח (מ"ר) *' />
+        <input id="nl-floor" class="input" type="number" placeholder="קומה" value="0" />
+        <select id="nl-type" class="input">
+          <option value="house">בית</option><option value="flat">דירה</option>
+          <option value="penthouse">פנטהאוז</option><option value="studio">סטודיו</option>
+          <option value="office">משרד</option><option value="shop">חנות</option>
+          <option value="warehouse">מחסן</option><option value="other">אחר</option>
+        </select>
+        <select id="nl-age" class="input"><option value="new">חדש</option><option value="old">ישן</option></select>
+        <input id="nl-city" class="input" placeholder="עיר *" />
+        <input id="nl-address" class="input" placeholder="כתובת *" />
+        <input id="nl-lat" class="input" type="number" step="0.00001" placeholder="lat *" />
+        <input id="nl-lng" class="input" type="number" step="0.00001" placeholder="lng *" />
+        <input id="nl-cname" class="input" placeholder="שם איש קשר" />
+        <input id="nl-cphone" class="input" placeholder="טלפון" />
+      </div>
+      <textarea id="nl-desc" class="input" rows="4" placeholder="תיאור" style="margin-top:10px"></textarea>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="nl-wa" /> המספר זמין בוואטסאפ</label>
+      <div id="nl-err" class="err" hidden style="margin-top:10px"></div>
+      <button id="nl-create" class="btn-primary" style="margin-top:12px">צור נכס ממתין</button>
+    </section>
   </main>
 
   <div id="toast" hidden></div>
@@ -249,6 +282,6 @@
   <script src="../js/config.js?v=17"></script>
   <script src="../js/analytics.js?v=2"></script>
   <script src="../js/oauth.js?v=17"></script>
-  <script src="admin.js?v=22"></script>
+  <script src="admin.js?v=23"></script>
 </body>
 </html>
