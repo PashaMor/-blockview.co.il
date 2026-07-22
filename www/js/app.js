@@ -1266,10 +1266,10 @@ document.getElementById("dl-continue").addEventListener("click", () => {
   pendingListing = null;
 });
 document.querySelectorAll(".dl-store").forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); toast("האפליקציה תהיה זמינה בקרוב"); }));
-(function initDeepLink() {
-  const lid = new URLSearchParams(location.search).get("listing");
-  if (lid && LISTING_INDEX[lid]) showDownload(lid);
-})();
+// ?listing= is handled by openSharedListing(), called from loadLiveData once
+// the real listings are indexed. If live data is already in (e.g. a language
+// re-render triggered a reload) this second call opens it immediately.
+openSharedListing();
 
 /* ---- legal links (terms / privacy) ----
    In the native app there is no browser plugin, so target="_blank" is a dead tap.
