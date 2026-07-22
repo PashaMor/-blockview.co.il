@@ -241,7 +241,26 @@ async function loadLiveData() {
     healBuildingFootprints();     // fix any building still drawn as a plain box
   } catch (e) {
     console.warn("[BlockView] live data failed, using sample data:", e.message);
+  } finally {
+    // a shared ?listing= link can only resolve once the real listings are
+    // indexed — before this, LISTING_INDEX holds sample data only
+    openSharedListing();
   }
+}
+
+/* ---- open a listing shared via ?listing=<id> ----
+ * Runs after loadLiveData, so a real (uuid) listing is in the index by now. */
+let sharedDone = false;
+function openSharedListing() {
+  if (sharedDone) return;
+  let lid = "";
+  try { lid = new URLSearchParams(location.search).get("listing") || ""; } catch (e) {}
+  if (!lid) { sharedDone = true; return; }
+  if (!LISTING_INDEX[lid]) return;             // not loaded yet — a later call catches it
+  sharedDone = true;
+  const l = LISTING_INDEX[lid];
+  selectBuilding(l.building.id);
+  openDetail(lid);
 }
 
 /* ---- self-heal building outlines ------------------------------------------

@@ -23,6 +23,11 @@ window.BLOCKVIEW_CONFIG = {
   OAUTH: { google: true, apple: false },
   NATIVE_REDIRECT: "com.blockview.app://auth/callback",
 
+  /* App store links, shown as badges to mobile-web visitors (profile sheet).
+   * Empty string = not published yet: the badge shows a "coming soon" toast
+   * instead of a dead link. Paste the store URL here when the listing is live. */
+  APP_STORES: { ios: "", android: "" },
+
   /* Version of the Terms / Privacy Policy the user is asked to accept. Keep it
    * equal to the "last updated" date in www/legal/lang/*.js — bumping it here is
    * what marks older acceptances as out of date. */

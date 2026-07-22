@@ -31,8 +31,8 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=72" />
-  <link rel="stylesheet" href="css/style.css?v=72" />
+  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=73" />
+  <link rel="stylesheet" href="css/style.css?v=73" />
 </head>
 <body>
   <div id="map"></div>
@@ -311,6 +311,19 @@
           <div class="acc-agent-sub" id="acc-agent-sub"></div>
         </div>
         <button id="acc-agent-btn" class="acc-agent-btn">—</button>
+      </div>
+
+      <!-- get the app (mobile web only; wired by js/app-badge.js) -->
+      <div class="acc-app-row" id="acc-app-row" hidden>
+        <div class="acc-app-title" data-i18n="get_the_app">קבל את האפליקציה</div>
+        <div class="acc-app-badges">
+          <button type="button" class="store-badge" data-store="android" aria-label="Google Play">
+            <span class="sb-ic">▶</span><span class="sb-tx"><small data-i18n="get_it_on">GET IT ON</small><b>Google Play</b></span>
+          </button>
+          <button type="button" class="store-badge" data-store="ios" aria-label="App Store">
+            <span class="sb-ic"></span><span class="sb-tx"><small data-i18n="download_on">Download on the</small><b>App Store</b></span>
+          </button>
+        </div>
       </div>
 
       <button id="acc-upgrade" class="sheet-apply" data-i18n="upgrade_pro">⭐ שדרג ל-Pro</button>
@@ -604,22 +617,23 @@
     </div>
   </div>
 
-  <script src="vendor/maplibre-gl.js?v=72"></script>
-  <script src="vendor/supabase.min.js?v=72"></script>
-  <script src="js/config.js?v=72"></script>
-  <script src="js/analytics.js?v=72"></script>
-  <script src="js/oauth.js?v=72"></script>
-  <script src="js/geo.js?v=72"></script>
-  <script src="js/i18n.js?v=72"></script>
-  <script src="js/confirm.js?v=72"></script>
-  <script src="js/data.js?v=72"></script>
-  <script src="js/track.js?v=72"></script>
-  <script src="js/app.js?v=72"></script>
-  <script src="js/auth.js?v=72"></script>
-  <script src="js/describe-gen.js?v=72"></script>
-  <script src="js/publish.js?v=72"></script>
-  <script src="js/my-listings.js?v=72"></script>
-  <script src="js/agent-apply.js?v=72"></script>
-  <script src="js/legal-modal.js?v=72"></script>
+  <script src="vendor/maplibre-gl.js?v=73"></script>
+  <script src="vendor/supabase.min.js?v=73"></script>
+  <script src="js/config.js?v=73"></script>
+  <script src="js/analytics.js?v=73"></script>
+  <script src="js/oauth.js?v=73"></script>
+  <script src="js/geo.js?v=73"></script>
+  <script src="js/i18n.js?v=73"></script>
+  <script src="js/confirm.js?v=73"></script>
+  <script src="js/data.js?v=73"></script>
+  <script src="js/track.js?v=73"></script>
+  <script src="js/app.js?v=73"></script>
+  <script src="js/auth.js?v=73"></script>
+  <script src="js/describe-gen.js?v=73"></script>
+  <script src="js/publish.js?v=73"></script>
+  <script src="js/my-listings.js?v=73"></script>
+  <script src="js/agent-apply.js?v=73"></script>
+  <script src="js/app-badge.js?v=73"></script>
+  <script src="js/legal-modal.js?v=73"></script>
 </body>
 </html>
