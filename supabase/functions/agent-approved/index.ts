@@ -1,7 +1,7 @@
 // BlockView — send the "you're approved as an agent" email (with a CRM link).
 //
 // Deploy:  supabase functions deploy agent-approved
-// Secrets: supabase secrets set RESEND_API_KEY=... FROM_EMAIL="BlockView <noreply@blockview.co.il>"
+// Secrets: supabase secrets set RESEND_API_KEY=... FROM_EMAIL="BlockView <no-reply@blockview.co.il>"
 //
 // Security: the RESEND key lives only in this function's env, never in the
 // browser. The caller must be a signed-in ADMIN — verified here with the service
@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-  const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "BlockView <noreply@blockview.co.il>";
+  const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "BlockView <no-reply@blockview.co.il>";
   if (!RESEND_API_KEY) return json({ error: "email not configured" }, 500);
 
   // 1) who is calling — must be a signed-in admin

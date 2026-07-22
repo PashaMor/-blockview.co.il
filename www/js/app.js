@@ -1043,7 +1043,7 @@ function refreshBuildings() {
 }
 function updateTotal() {
   let n = 0; for (const id in LISTINGS) n += buildingMatches(id).length;
-  document.getElementById("fcount").textContent = n;
+  var fc = document.getElementById("fcount"); if (fc) fc.textContent = n;
   document.getElementById("apply-count").textContent = n;
 }
 document.querySelectorAll("#deal-seg .seg-btn").forEach((btn) => {
