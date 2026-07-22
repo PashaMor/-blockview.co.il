@@ -28,7 +28,18 @@ const OVERPASS = [
 module.exports = async function handler(req, res) {
   try {
     const id = String((req.query && req.query.id) || "").trim();
-    if (!id) return res.status(400).json({ error: "id required" });
+
+    // read-only mode: /api/footprint?lat=&lng= just returns the outline and
+    // writes nothing. Used by the publish forms so the outline lookup is
+    // reliable (server-side) instead of the browser hitting flaky Overpass.
+    if (!id) {
+      const qlat = parseFloat(req.query && req.query.lat);
+      const qlng = parseFloat(req.query && req.query.lng);
+      if (!isFinite(qlat) || !isFinite(qlng)) return res.status(400).json({ error: "id or lat&lng required" });
+      const fp = await fetchFootprint(qlat, qlng);
+      if (!fp) return res.status(200).json({ ok: false, reason: "no outline" });
+      return res.status(200).json({ ok: true, footprint: fp.polygon, center: fp.center, height: fp.height, osmId: fp.osmId });
+    }
 
     const base = env("SUPABASE_URL").replace(/\/+$/, "") + "/rest/v1/";
     const key = env("SUPABASE_SECRET_KEY");

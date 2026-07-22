@@ -163,6 +163,20 @@
   }
 
   async function fetchFootprint(lat, lng) {
+    // Prefer our own server endpoint: it reaches Overpass with a real
+    // User-Agent and no CORS limit, so it succeeds where the browser call
+    // usually fails ("ללא מתאר מדויק" was almost always this, not a missing
+    // building). Same origin on both the website and the app WebView.
+    try {
+      var sr = await withTimeout("/api/footprint?lat=" + lat + "&lng=" + lng, {}, TIMEOUT_MS);
+      if (sr.ok) {
+        var sj = await sr.json();
+        if (sj && sj.ok && sj.footprint) {
+          return { osmId: sj.osmId || null, polygon: sj.footprint, height: sj.height, center: sj.center };
+        }
+      }
+    } catch (e) { /* fall through to hitting Overpass directly */ }
+
     // server timeout below our abort, so "slow" still returns instead of dying
     var q =
       "[out:json][timeout:6];(" +
