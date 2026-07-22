@@ -227,6 +227,9 @@ async function loadLiveData() {
         category: r.category || "residential",
         rentTerm: r.rent_term || (r.deal === "rent" ? "long" : null),
         furnished: !!r.furnished, pets: !!r.pets, parking: !!r.parking, elevator: !!r.elevator,
+        balcony: !!r.balcony, balcony_size: r.balcony_size != null ? +r.balcony_size : null,
+        yard: !!r.yard, yard_size: r.yard_size != null ? +r.yard_size : null,
+        floors_total: r.floors_total != null ? +r.floors_total : null,
         hasWhatsapp: waSet.has(r.id),
         photos,
       });
@@ -736,14 +739,21 @@ async function renderContacts(lid) {
 }
 function specRows(l) {
   const a = attrs(l);
-  return [
+  const rows = [
     ["סוג עסקה", l.deal === "sale" ? "למכירה" : "להשכרה"],
     ["סוג נכס", a.type === "house" ? "בית" : "דירה"],
     ["חדרים", l.rooms], ['שטח (מ"ר)', l.size], ["קומה", l.floor],
     ["מעלית", a.elevator ? "יש" : "אין"], ["חניה", a.parking ? "יש" : "אין"],
-    ["ריהוט", a.furnished ? "מרוהט" : "לא מרוהט"], ["חיות מחמד", a.pets ? "מותר" : "לא"],
-    ["גיל בניין", a.age === "new" ? "חדש" : "ישן"],
   ];
+  // furniture & pets are a rental concern; only meaningful on a rental
+  if (l.deal !== "sale") {
+    rows.push(["ריהוט", a.furnished ? "מרוהט" : "לא מרוהט"]);
+    rows.push(["חיות מחמד", a.pets ? "מותר" : "לא"]);
+  }
+  if (l.balcony) rows.push(["מרפסת", l.balcony_size ? l.balcony_size + ' מ"ר' : "יש"]);
+  if (l.yard) rows.push(["חצר", l.yard_size ? l.yard_size + ' מ"ר' : "יש"]);
+  rows.push(["גיל בניין", a.age === "new" ? "חדש" : "ישן"]);
+  return rows;
 }
 function descFor(l) {
   if (l.description && String(l.description).trim())

@@ -773,3 +773,7 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .store-badge .sb-tx { display: flex; flex-direction: column; line-height: 1.15; }
 .store-badge .sb-tx small { font-size: 9.5px; letter-spacing: .04em; opacity: .85; text-transform: uppercase; }
 .store-badge .sb-tx b { font-size: 15px; font-weight: 700; }
+
+/* ---- publish: balcony / yard size ---- */
+.amen-size { margin-top: 10px; }
+.amen-size label { display: block; font-size: 13px; color: var(--text-soft); margin-bottom: 7px; font-weight: 600; }

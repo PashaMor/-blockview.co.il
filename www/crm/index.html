@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>BlockView CRM — ניהול נכסים</title>
-  <link rel="stylesheet" href="crm.css?v=13" />
+  <link rel="stylesheet" href="crm.css?v=15" />
 </head>
 <body>
 
@@ -276,7 +276,17 @@
             <label><input type="checkbox" id="f-pets" /> 🐾 חיות מחמד</label>
             <label><input type="checkbox" id="f-parking" /> 🅿️ חניה</label>
             <label><input type="checkbox" id="f-elevator" /> 🛗 מעלית</label>
+            <label><input type="checkbox" id="f-balcony" /> 🌇 מרפסת</label>
+            <label><input type="checkbox" id="f-yard" /> 🌳 חצר</label>
           </div>
+        </div>
+        <div class="grid2" id="f-sizes">
+          <label class="field" id="f-balcony-size-wrap" hidden><span>גודל מרפסת (מ"ר)</span>
+            <input id="f-balcony-size" class="input" type="number" min="0" step="0.5" inputmode="decimal" />
+          </label>
+          <label class="field" id="f-yard-size-wrap" hidden><span>גודל חצר (מ"ר)</span>
+            <input id="f-yard-size" class="input" type="number" min="0" step="0.5" inputmode="decimal" />
+          </label>
         </div>
 
         <div class="field"><span>תמונות</span>
@@ -363,6 +373,6 @@
   <script src="../js/oauth.js?v=17"></script>
   <script src="../js/describe-gen.js?v=16"></script>
   <script src="../js/geo.js?v=70"></script>
-  <script src="crm.js?v=24"></script>
+  <script src="crm.js?v=26"></script>
 </body>
 </html>

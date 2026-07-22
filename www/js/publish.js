@@ -93,6 +93,8 @@
     state.editId = null; state.savedPhotos = [];
     setSheetMode(false);
     document.querySelectorAll("#p-amen .chip").forEach((c) => c.classList.remove("on"));
+    if ($("p-balcony-size-row")) { $("p-balcony-size-row").hidden = true; $("p-balcony-size").value = ""; }
+    if ($("p-yard-size-row")) { $("p-yard-size-row").hidden = true; $("p-yard-size").value = ""; }
     document.querySelectorAll("#p-deal-seg .seg-btn").forEach((b) => b.classList.toggle("active", b.dataset.pdeal === "sale"));
     state.term = "long";
     document.querySelectorAll("#p-term-seg .seg-btn").forEach((b) => b.classList.toggle("active", b.dataset.pterm === "long"));
@@ -169,7 +171,7 @@
     state.editId = l.id;
     state.editStatus = l.status;
     state.pending = [];
-    state.amen = { furnished: !!l.furnished, pets: !!l.pets, parking: !!l.parking, elevator: !!l.elevator };
+    state.amen = { furnished: !!l.furnished, pets: !!l.pets, parking: !!l.parking, elevator: !!l.elevator, balcony: !!l.balcony, yard: !!l.yard };
     state.deal = l.deal;
     state.address = null; state.footprint = null;
 
@@ -182,6 +184,9 @@
     syncTermGroup();
     document.querySelectorAll("#p-amen .chip").forEach((c) =>
       c.classList.toggle("on", !!state.amen[c.dataset.pamen]));
+    $("p-balcony-size").value = l.balcony_size != null ? l.balcony_size : "";
+    $("p-yard-size").value = l.yard_size != null ? l.yard_size : "";
+    syncAmenSizeRows();
 
     $("p-title").value = l.title || "";
     $("p-price").value = l.price || "";
@@ -485,9 +490,15 @@
     }));
   function rentTerm() { return state.deal === "rent" ? (state.term || "long") : null; }
 
+  function syncAmenSizeRows() {
+    const bRow = $("p-balcony-size-row"), yRow = $("p-yard-size-row");
+    if (bRow) { bRow.hidden = !state.amen.balcony; if (!state.amen.balcony) $("p-balcony-size").value = ""; }
+    if (yRow) { yRow.hidden = !state.amen.yard; if (!state.amen.yard) $("p-yard-size").value = ""; }
+  }
   document.querySelectorAll("#p-amen .chip").forEach((c) =>
     c.addEventListener("click", () => {
       c.classList.toggle("on"); state.amen[c.dataset.pamen] = c.classList.contains("on");
+      syncAmenSizeRows();
     }));
 
   /* -------------------------------------------------------- contacts ---- */
@@ -671,6 +682,10 @@
         pets: !!state.amen.pets,
         parking: !!state.amen.parking,
         elevator: !!state.amen.elevator,
+        balcony: !!state.amen.balcony,
+        balcony_size: state.amen.balcony ? (+$("p-balcony-size").value || null) : null,
+        yard: !!state.amen.yard,
+        yard_size: state.amen.yard ? (+$("p-yard-size").value || null) : null,
         status: "pending",
       };
       const contacts = readContacts();

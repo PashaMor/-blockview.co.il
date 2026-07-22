@@ -12,7 +12,10 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g,
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const nis = (n) => "₪" + Number(n || 0).toLocaleString("he-IL");
-  const ST = { pending: "ממתין", approved: "מאושר", rejected: "נדחה", sold: "נמכר", draft: "טיוטה" };
+  // מוקפא = temporarily off the map. draft/sold are retired from the picker but
+  // still labelled if an old row carries one (see supabase/30_listing_frozen.sql).
+  const ST = { pending: "ממתין", approved: "מאושר", rejected: "נדחה", frozen: "מוקפא" };
+  const ST_LABEL = Object.assign({ sold: "נמכר", draft: "טיוטה" }, ST);
   const when = (d) => new Date(d).toLocaleDateString("he-IL");
 
   const state = { user: null, listings: [], profiles: [], pmap: {}, buildings: [], leadCount: 0, leads: [], apps: [], appsMissing: false, agentProfiles: [], apmap: {} };
@@ -408,7 +411,7 @@
           <span>${esc(l.rooms)} חד'</span><span>${esc(l.size)} מ"ר</span><span>קומה ${esc(l.floor)}</span>
           <span>${esc(l.poster_type === "agent" ? "סוכן" : "בעל נכס")}: ${esc(agentLabel(l.agent_id))}</span>
           <span>${esc(when(l.created_at))}</span>
-          <span class="badge ${esc(l.status)}">${esc(ST[l.status] || l.status)}</span>
+          <span class="badge ${esc(l.status)}">${esc(ST_LABEL[l.status] || l.status)}</span>
         </div>
         ${contactList(l)}
         ${more}
@@ -420,7 +423,8 @@
                          <button class="btn-bad" data-reject="${esc(l.id)}">דחה</button>` : ""}
         <button class="btn-edit" data-editlisting="${esc(l.id)}">✏️ ערוך</button>
         ${!withActions ? `<select class="input" data-status="${esc(l.id)}">
-            ${Object.keys(ST).map((s) => `<option value="${s}"${s === l.status ? " selected" : ""}>${ST[s]}</option>`).join("")}
+            ${(Object.keys(ST).indexOf(l.status) < 0 ? [l.status] : []).concat(Object.keys(ST))
+              .map((s) => `<option value="${esc(s)}"${s === l.status ? " selected" : ""}>${esc(ST_LABEL[s] || s)}</option>`).join("")}
           </select>
           <label class="reassign-lbl">העבר לסוכן
             <select class="input" data-reassign="${esc(l.id)}" data-current="${esc(l.agent_id)}">${agentOptions(l.agent_id)}</select>
@@ -536,6 +540,13 @@
     });
   }
   $("e-deal").addEventListener("change", syncEditDeal);
+  function syncEditSizes() {
+    const bw = $("e-balcony-size-wrap"), yw = $("e-yard-size-wrap");
+    if (bw) { bw.hidden = !$("e-balcony").checked; if (!$("e-balcony").checked) $("e-balcony-size").value = ""; }
+    if (yw) { yw.hidden = !$("e-yard").checked; if (!$("e-yard").checked) $("e-yard-size").value = ""; }
+  }
+  $("e-balcony").addEventListener("change", syncEditSizes);
+  $("e-yard").addEventListener("change", syncEditSizes);
 
   /* photos on the edited listing. A separate copy so edits are live but the row
      in state.listings only refreshes on the next loadAll(). */
@@ -645,10 +656,15 @@
     $("e-pets").checked = !!l.pets;
     $("e-parking").checked = !!l.parking;
     $("e-elevator").checked = !!l.elevator;
+    $("e-balcony").checked = !!l.balcony;
+    $("e-yard").checked = !!l.yard;
+    $("e-balcony-size").value = l.balcony_size != null ? l.balcony_size : "";
+    $("e-yard-size").value = l.yard_size != null ? l.yard_size : "";
     $("e-tour").value = l.tour_url || "";
     $("e-website").value = l.website_url || "";
     $("e-desc").value = l.description || "";
     syncEditDeal();
+    syncEditSizes();
     $("edit-modal").hidden = false;
   }
   function closeEdit() { $("edit-modal").hidden = true; }
@@ -678,6 +694,10 @@
       pets: $("e-pets").checked,
       parking: $("e-parking").checked,
       elevator: $("e-elevator").checked,
+      balcony: $("e-balcony").checked,
+      balcony_size: $("e-balcony").checked ? (numOrNull($("e-balcony-size").value)) : null,
+      yard: $("e-yard").checked,
+      yard_size: $("e-yard").checked ? (numOrNull($("e-yard-size").value)) : null,
       tour_url: $("e-tour").value.trim() || null,
       website_url: $("e-website").value.trim() || null,
       description: $("e-desc").value.trim(),
@@ -718,7 +738,7 @@
   async function setStatus(id, status) {
     const { error } = await supa.from("listings").update({ status }).eq("id", id);
     if (error) return toast("שגיאה: " + error.message);
-    toast("סטטוס עודכן ל: " + (ST[status] || status));
+    toast("סטטוס עודכן ל: " + (ST_LABEL[status] || status));
     loadAll();
   }
 
@@ -959,7 +979,7 @@
 
     const listRows = mine.length
       ? mine.slice(0, 12).map((l) => `<div class="ud-listing">
-          <span class="badge ${esc(l.status)}">${esc(ST[l.status] || l.status)}</span>
+          <span class="badge ${esc(l.status)}">${esc(ST_LABEL[l.status] || l.status)}</span>
           <b>${esc(l.title)}</b>
           <span>${nis(l.price)}</span>
           <span>${esc(when(l.created_at))}</span>

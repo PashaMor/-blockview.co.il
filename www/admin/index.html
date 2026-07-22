@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>BlockView — ניהול מערכת</title>
-  <link rel="stylesheet" href="admin.css?v=23" />
+  <link rel="stylesheet" href="admin.css?v=25" />
 </head>
 <body>
 
@@ -259,6 +259,12 @@
           <label><input type="checkbox" id="e-pets" /> 🐾 חיות מחמד</label>
           <label><input type="checkbox" id="e-parking" /> 🅿️ חניה</label>
           <label><input type="checkbox" id="e-elevator" /> 🛗 מעלית</label>
+          <label><input type="checkbox" id="e-balcony" /> 🌇 מרפסת</label>
+          <label><input type="checkbox" id="e-yard" /> 🌳 חצר</label>
+        </div>
+        <div class="edit-grid">
+          <label class="ef" id="e-balcony-size-wrap" hidden><span>גודל מרפסת (מ"ר)</span><input id="e-balcony-size" class="input" type="number" min="0" step="0.5" /></label>
+          <label class="ef" id="e-yard-size-wrap" hidden><span>גודל חצר (מ"ר)</span><input id="e-yard-size" class="input" type="number" min="0" step="0.5" /></label>
         </div>
         <label class="ef"><span>קישור לסיור וירטואלי</span><input id="e-tour" class="input" type="url" placeholder="https://..." /></label>
         <label class="ef"><span>אתר הנכס</span><input id="e-website" class="input" type="url" placeholder="https://..." /></label>
@@ -282,6 +288,6 @@
   <script src="../js/config.js?v=17"></script>
   <script src="../js/analytics.js?v=2"></script>
   <script src="../js/oauth.js?v=17"></script>
-  <script src="admin.js?v=23"></script>
+  <script src="admin.js?v=25"></script>
 </body>
 </html>

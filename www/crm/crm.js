@@ -604,6 +604,13 @@
     });
   }
   $("f-deal").addEventListener("change", syncTermField);
+  function syncSizeFields() {
+    const bw = $("f-balcony-size-wrap"), yw = $("f-yard-size-wrap");
+    if (bw) { bw.hidden = !$("f-balcony").checked; if (!$("f-balcony").checked) $("f-balcony-size").value = ""; }
+    if (yw) { yw.hidden = !$("f-yard").checked; if (!$("f-yard").checked) $("f-yard-size").value = ""; }
+  }
+  $("f-balcony").addEventListener("change", syncSizeFields);
+  $("f-yard").addEventListener("change", syncSizeFields);
 
   /* ---------------------------------------------------------- editor ---- */
   function openEditor(l) {
@@ -639,6 +646,11 @@
     $("f-pets").checked = !!(l && l.pets);
     $("f-parking").checked = !!(l && l.parking);
     $("f-elevator").checked = !!(l && l.elevator);
+    $("f-balcony").checked = !!(l && l.balcony);
+    $("f-yard").checked = !!(l && l.yard);
+    $("f-balcony-size").value = l && l.balcony_size != null ? l.balcony_size : "";
+    $("f-yard-size").value = l && l.yard_size != null ? l.yard_size : "";
+    syncSizeFields();
     $("f-delete").hidden = !l;
     $("f-photos").value = "";
     renderPhotoStrip();
@@ -939,6 +951,10 @@
         pets: $("f-pets").checked,
         parking: $("f-parking").checked,
         elevator: $("f-elevator").checked,
+        balcony: $("f-balcony").checked,
+        balcony_size: $("f-balcony").checked ? (+$("f-balcony-size").value || null) : null,
+        yard: $("f-yard").checked,
+        yard_size: $("f-yard").checked ? (+$("f-yard-size").value || null) : null,
       };
       const id = $("f-id").value;
       let listingId = id;
