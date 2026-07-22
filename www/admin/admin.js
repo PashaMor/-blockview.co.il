@@ -665,7 +665,6 @@
     $("e-floor").value = l.floor != null ? l.floor : "";
     $("e-floors-total").value = l.floors_total != null ? l.floors_total : "";
     $("e-age").value = l.age || "old";
-    $("e-status").value = l.status || "pending";
     $("e-furnished").checked = !!l.furnished;
     $("e-pets").checked = !!l.pets;
     $("e-parking").checked = !!l.parking;
@@ -703,7 +702,6 @@
       floor: numOrNull($("e-floor").value),
       floors_total: numOrNull($("e-floors-total").value),
       age: $("e-age").value,
-      status: $("e-status").value,
       furnished: $("e-furnished").checked,
       pets: $("e-pets").checked,
       parking: $("e-parking").checked,
