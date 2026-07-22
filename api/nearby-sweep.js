@@ -47,7 +47,9 @@ module.exports = async function handler(req, res) {
     const out = { total_missing: missing.length, saved: 0, empty: 0, failed: 0 };
     for (let i = 0; i < missing.length && i < MAX_PER_RUN; i++) {
       try {
-        const r = await importOneBuilding({ supabaseUrl: SUPABASE_URL, serviceKey: SERVICE_KEY }, missing[i]);
+        // fewer attempts here than the creation path: the sweep is serial under
+        // a 60s cap, and a building it can't get tonight it simply retries tomorrow
+        const r = await importOneBuilding({ supabaseUrl: SUPABASE_URL, serviceKey: SERVICE_KEY }, missing[i], { attempts: 3 });
         if (r.saved) out.saved++;
         else out.empty++;               // genuinely nothing nearby — leave it
       } catch (e) {
