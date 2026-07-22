@@ -7,6 +7,7 @@
   const cfg = window.BLOCKVIEW_CONFIG;
   const supa = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY,
     window.BVOAuth ? BVOAuth.clientOptions() : undefined);
+  if (window.BVOAuth && BVOAuth.shareSession) BVOAuth.shareSession(supa);   // share session across *.blockview.co.il
   const $ = (id) => document.getElementById(id);
   const BUCKET = "listing-photos";
 

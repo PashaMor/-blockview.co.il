@@ -36,8 +36,19 @@
 
   async function load() {
     if (!db() || !window.BVAuth || !window.BVAuth.isLoggedIn()) return [];
+    // MUST filter to my own listings. Without it, RLS still returns every
+    // APPROVED listing (they are public to read), so the list would show
+    // properties this user doesn't own — and edit/delete on those silently do
+    // nothing, because the write policies require agent_id = auth.uid().
+    var uid = "";
+    try {
+      var u = await db().auth.getUser();
+      uid = u && u.data && u.data.user ? u.data.user.id : "";
+    } catch (e) {}
+    if (!uid) return [];
     var res = await db().from("listings")
       .select("*, buildings(name,address,city), listing_photos(path,sort)")
+      .eq("agent_id", uid)
       .order("created_at", { ascending: false });
     if (res.error) { console.warn("[BlockView] my listings:", res.error.message); return []; }
     return res.data || [];

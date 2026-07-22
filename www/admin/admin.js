@@ -6,6 +6,7 @@
   const cfg = window.BLOCKVIEW_CONFIG;
   const supa = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY,
     window.BVOAuth ? BVOAuth.clientOptions() : undefined);
+  if (window.BVOAuth && BVOAuth.shareSession) BVOAuth.shareSession(supa);   // share session across *.blockview.co.il
   const $ = (id) => document.getElementById(id);
   const BUCKET = "listing-photos";
 
@@ -324,7 +325,20 @@
     const { error } = await supa.rpc("review_agent_application", { target: userId, decision, note });
     if (error) return toast("שגיאה: " + error.message);
     toast(decision === "approved" ? "אושר כסוכן ✓" : "הבקשה נדחתה");
+    // fire the approval email (best-effort — the role change already committed;
+    // the edge function re-checks admin + that the target is now an agent)
+    if (decision === "approved") notifyAgentApproved(userId);
     loadAll();
+  }
+  async function notifyAgentApproved(userId) {
+    try {
+      const r = await supa.functions.invoke("agent-approved", { body: { user_id: userId } });
+      if (r.error) { console.warn("[BlockView] approval email failed:", r.error.message); toast("אושר — אך שליחת האימייל נכשלה"); }
+      else toast("אימייל אישור נשלח 📧");
+    } catch (e) {
+      // function not deployed yet, or no network — approval still stands
+      console.warn("[BlockView] approval email not sent:", e && e.message);
+    }
   }
   document.addEventListener("click", (e) => {
     const ok = e.target.closest("[data-appok]");

@@ -106,5 +106,68 @@
     return shown;
   }
 
-  window.BVOAuth = { isNative: isNative, enabled: enabled, clientOptions: clientOptions, signIn: signIn, attach: attach, wire: wire };
+  /* ---- share the session across *.blockview.co.il ----------------------
+   * blockview.co.il, crm. and admin. are separate origins, and Supabase keeps
+   * the session in localStorage, which is per-origin. So "מעבר ל-CRM" landed
+   * the user on a login screen. We mirror just the tokens into a cookie scoped
+   * to the parent domain (.blockview.co.il); a subdomain that loads without a
+   * session hydrates from that cookie. localStorage stays the per-origin cache;
+   * the cookie is only the hand-off between subdomains.
+   *
+   * The cookie is JS-readable (the client has to read it) and holds only the
+   * access + refresh tokens — the same exposure as the localStorage session it
+   * mirrors, no worse. It never runs off the real domain (localhost / previews
+   * fall back to plain localStorage). */
+  var COOKIE = "bv_sess";
+  function parentDomain() {
+    var h = location.hostname || "";
+    return /(^|\.)blockview\.co\.il$/i.test(h) ? ".blockview.co.il" : null;
+  }
+  function writeSharedSession(session) {
+    var domain = parentDomain();
+    if (!domain) return;
+    try {
+      if (!session || !session.access_token) { clearSharedSession(); return; }
+      var v = encodeURIComponent(JSON.stringify({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+      }));
+      // ~1.5KB, well under the 4KB cookie limit; 30-day life, refreshed on use
+      document.cookie = COOKIE + "=" + v + ";domain=" + domain +
+        ";path=/;max-age=2592000;secure;samesite=Lax";
+    } catch (e) { /* best effort */ }
+  }
+  function clearSharedSession() {
+    var domain = parentDomain();
+    if (!domain) return;
+    document.cookie = COOKIE + "=;domain=" + domain + ";path=/;max-age=0;secure;samesite=Lax";
+  }
+  function readSharedSession() {
+    var m = ("; " + document.cookie).match(/; bv_sess=([^;]+)/);
+    if (!m) return null;
+    try { return JSON.parse(decodeURIComponent(m[1])); } catch (e) { return null; }
+  }
+
+  /* Call once, right after creating a client. Keeps the shared cookie in step
+   * with the session, and hydrates a fresh subdomain from it. */
+  function shareSession(supa) {
+    if (!parentDomain() || !supa || !supa.auth) return;
+    supa.auth.onAuthStateChange(function (evt, session) {
+      if (evt === "SIGNED_OUT") clearSharedSession();
+      else writeSharedSession(session);
+    });
+    // hydrate: if this origin has no session yet but a sibling left a cookie
+    supa.auth.getSession().then(function (r) {
+      if (r && r.data && r.data.session) return;   // already signed in here
+      var shared = readSharedSession();
+      if (shared && shared.access_token && shared.refresh_token) {
+        supa.auth.setSession({
+          access_token: shared.access_token,
+          refresh_token: shared.refresh_token,
+        }).catch(function () { clearSharedSession(); });  // stale/invalid — drop it
+      }
+    });
+  }
+
+  window.BVOAuth = { isNative: isNative, enabled: enabled, clientOptions: clientOptions, signIn: signIn, attach: attach, wire: wire, shareSession: shareSession };
 })();
