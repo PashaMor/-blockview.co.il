@@ -15,11 +15,8 @@
   var stores = (window.BLOCKVIEW_CONFIG && window.BLOCKVIEW_CONFIG.APP_STORES) || {};
   var T = function (k, fb) { return (window.t ? window.t(k) : fb) || fb; };
 
-  // don't offer the App Store badge when there is no iOS listing at all;
-  // Android is the primary platform, so its badge stays as a "coming soon" teaser.
-  var ios = row.querySelector('[data-store="ios"]');
-  if (ios && !stores.ios) ios.hidden = true;
-
+  // both badges always show; one whose URL isn't set yet acts as a "coming soon"
+  // teaser (the click handler toasts instead of following a dead link)
   row.hidden = false;
 
   row.addEventListener("click", function (e) {
