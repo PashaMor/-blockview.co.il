@@ -245,41 +245,31 @@ async function loadLiveData() {
 }
 
 /* ---- self-heal building outlines ------------------------------------------
- * A building whose Overpass lookup failed at publish time (the service is
- * flaky) is drawn as a generic box that does not sit on the real building.
- * The outline is usually available on a later try, so when a SIGNED-IN user
- * loads the map we re-fetch the outline for a few footprint-less buildings and
- * back-fill it. ensure_building() only fills a null footprint and never
- * overwrites one (27_backfill_footprint_on_match.sql), so this is safe to run
- * repeatedly; it converges and then stops. Kept small and serial so Overpass
- * is never hammered. Requires sign-in because ensure_building() needs auth. */
+ * A building whose outline failed to load at publish time (Overpass is flaky)
+ * is drawn as a generic box that does not sit on the real building. The
+ * /api/footprint endpoint fetches the outline server-side and stores it with
+ * the service key, so this works for EVERY viewer — no sign-in, no browser
+ * Overpass. It only fills a null footprint and never overwrites one, so it is
+ * safe to repeat: it converges as buildings gain outlines and then stops.
+ * Kept small and serial so the endpoint is never hammered. */
 let healingRun = false;
 async function healBuildingFootprints() {
-  if (healingRun || !window.BVGeo || !window.BVSupa) return;
-  let session = null;
-  try { const s = await window.BVSupa.auth.getSession(); session = s && s.data && s.data.session; } catch (e) {}
-  if (!session) return;                       // anon cannot create/heal buildings
+  if (healingRun) return;
   healingRun = true;
   const missing = BUILDINGS
-    .filter((b) => !b.footprint && b.address && isFinite(b.lat) && isFinite(b.lng))
+    .filter((b) => !b.footprint && isFinite(b.lat) && isFinite(b.lng))
     // buildings a user can actually see (they have listings) come first
     .sort((a, c) => ((LISTINGS[c.id] || []).length ? 1 : 0) - ((LISTINGS[a.id] || []).length ? 1 : 0));
   let healed = 0;
-  for (let i = 0; i < missing.length && healed < 5; i++) {
+  for (let i = 0; i < missing.length && healed < 6; i++) {
     const b = missing[i];
-    let fp = null;
-    try { fp = await window.BVGeo.fetchFootprint(b.lat, b.lng); } catch (e) {}
-    if (!fp || !fp.polygon) continue;
     try {
-      await window.BVSupa.rpc("ensure_building", {
-        p_name: b.name, p_address: b.address, p_city: b.city || null,
-        p_lat: fp.center ? fp.center[1] : b.lat,
-        p_lng: fp.center ? fp.center[0] : b.lng,
-        p_osm_id: fp.osmId || null, p_footprint: fp.polygon, p_height: fp.height || null,
-      });
-      b.footprint = fp.polygon;
-      if (fp.center) { b.lng = fp.center[0]; b.lat = fp.center[1]; }
-      if (fp.height) b.height = fp.height;
+      const r = await fetch("/api/footprint?id=" + encodeURIComponent(b.id));
+      const j = await r.json();
+      if (!j || !j.ok || !j.footprint) continue;
+      b.footprint = j.footprint;
+      if (j.center) { b.lng = j.center[0]; b.lat = j.center[1]; }
+      if (j.height) b.height = j.height;
       healed++;
     } catch (e) { /* leave it as a box; try again next load */ }
   }
