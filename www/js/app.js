@@ -289,6 +289,7 @@ async function healBuildingFootprints() {
       b.footprint = j.footprint;
       if (j.center) { b.lng = j.center[0]; b.lat = j.center[1]; }
       if (j.height) b.height = j.height;
+      b.heightMatched = false;   // re-match to the base map now that it moved
       healed++;
     } catch (e) { /* leave it as a box; try again next load */ }
   }
@@ -297,6 +298,36 @@ async function healBuildingFootprints() {
     map.getSource("blockview").setData(buildingsGeoJSON());
     if (selectedId) setSelectedState(selectedId, true);
     console.log("[BlockView] healed", healed, "building outline(s)");
+  }
+}
+
+/* ---- match our building to the real one under it -------------------------
+ * Our blue building extrudes to its own `height`; the base-map buildings use
+ * the real OSM `render_height`. A fixed 24 m box towers over (or sinks into) a
+ * house that is really ~10 m, which is what "looks bad on the app" was — the
+ * heights did not agree. Here we read the height the map actually rendered for
+ * the building under each of ours and copy it, so the blue block is exactly as
+ * tall as the building it stands for. Only works for buildings on screen, so it
+ * runs on every "idle"; each building is matched once. */
+function matchBuildingHeights() {
+  if (!map.getLayer || !map.getLayer("city-3d")) return;
+  let changed = false;
+  BUILDINGS.forEach((b) => {
+    if (b.heightMatched || !isFinite(b.lat) || !isFinite(b.lng)) return;
+    var pt;
+    try { pt = map.project([b.lng, b.lat]); } catch (e) { return; }
+    if (pt.x < 0 || pt.y < 0 || pt.x > map.getCanvas().width || pt.y > map.getCanvas().height) return; // off screen
+    var feats = map.queryRenderedFeatures(
+      [[pt.x - 3, pt.y - 3], [pt.x + 3, pt.y + 3]], { layers: ["city-3d"] });
+    if (!feats.length) { b.heightMatched = true; return; }   // no base building here (e.g. empty lot)
+    var h = 0;
+    feats.forEach((f) => { var rh = +(f.properties && f.properties.render_height); if (isFinite(rh) && rh > h) h = rh; });
+    if (h > 2 && Math.abs(h - b.height) > 0.5) { b.height = h; changed = true; }
+    b.heightMatched = true;
+  });
+  if (changed && map.getSource("blockview")) {
+    map.getSource("blockview").setData(buildingsGeoJSON());
+    if (selectedId) setSelectedState(selectedId, true);
   }
 }
 
@@ -369,6 +400,7 @@ function addCustomLayers() {
   addEducationLayer();
   localizeMap();
   if (selectedId) setSelectedState(selectedId, true);
+  matchBuildingHeights();
 }
 
 /* switch base-map street/place labels to the app language (falls back to Latin/local
@@ -399,6 +431,8 @@ map.on("load", () => {
   loadLiveData();          // swap the sample data for real listings from Supabase
   // let other scripts refresh the map after they change a listing
   window.reloadLiveData = loadLiveData;
+  // once the map settles, size each blue building to the real one beneath it
+  map.on("idle", matchBuildingHeights);
 
   /* ---- the map controls collapse behind a chevron on a phone ----
      Desktop keeps them open (CSS hides the chevron there), so this only ever
