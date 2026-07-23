@@ -61,3 +61,7 @@ body { font-family: var(--font); color: var(--text); background: var(--surface-2
     --surface: #131A24; --surface-2: #0D131B; --line: #263242; }
   body { background: #0D131B; }
 }
+
+/* initial-avatar thumbnail + no-contact note */
+.p-logo { font-size: 34px; }
+.p-nocontact { font-size: 13px; color: var(--muted); }

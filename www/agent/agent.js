@@ -91,19 +91,29 @@
     $("p-agency").textContent = p.agency || "";
     $("p-license").textContent = p.license_no ? ("רישיון תיווך " + p.license_no) : "";
 
+    // thumbnail: the logo, or a coloured circle with the name's initial
     if (p.logo_path) {
       var img = new Image();
       img.alt = ""; img.src = logoUrl(p.logo_path);
       $("p-logo").textContent = ""; $("p-logo").appendChild(img);
+    } else {
+      var hue = 0, ns = name || "?"; for (var i = 0; i < ns.length; i++) hue = (hue * 31 + ns.charCodeAt(i)) % 360;
+      $("p-logo").textContent = ns.charAt(0).toUpperCase();
+      $("p-logo").style.background = "hsl(" + hue + ",60%,92%)";
+      $("p-logo").style.color = "hsl(" + hue + ",55%,38%)";
+      $("p-logo").style.fontWeight = "800";
     }
 
-    // contact actions
+    // contact actions: phone, WhatsApp (opens a ready message), website
     var acts = [];
     var wa = waNumber(p.phone);
-    if (wa) acts.push('<a class="act wa" href="https://wa.me/' + wa + '" target="_blank" rel="noopener">💬 וואטסאפ</a>');
     if (p.phone) acts.push('<a class="act" href="tel:' + esc(p.phone) + '">📞 ' + esc(p.phone) + '</a>');
+    if (wa) {
+      var msg = encodeURIComponent("שלום " + (p.first_name || "") + ", ראיתי את העמוד שלך ב-BlockView ואשמח לפרטים.");
+      acts.push('<a class="act wa" href="https://wa.me/' + wa + '?text=' + msg + '" target="_blank" rel="noopener">💬 שליחת הודעה בוואטסאפ</a>');
+    }
     if (p.website && /^https?:\/\//i.test(p.website)) acts.push('<a class="act" href="' + esc(p.website) + '" target="_blank" rel="noopener noreferrer">🌐 אתר</a>');
-    $("p-actions").innerHTML = acts.join("");
+    $("p-actions").innerHTML = acts.join("") || '<span class="p-nocontact">אין פרטי קשר לסוכן זה</span>';
 
     done();
 
