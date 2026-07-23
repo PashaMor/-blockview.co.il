@@ -1204,8 +1204,22 @@
   });
 
   /* --------------------------------------------------------- buildings */
+  // opens the public map centered on the building, so an admin can eyeball the
+  // location / footprint before verifying
+  const mapUrl = (b) => "https://blockview.co.il/?at=" + encodeURIComponent(b.lat + "," + b.lng);
+
   function renderBuildings() {
-    $("buildings-list").innerHTML = state.buildings.map((b) => `
+    const q = ($("bl-search").value || "").trim().toLowerCase();
+    const f = $("bl-filter").value;
+    const rows = state.buildings.filter((b) => {
+      if (f === "unverified" && b.verified !== false) return false;
+      if (f === "verified" && b.verified === false) return false;
+      if (f === "nofootprint" && b.footprint) return false;
+      if (!q) return true;
+      return ((b.name || "") + " " + (b.address || "") + " " + (b.city || "") + " " + (b.id || "")).toLowerCase().includes(q);
+    });
+    $("bl-count").textContent = rows.length;
+    $("buildings-list").innerHTML = rows.map((b) => `
       <div class="row">
         <div class="rthumb">🏢</div>
         <div class="rmain">
@@ -1218,11 +1232,14 @@
             ${b.source && b.source !== "manual" ? `<span>${esc(b.source)}</span>` : ""}</div>
         </div>
         <div class="ractions">
+          <a class="btn-edit" href="${esc(mapUrl(b))}" target="_blank" rel="noopener">🗺️ מפה</a>
           ${b.verified === false ? `<button class="btn-ok" data-verifyb="${esc(b.id)}">אמת</button>` : ""}
           <button class="btn-bad" data-delb="${esc(b.id)}">מחק</button>
         </div>
-      </div>`).join("") || `<div class="empty">אין בניינים.</div>`;
+      </div>`).join("") || `<div class="empty">אין בניינים בסינון הזה.</div>`;
   }
+  $("bl-search").addEventListener("input", renderBuildings);
+  $("bl-filter").addEventListener("change", renderBuildings);
   document.addEventListener("click", async (e) => {
     // buildings created from an address stay off the map until verified
     const v = e.target.closest("[data-verifyb]");

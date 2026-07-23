@@ -175,7 +175,19 @@
 
     <!-- buildings -->
     <section class="panel" id="tab-buildings" hidden>
-      <div class="panel-head"><h2>בניינים</h2></div>
+      <div class="panel-head">
+        <h2>בניינים</h2>
+        <div class="filters">
+          <input id="bl-search" class="input" placeholder="חיפוש שם / כתובת / עיר..." />
+          <select id="bl-filter" class="input">
+            <option value="all">כל הבניינים</option>
+            <option value="unverified">לא מאומתים (ממתינים)</option>
+            <option value="verified">מאומתים</option>
+            <option value="nofootprint">ללא מתאר</option>
+          </select>
+          <span class="filter-count"><b id="bl-count">0</b> תוצאות</span>
+        </div>
+      </div>
       <form id="b-form" class="bform">
         <input id="b-id" class="input" placeholder="מזהה (למשל b9)" required />
         <input id="b-name" class="input" placeholder="שם" required />
@@ -291,6 +303,6 @@
   <script src="../js/config.js?v=17"></script>
   <script src="../js/analytics.js?v=2"></script>
   <script src="../js/oauth.js?v=18"></script>
-  <script src="admin.js?v=30"></script>
+  <script src="admin.js?v=31"></script>
 </body>
 </html>
