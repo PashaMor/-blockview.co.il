@@ -65,3 +65,6 @@ body { font-family: var(--font); color: var(--text); background: var(--surface-2
 /* initial-avatar thumbnail + no-contact note */
 .p-logo { font-size: 34px; }
 .p-nocontact { font-size: 13px; color: var(--muted); }
+
+/* back arrow: symbol only, tappable */
+.back { font-size: 22px; line-height: 1; padding: 4px 8px; }
