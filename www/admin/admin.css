@@ -253,3 +253,23 @@ main { max-width: 1140px; margin: 0 auto; padding: 20px; }
 .e-upload { display: inline-block; margin-top: 8px; font: inherit; font-weight: 700; font-size: 13px; cursor: pointer;
   color: var(--blue); border: 1px dashed var(--line); border-radius: 10px; padding: 9px 14px; }
 .e-upload:hover { border-color: var(--blue); }
+
+/* ---- agents & their leads ---- */
+.al-agent { border: 1px solid var(--line, #e4e8ed); border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
+.al-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  padding: 12px 14px; background: var(--surface-2, #f5f7f9); flex-wrap: wrap; }
+.al-head b { font-size: 15px; }
+.al-agency { margin-inline-start: 8px; font-size: 12.5px; color: var(--text-soft, #5a6879); }
+.al-email { display: block; font-size: 12px; color: var(--muted, #8592a2); margin-top: 2px; }
+.al-counts { display: flex; gap: 12px; font-size: 12.5px; color: var(--text-soft, #5a6879); white-space: nowrap; }
+.al-leadcount b { color: var(--blue, #0038b8); }
+.al-leads { padding: 4px 14px 8px; }
+.al-lead { padding: 10px 0; border-bottom: 1px solid var(--line, #eef1f5); }
+.al-lead:last-child { border-bottom: 0; }
+.al-lead-main { display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; font-size: 13.5px; }
+.al-reach { color: var(--text-soft, #5a6879); }
+.al-for { color: var(--muted, #8592a2); font-size: 12.5px; }
+.al-msg { margin: 5px 0 0; font-size: 13px; color: var(--text, #263140); background: var(--surface-2, #f5f7f9);
+  padding: 7px 10px; border-radius: 8px; }
+.al-meta { display: flex; gap: 10px; align-items: center; margin-top: 6px; font-size: 12px; color: var(--muted, #8592a2); }
+.al-none { padding: 10px 0; font-size: 13px; color: var(--muted, #8592a2); }

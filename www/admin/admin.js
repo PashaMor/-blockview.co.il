@@ -217,7 +217,7 @@
       supa.from("listings").select("*, buildings(name,address), listing_photos(id,path,sort), listing_contacts(name,phone,email,sort)").order("created_at", { ascending: false }),
       supa.from("profiles").select("*").order("created_at", { ascending: false }),
       supa.from("buildings").select("*").order("name"),
-      supa.from("leads").select("id,agent_id"),
+      supa.from("leads").select("id,agent_id,name,phone,email,message,status,created_at,listing_id,listings(title)").order("created_at", { ascending: false }),
       // 07_agent_applications.sql may not have been run yet — degrade gracefully
       supa.from("agent_applications").select("*").order("created_at", { ascending: false }),
       // 09_agent_profile.sql — approved agents' firm / licence / logo
@@ -247,7 +247,7 @@
     state.apmap = {}; state.agentProfiles.forEach((a) => (state.apmap[a.user_id] = a));
     state.appsMissing = !!A.error;
     state.pmap = {}; state.profiles.forEach((p) => (state.pmap[p.id] = p));
-    renderStats(); renderQueue(); renderAll(); renderUsers(); renderBuildings(); renderRecent(); renderApps();
+    renderStats(); renderQueue(); renderAll(); renderUsers(); renderBuildings(); renderRecent(); renderApps(); renderAgentLeads();
   }
 
   const byStatus = (s) => state.listings.filter((l) => l.status === s).length;
@@ -755,6 +755,60 @@
   }
 
   /* ------------------------------------------------------------- users */
+  /* ---- agents and the leads each of them received ---- */
+  function renderAgentLeads() {
+    const box = $("agentleads-list");
+    if (!box) return;
+    const agents = state.profiles.filter((p) => p.role === "agent" || p.role === "admin");
+    $("agentleads-empty").hidden = agents.length > 0;
+    // leads grouped by the agent who owns the listing
+    const byAgent = {};
+    (state.leads || []).forEach((l) => {
+      (byAgent[l.agent_id] = byAgent[l.agent_id] || []).push(l);
+    });
+    // most leads first, so who's getting traction is obvious
+    agents.sort((a, b) => (byAgent[b.id] || []).length - (byAgent[a.id] || []).length);
+
+    box.innerHTML = agents.map((p) => {
+      const ap = state.apmap[p.id] || {};
+      const name = [ap.first_name, ap.last_name].filter(Boolean).join(" ") || p.email;
+      const leads = (byAgent[p.id] || []);
+      const listings = state.listings.filter((l) => l.agent_id === p.id).length;
+      const newLeads = leads.filter((l) => l.status === "new").length;
+      const rows = leads.length
+        ? leads.map((l) => `
+            <div class="al-lead">
+              <div class="al-lead-main">
+                <b>${esc(l.name || "—")}</b>
+                <span class="al-reach">${esc([l.phone, l.email].filter(Boolean).join(" · "))}</span>
+                <span class="al-for">על: ${esc((l.listings && l.listings.title) || "—")}</span>
+              </div>
+              ${l.message ? `<div class="al-msg">${esc(l.message)}</div>` : ""}
+              <div class="al-meta">
+                <span class="badge ${l.status === "new" ? "pending" : l.status === "contacted" ? "approved" : "draft"}">${
+                  l.status === "new" ? "חדש" : l.status === "contacted" ? "נוצר קשר" : "סגור"}</span>
+                <span>${esc(when(l.created_at))}</span>
+              </div>
+            </div>`).join("")
+        : `<div class="al-none">אין לידים עדיין</div>`;
+      return `
+        <div class="al-agent">
+          <div class="al-head">
+            <div>
+              <b>${esc(name)}</b>
+              ${ap.agency ? `<span class="al-agency">${esc(ap.agency)}</span>` : ""}
+              <span class="al-email">${esc(p.email)}</span>
+            </div>
+            <div class="al-counts">
+              <span>${listings} נכסים</span>
+              <span class="al-leadcount"><b>${leads.length}</b> לידים${newLeads ? ` · ${newLeads} חדשים` : ""}</span>
+            </div>
+          </div>
+          <div class="al-leads">${rows}</div>
+        </div>`;
+    }).join("");
+  }
+
   function renderUsers() {
     const q = $("u-search").value.trim().toLowerCase();
     const role = $("u-role").value, plan = $("u-plan").value;
@@ -1165,7 +1219,7 @@
   /* -------------------------------------------------------------- tabs */
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("active", x === t));
-    ["overview", "queue", "agents", "listings", "users", "buildings", "new"].forEach((n) => ($("tab-" + n).hidden = n !== t.dataset.tab));
+    ["overview", "queue", "agents", "listings", "users", "agentleads", "buildings", "new"].forEach((n) => ($("tab-" + n).hidden = n !== t.dataset.tab));
   }));
 
   /* ---- create a listing from a pasted JSON blob (no SQL) ----------------
