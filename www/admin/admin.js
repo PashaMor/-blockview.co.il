@@ -213,7 +213,7 @@
 
   /* --------------------------------------------------------------- data */
   async function loadAll() {
-    const [L, P, B, Lead, A, AP, AU, REV, VW] = await Promise.all([
+    const [L, P, B, Lead, A, AP, AU, REV, VW, OF] = await Promise.all([
       supa.from("listings").select("*, buildings(name,address), listing_photos(id,path,sort), listing_contacts(name,phone,email,sort)").order("created_at", { ascending: false }),
       supa.from("profiles").select("*").order("created_at", { ascending: false }),
       supa.from("buildings").select("*").order("name"),
@@ -229,6 +229,8 @@
       supa.from("listing_revisions").select("*").order("changed_at", { ascending: false }).limit(400),
       // 16_analytics.sql — one row per viewer/event/day; admins may read it
       supa.from("listing_views").select("listing_id,event"),
+      // 34_offices.sql — brokerages awaiting/needing review (degrade if not run)
+      supa.from("offices").select("*").order("created_at", { ascending: false }),
     ]);
     // clicks/views per listing: 'detail' is a listing opened, 'impression' is
     // shown in a building's sheet. Guarded so an agent viewing their own does
@@ -258,7 +260,8 @@
     state.apmap = {}; state.agentProfiles.forEach((a) => (state.apmap[a.user_id] = a));
     state.appsMissing = !!A.error;
     state.pmap = {}; state.profiles.forEach((p) => (state.pmap[p.id] = p));
-    renderStats(); renderQueue(); renderAll(); renderUsers(); renderBuildings(); renderRecent(); renderApps(); renderAgentLeads();
+    state.offices = (OF && OF.data) || [];
+    renderStats(); renderQueue(); renderAll(); renderUsers(); renderBuildings(); renderRecent(); renderApps(); renderAgentLeads(); renderOffices();
   }
 
   const byStatus = (s) => state.listings.filter((l) => l.status === s).length;
@@ -739,6 +742,12 @@
     const ap = e.target.closest("[data-approve]");
     const rj = e.target.closest("[data-reject]");
     const dl = e.target.closest("[data-del]");
+    const oa = e.target.closest("[data-office-approve]");
+    const orj = e.target.closest("[data-office-reject]");
+    const osu = e.target.closest("[data-office-suspend]");
+    if (oa) return reviewOffice(oa.dataset.officeApprove, "approved");
+    if (orj) return reviewOffice(orj.dataset.officeReject, "rejected");
+    if (osu) return reviewOffice(osu.dataset.officeSuspend, "suspended");
     if (ap) return setStatus(ap.dataset.approve, "approved");
     if (rj) return setStatus(rj.dataset.reject, "rejected");
     if (dl) {
@@ -753,6 +762,7 @@
     if (s) setStatus(s.dataset.status, s.value);
     const rs = e.target.closest("[data-reassign]");
     if (rs && rs.value !== rs.dataset.current) return reassignListing(rs.dataset.reassign, rs.value);
+    if (e.target.closest("#of-filter")) return renderOffices();
     const r = e.target.closest("[data-role]");
     if (r) setRole(r.dataset.role, r.value);
     const pl = e.target.closest("[data-plan]");
@@ -766,6 +776,52 @@
   }
 
   /* ------------------------------------------------------------- users */
+  /* ---- offices: approve / reject / suspend brokerages ---- */
+  const OFST = { pending: "ממתין", approved: "מאושר", rejected: "נדחה", suspended: "מושהה" };
+  function renderOffices() {
+    const list = state.offices || [];
+    $("offices-badge").textContent = list.filter((o) => o.status === "pending").length;
+    const filter = ($("of-filter") && $("of-filter").value) || "pending";
+    const rows = filter === "all" ? list : list.filter((o) => o.status === filter);
+    const box = $("offices-list");
+    if (!box) return;
+    $("offices-empty").hidden = rows.length > 0;
+    box.innerHTML = rows.map((o) => {
+      const owner = state.pmap[o.owner_id];
+      const canApprove = o.status !== "approved";
+      return `<div class="row" data-office="${esc(o.id)}">
+        <div class="rmain">
+          <div class="rtitle">${esc(o.name || "—")}</div>
+          <div class="rmeta">
+            <span>בעלים: ${esc(owner ? owner.email : o.owner_id)}</span>
+            ${o.license_no ? `<span>רישיון ${esc(o.license_no)}</span>` : ""}
+            ${o.city ? `<span>${esc(o.city)}</span>` : ""}
+            ${o.phone ? `<span>${esc(o.phone)}</span>` : ""}
+            <span>${esc(when(o.created_at))}</span>
+            <span class="badge ${esc(o.status === "approved" ? "approved" : o.status === "pending" ? "pending" : "draft")}">${esc(OFST[o.status] || o.status)}</span>
+          </div>
+          ${o.admin_note ? `<div class="rsub">${esc(o.admin_note)}</div>` : ""}
+        </div>
+        <div class="ractions">
+          ${canApprove ? `<button class="btn-ok" data-office-approve="${esc(o.id)}">אשר</button>` : ""}
+          ${o.status !== "rejected" ? `<button class="btn-bad" data-office-reject="${esc(o.id)}">דחה</button>` : ""}
+          ${o.status === "approved" ? `<button class="btn-ghost" data-office-suspend="${esc(o.id)}">השהה</button>` : ""}
+        </div>
+      </div>`;
+    }).join("");
+  }
+  async function reviewOffice(id, decision) {
+    let note = "";
+    if (decision === "rejected" || decision === "suspended") {
+      const ok = await askConfirm({ title: decision === "rejected" ? "דחיית משרד" : "השהיית משרד",
+        lines: ["הבעלים לא יוכל לצרף סוכנים חדשים כל עוד המשרד אינו מאושר."], okText: "אישור", danger: true });
+      if (!ok) return;
+    }
+    const { error } = await supa.rpc("review_office", { target: id, decision: decision, note: note });
+    if (error) return toast("שגיאה: " + (error.message || error));
+    toast("סטטוס המשרד עודכן"); loadAll();
+  }
+
   /* ---- each agent: their properties (with clicks), and the leads they got ---- */
   function renderAgentLeads() {
     const box = $("agentleads-list");
@@ -1272,7 +1328,7 @@
   /* -------------------------------------------------------------- tabs */
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("active", x === t));
-    ["overview", "queue", "agents", "listings", "users", "agentleads", "buildings", "new"].forEach((n) => ($("tab-" + n).hidden = n !== t.dataset.tab));
+    ["overview", "queue", "agents", "listings", "users", "agentleads", "offices", "buildings", "new"].forEach((n) => ($("tab-" + n).hidden = n !== t.dataset.tab));
   }));
 
   /* ---- create a listing from a pasted JSON blob (no SQL) ----------------

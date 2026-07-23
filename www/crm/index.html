@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>BlockView CRM — ניהול נכסים</title>
-  <link rel="stylesheet" href="crm.css?v=27" />
+  <link rel="stylesheet" href="crm.css?v=31" />
 </head>
 <body>
 
@@ -158,6 +158,7 @@
       <button class="tab" data-tab="leads">לידים <b id="leads-badge">0</b></button>
       <button class="tab" data-tab="analytics">📊 אנליטיקס</button>
       <button class="tab" data-tab="profile">👤 פרופיל</button>
+      <button class="tab" data-tab="office">🏢 המשרד שלי</button>
       <button class="tab" data-tab="security">🔐 אבטחה</button>
     </nav>
 
@@ -336,6 +337,64 @@
     </section>
 
     <!-- ---- analytics ---- -->
+    <!-- office: create a brokerage, then manage it once an admin approves -->
+    <section class="panel" id="tab-office" hidden>
+      <div class="panel-head"><h2>המשרד שלי</h2></div>
+
+      <!-- state: no office yet -> create form -->
+      <div id="of-create" hidden>
+        <p class="muted" style="margin:0 0 14px">פתח משרד תיווך, ולאחר אישור מנהל תוכל להזמין ולצרף סוכנים. הסוכנים שתצרף יאושרו אוטומטית דרכך.</p>
+        <div class="logo-row">
+          <div class="logo-preview" id="of-logo-preview"><span>🏢</span></div>
+          <div>
+            <input id="of-logo" type="file" accept="image/*" class="input" />
+            <div class="hint">הלוגו של המשרד. PNG/JPG, נדחס אוטומטית.</div>
+          </div>
+        </div>
+        <div class="grid2" style="margin-top:12px">
+          <label class="field"><span>שם המשרד *</span><input id="of-name" class="input" maxlength="80" /></label>
+          <label class="field"><span>מספר רישיון</span><input id="of-license" class="input" maxlength="30" /></label>
+        </div>
+        <div class="grid2">
+          <label class="field"><span>טלפון</span><input id="of-phone" class="input" maxlength="20" inputmode="tel" placeholder="050-0000000" /></label>
+          <label class="field"><span>עיר</span><input id="of-city" class="input" maxlength="60" /></label>
+        </div>
+        <label class="field"><span>כתובת</span><input id="of-address" class="input" maxlength="120" /></label>
+        <div id="of-err" class="err" hidden></div>
+        <button id="of-create-btn" class="btn-primary" style="margin-top:12px">צור משרד</button>
+      </div>
+
+      <!-- state: has an office -> status + branding + members -->
+      <div id="of-manage" hidden>
+        <div class="of-status-row">
+          <span id="of-status-badge" class="badge"></span>
+          <span id="of-status-tx" class="muted"></span>
+        </div>
+        <div class="logo-row" style="margin-top:14px">
+          <div class="logo-preview" id="of-m-logo-preview"><span>🏢</span></div>
+          <div>
+            <input id="of-m-logo" type="file" accept="image/*" class="input" />
+            <div class="hint">שינוי לוגו המשרד.</div>
+          </div>
+        </div>
+        <div class="grid2" style="margin-top:12px">
+          <label class="field"><span>שם המשרד</span><input id="of-m-name" class="input" maxlength="80" /></label>
+          <label class="field"><span>טלפון</span><input id="of-m-phone" class="input" maxlength="20" inputmode="tel" /></label>
+        </div>
+        <div class="grid2">
+          <label class="field"><span>עיר</span><input id="of-m-city" class="input" maxlength="60" /></label>
+          <label class="field"><span>כתובת</span><input id="of-m-address" class="input" maxlength="120" /></label>
+        </div>
+        <div id="of-m-err" class="err" hidden></div>
+        <div id="of-m-ok" class="ok-box" hidden></div>
+        <button id="of-save-btn" class="btn-primary" style="margin-top:12px">שמור פרטי משרד</button>
+
+        <div class="panel-head" style="margin-top:26px"><h2>סוכני המשרד</h2></div>
+        <div id="of-members" class="rows"></div>
+        <p class="muted" id="of-members-hint" style="margin-top:8px">הזמנת וצירוף סוכנים ייפתחו בקרוב (שלב הבא).</p>
+      </div>
+    </section>
+
     <!-- public profile / branding — logo, name, phone shown on the agent page & listings -->
     <section class="panel" id="tab-profile" hidden>
       <div class="panel-head"><h2>הפרופיל הציבורי שלי</h2></div>
@@ -400,6 +459,6 @@
   <script src="../js/oauth.js?v=18"></script>
   <script src="../js/describe-gen.js?v=16"></script>
   <script src="../js/geo.js?v=70"></script>
-  <script src="crm.js?v=30"></script>
+  <script src="crm.js?v=31"></script>
 </body>
 </html>

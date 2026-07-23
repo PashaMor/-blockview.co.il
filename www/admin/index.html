@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>BlockView — ניהול מערכת</title>
-  <link rel="stylesheet" href="admin.css?v=30" />
+  <link rel="stylesheet" href="admin.css?v=32" />
 </head>
 <body>
 
@@ -88,6 +88,7 @@
       <button class="tab" data-tab="listings">כל הנכסים</button>
       <button class="tab" data-tab="users">משתמשים</button>
       <button class="tab" data-tab="agentleads">סוכנים ולידים</button>
+      <button class="tab" data-tab="offices">משרדים <b id="offices-badge">0</b></button>
       <button class="tab" data-tab="buildings">בניינים</button>
       <button class="tab" data-tab="new">➕ נכס חדש</button>
     </nav>
@@ -164,6 +165,24 @@
         </div>
       </div>
       <div id="users-list" class="rows"></div>
+    </section>
+
+    <!-- offices: approve / manage brokerages -->
+    <section class="panel" id="tab-offices" hidden>
+      <div class="panel-head">
+        <h2>משרדים</h2>
+        <div class="filters">
+          <select id="of-filter" class="input">
+            <option value="pending">ממתינים</option>
+            <option value="approved">מאושרים</option>
+            <option value="rejected">נדחו</option>
+            <option value="suspended">מושהים</option>
+            <option value="all">הכל</option>
+          </select>
+        </div>
+      </div>
+      <div id="offices-list" class="rows"></div>
+      <div id="offices-empty" class="empty" hidden>אין משרדים בסטטוס הזה.</div>
     </section>
 
     <!-- agents & their leads -->
@@ -303,6 +322,6 @@
   <script src="../js/config.js?v=17"></script>
   <script src="../js/analytics.js?v=2"></script>
   <script src="../js/oauth.js?v=18"></script>
-  <script src="admin.js?v=31"></script>
+  <script src="admin.js?v=32"></script>
 </body>
 </html>

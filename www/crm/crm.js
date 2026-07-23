@@ -1251,6 +1251,105 @@
     } finally { btn.disabled = false; }
   });
 
+  /* ---- my office (Phase 1: create + branding) ----------------------------
+   * offices/office_members have RLS; the status guard forces a new office to
+   * 'pending' and blocks self-approval, so this is safe on the agent's session. */
+  const OF_ST = { pending: "ממתין לאישור", approved: "מאושר", rejected: "נדחה", suspended: "מושהה" };
+  const ofc = { office: null, logoBlob: null, logoPreview: null };
+  async function loadMyOffice() {
+    try {
+      const r = await supa.from("offices").select("*").eq("owner_id", state.user.id).order("created_at", { ascending: false }).limit(1);
+      ofc.office = (r.data && r.data[0]) || null;
+    } catch (e) { ofc.office = null; }
+  }
+  function ofLogoInto(boxId, path, preview) {
+    const box = $(boxId); box.textContent = "";
+    const src = preview || (path ? logoUrl(path) : null);
+    if (src) { const im = document.createElement("img"); im.src = src; im.alt = ""; box.appendChild(im); }
+    else { const s = document.createElement("span"); s.textContent = "🏢"; box.appendChild(s); }
+  }
+  async function renderOfficeTab() {
+    await loadMyOffice();
+    const o = ofc.office;
+    $("of-create").hidden = !!o;
+    $("of-manage").hidden = !o;
+    ofc.logoBlob = null; ofc.logoPreview = null;
+    if (!o) { ofLogoInto("of-logo-preview", null, null); return; }
+    $("of-status-badge").className = "badge " + (o.status === "approved" ? "approved" : o.status === "rejected" ? "rejected" : "pending");
+    $("of-status-badge").textContent = OF_ST[o.status] || o.status;
+    $("of-status-tx").textContent = o.status === "pending" ? "המשרד ממתין לאישור מנהל." :
+      o.status === "approved" ? "המשרד מאושר. אפשר לצרף סוכנים (בקרוב)." :
+      o.status === "rejected" ? (o.admin_note || "הבקשה נדחתה.") : (o.admin_note || "המשרד מושהה.");
+    $("of-m-name").value = o.name || ""; $("of-m-phone").value = o.phone || "";
+    $("of-m-city").value = o.city || ""; $("of-m-address").value = o.address || "";
+    ofLogoInto("of-m-logo-preview", o.logo_path, null);
+    $("of-m-err").hidden = true; $("of-m-ok").hidden = true;
+    renderOfficeMembers(o.id);
+  }
+  async function renderOfficeMembers(officeId) {
+    const box = $("of-members"); box.innerHTML = "";
+    try {
+      const r = await supa.from("office_members").select("user_id,member_role,status,invited_email,joined_at").eq("office_id", officeId);
+      const rows = r.data || [];
+      box.innerHTML = rows.map((m) => `<div class="row"><div class="rmain">
+        <b>${esc(m.member_role === "owner" ? "בעל המשרד" : "סוכן")}</b>
+        <span class="rsub">${esc(m.user_id === state.user.id ? "אתה" : (m.invited_email || m.user_id || ""))}</span>
+      </div><span class="badge ${m.status === "active" ? "approved" : "pending"}">${m.status === "active" ? "פעיל" : "הוזמן"}</span></div>`).join("");
+    } catch (e) {}
+  }
+  async function uploadOfficeLogo(blob, oldPath) {
+    const path = state.user.id + "/office_" + Date.now() + ".png";
+    const up = await supa.storage.from(LOGO_BUCKET).upload(path, blob, { contentType: "image/png", upsert: true });
+    if (up.error) throw up.error;
+    if (oldPath && oldPath !== path) { try { await supa.storage.from(LOGO_BUCKET).remove([oldPath]); } catch (e) {} }
+    return path;
+  }
+  if ($("of-logo")) $("of-logo").addEventListener("change", async (e) => {
+    const f = (e.target.files || [])[0]; e.target.value = "";
+    if (!f || !/^image\//.test(f.type)) return;
+    if (f.size > 5 * 1024 * 1024) return showErr("of-err", "הקובץ גדול מדי (עד 5MB)");
+    const out = await compressLogo(f); ofc.logoBlob = out.blob; ofc.logoPreview = out.preview;
+    ofLogoInto("of-logo-preview", null, out.preview);
+  });
+  if ($("of-create-btn")) $("of-create-btn").addEventListener("click", async () => {
+    $("of-err").hidden = true; const btn = $("of-create-btn"); btn.disabled = true;
+    try {
+      const name = $("of-name").value.trim();
+      if (!name) throw new Error("נא למלא שם משרד");
+      let logo_path = null;
+      if (ofc.logoBlob) logo_path = await uploadOfficeLogo(ofc.logoBlob, null);
+      const row = { owner_id: state.user.id, name: name, license_no: $("of-license").value.trim(),
+        phone: $("of-phone").value.trim(), city: $("of-city").value.trim(), address: $("of-address").value.trim(), logo_path: logo_path };
+      const { error } = await supa.from("offices").insert(row);
+      if (error) throw error;
+      toast("המשרד נוצר ונשלח לאישור ✓");
+      renderOfficeTab();
+    } catch (err) { showErr("of-err", err.message || "יצירת המשרד נכשלה"); }
+    finally { btn.disabled = false; }
+  });
+  if ($("of-m-logo")) $("of-m-logo").addEventListener("change", async (e) => {
+    const f = (e.target.files || [])[0]; e.target.value = "";
+    if (!f || !/^image\//.test(f.type)) return;
+    const out = await compressLogo(f); ofc.logoBlob = out.blob;
+    ofLogoInto("of-m-logo-preview", null, out.preview);
+  });
+  if ($("of-save-btn")) $("of-save-btn").addEventListener("click", async () => {
+    $("of-m-err").hidden = true; $("of-m-ok").hidden = true;
+    const o = ofc.office; if (!o) return;
+    const btn = $("of-save-btn"); btn.disabled = true;
+    try {
+      const patch = { name: $("of-m-name").value.trim(), phone: $("of-m-phone").value.trim(),
+        city: $("of-m-city").value.trim(), address: $("of-m-address").value.trim() };
+      if (ofc.logoBlob) patch.logo_path = await uploadOfficeLogo(ofc.logoBlob, o.logo_path);
+      const { error } = await supa.from("offices").update(patch).eq("id", o.id);
+      if (error) throw error;
+      ofc.logoBlob = null;
+      $("of-m-ok").textContent = "פרטי המשרד נשמרו ✓"; $("of-m-ok").hidden = false; toast("נשמר ✓");
+      loadMyOffice();
+    } catch (err) { showErr("of-m-err", err.message || "השמירה נכשלה"); }
+    finally { btn.disabled = false; }
+  });
+
   function switchTab(name) {
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
     $("tab-listings").hidden = name !== "listings";
@@ -1259,9 +1358,11 @@
     $("tab-security").hidden = name !== "security";
     $("tab-analytics").hidden = name !== "analytics";
     $("tab-profile").hidden = name !== "profile";
+    $("tab-office").hidden = name !== "office";
     if (name === "security") refreshSecurity();
     if (name === "analytics") loadAnalytics();
     if (name === "profile") renderProfileTab();
+    if (name === "office") renderOfficeTab();
   }
   document.querySelectorAll(".tab").forEach((t) =>
     t.addEventListener("click", () => { if (t.dataset.tab === "editor") openEditor(null); else switchTab(t.dataset.tab); }));
