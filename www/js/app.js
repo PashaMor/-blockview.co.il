@@ -259,17 +259,20 @@ async function loadLiveData() {
 
 /* ---- fly to a coordinate via ?at=<lat>,<lng> ----
  * Used by the admin console's "🗺️ מפה" link to eyeball a building's spot before
- * verifying it. Runs once, as soon as the map is ready; works even for a building
- * that isn't drawn (unverified ones aren't on the public map). */
-(function flyToParam() {
+ * verifying it. Works even for a building that isn't drawn (unverified ones
+ * aren't on the public map). Deferred to window 'load' so `map` is initialised
+ * (this runs from top-level, before the `const map = ...` further down). */
+function flyToParam() {
   let at = "";
   try { at = new URLSearchParams(location.search).get("at") || ""; } catch (e) { return; }
   const m = at.split(",");
   const lat = parseFloat(m[0]), lng = parseFloat(m[1]);
   if (!isFinite(lat) || !isFinite(lng)) return;
+  if (typeof map === "undefined" || !map) return;
   const go = () => map.flyTo({ center: [lng, lat], zoom: 17.5, pitch: TLV.pitch, bearing: TLV.bearing, duration: 1200 });
   if (map.loaded()) go(); else map.once("load", go);
-})();
+}
+window.addEventListener("load", flyToParam);
 
 /* ---- open a listing shared via ?listing=<id> ----
  * Runs after loadLiveData, so a real (uuid) listing is in the index by now. */
