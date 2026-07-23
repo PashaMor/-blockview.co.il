@@ -213,7 +213,7 @@
 
   /* --------------------------------------------------------------- data */
   async function loadAll() {
-    const [L, P, B, Lead, A, AP, AU, REV] = await Promise.all([
+    const [L, P, B, Lead, A, AP, AU, REV, VW] = await Promise.all([
       supa.from("listings").select("*, buildings(name,address), listing_photos(id,path,sort), listing_contacts(name,phone,email,sort)").order("created_at", { ascending: false }),
       supa.from("profiles").select("*").order("created_at", { ascending: false }),
       supa.from("buildings").select("*").order("name"),
@@ -227,7 +227,18 @@
       supa.rpc("admin_auth_status"),
       // 26_listing_revisions.sql — what changed on each listing, newest first
       supa.from("listing_revisions").select("*").order("changed_at", { ascending: false }).limit(400),
+      // 16_analytics.sql — one row per viewer/event/day; admins may read it
+      supa.from("listing_views").select("listing_id,event"),
     ]);
+    // clicks/views per listing: 'detail' is a listing opened, 'impression' is
+    // shown in a building's sheet. Guarded so an agent viewing their own does
+    // not count (16_analytics.sql).
+    state.viewsByListing = {};
+    (VW && VW.data ? VW.data : []).forEach((v) => {
+      const m = state.viewsByListing[v.listing_id] || (state.viewsByListing[v.listing_id] = { detail: 0, impression: 0 });
+      if (v.event === "detail") m.detail++;
+      else if (v.event === "impression") m.impression++;
+    });
     state.authmap = {};
     (AU.data || []).forEach((u) => (state.authmap[u.user_id] = u));
     // keep the most recent edit per listing that a person actually made
@@ -755,27 +766,47 @@
   }
 
   /* ------------------------------------------------------------- users */
-  /* ---- agents and the leads each of them received ---- */
+  /* ---- each agent: their properties (with clicks), and the leads they got ---- */
   function renderAgentLeads() {
     const box = $("agentleads-list");
     if (!box) return;
     const agents = state.profiles.filter((p) => p.role === "agent" || p.role === "admin");
     $("agentleads-empty").hidden = agents.length > 0;
-    // leads grouped by the agent who owns the listing
-    const byAgent = {};
+
+    const leadsByAgent = {}, leadsByListing = {};
     (state.leads || []).forEach((l) => {
-      (byAgent[l.agent_id] = byAgent[l.agent_id] || []).push(l);
+      (leadsByAgent[l.agent_id] = leadsByAgent[l.agent_id] || []).push(l);
+      leadsByListing[l.listing_id] = (leadsByListing[l.listing_id] || 0) + 1;
     });
-    // most leads first, so who's getting traction is obvious
-    agents.sort((a, b) => (byAgent[b.id] || []).length - (byAgent[a.id] || []).length);
+    const clicksOf = (lid) => (state.viewsByListing[lid] || {}).detail || 0;
+    const listingsOf = (aid) => state.listings.filter((l) => l.agent_id === aid);
+
+    // busiest agents first (by clicks, then leads)
+    agents.sort((a, b) => {
+      const ca = listingsOf(a.id).reduce((s, l) => s + clicksOf(l.id), 0);
+      const cb = listingsOf(b.id).reduce((s, l) => s + clicksOf(l.id), 0);
+      return cb - ca || (leadsByAgent[b.id] || []).length - (leadsByAgent[a.id] || []).length;
+    });
 
     box.innerHTML = agents.map((p) => {
       const ap = state.apmap[p.id] || {};
       const name = [ap.first_name, ap.last_name].filter(Boolean).join(" ") || p.email;
-      const leads = (byAgent[p.id] || []);
-      const listings = state.listings.filter((l) => l.agent_id === p.id).length;
+      const mine = listingsOf(p.id);
+      const leads = leadsByAgent[p.id] || [];
+      const totalClicks = mine.reduce((s, l) => s + clicksOf(l.id), 0);
       const newLeads = leads.filter((l) => l.status === "new").length;
-      const rows = leads.length
+
+      const props = mine.length
+        ? mine.map((l) => `
+            <div class="al-prop">
+              <span class="al-prop-title">${esc(l.title || "—")}</span>
+              <span class="badge ${esc(l.status)}">${esc(ST[l.status] || l.status)}</span>
+              <span class="al-stat">👁️ ${clicksOf(l.id)} צפיות</span>
+              <span class="al-stat">📩 ${leadsByListing[l.id] || 0} לידים</span>
+            </div>`).join("")
+        : `<div class="al-none">אין נכסים</div>`;
+
+      const leadRows = leads.length
         ? leads.map((l) => `
             <div class="al-lead">
               <div class="al-lead-main">
@@ -791,6 +822,7 @@
               </div>
             </div>`).join("")
         : `<div class="al-none">אין לידים עדיין</div>`;
+
       return `
         <div class="al-agent">
           <div class="al-head">
@@ -800,11 +832,15 @@
               <span class="al-email">${esc(p.email)}</span>
             </div>
             <div class="al-counts">
-              <span>${listings} נכסים</span>
+              <span>${mine.length} נכסים</span>
+              <span>👁️ ${totalClicks} צפיות</span>
               <span class="al-leadcount"><b>${leads.length}</b> לידים${newLeads ? ` · ${newLeads} חדשים` : ""}</span>
             </div>
           </div>
-          <div class="al-leads">${rows}</div>
+          <div class="al-section-lbl">נכסים</div>
+          <div class="al-props">${props}</div>
+          <div class="al-section-lbl">לידים</div>
+          <div class="al-leads">${leadRows}</div>
         </div>`;
     }).join("");
   }
