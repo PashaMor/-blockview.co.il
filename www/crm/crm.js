@@ -1194,6 +1194,63 @@
   });
 
   /* ------------------------------------------------------------ tabs ---- */
+  /* ---- edit my public profile (logo, name, agency, phone) ----
+   * RLS lets an agent update only their own agent_profiles row and write logos
+   * only inside a folder named after their uid, so this is safe on their session. */
+  const pf = { logoBlob: null, logoPreview: null, logoPath: null };
+  function renderProfileLogo() {
+    const box = $("pf-logo-preview");
+    const src = pf.logoPreview || (pf.logoPath ? logoUrl(pf.logoPath) : null);
+    box.textContent = "";
+    if (src) { const img = document.createElement("img"); img.src = src; img.alt = ""; box.appendChild(img); }
+    else { const s = document.createElement("span"); s.textContent = "🏢"; box.appendChild(s); }
+  }
+  function renderProfileTab() {
+    const a = state.agent || {};
+    $("pf-first").value = a.first_name || "";
+    $("pf-last").value = a.last_name || "";
+    $("pf-agency").value = a.agency || "";
+    $("pf-phone").value = a.phone || "";
+    pf.logoPath = a.logo_path || null; pf.logoBlob = null; pf.logoPreview = null;
+    renderProfileLogo();
+    $("pf-err").hidden = true; $("pf-ok").hidden = true;
+    if (state.user) $("pf-view").href = "https://blockview.co.il/agent/?id=" + state.user.id;
+  }
+  if ($("pf-logo")) $("pf-logo").addEventListener("change", async (e) => {
+    const f = (e.target.files || [])[0]; e.target.value = "";
+    if (!f || !/^image\//.test(f.type)) return;
+    if (f.size > 5 * 1024 * 1024) return showErr("pf-err", "הקובץ גדול מדי (עד 5MB)");
+    const out = await compressLogo(f);
+    pf.logoBlob = out.blob; pf.logoPreview = out.preview;
+    renderProfileLogo();
+  });
+  if ($("pf-save")) $("pf-save").addEventListener("click", async () => {
+    $("pf-err").hidden = true; $("pf-ok").hidden = true;
+    const btn = $("pf-save"); btn.disabled = true;
+    try {
+      const first = $("pf-first").value.trim();
+      if (!first) throw new Error("נא למלא שם פרטי");
+      if (pf.logoBlob) {
+        const path = state.user.id + "/logo_" + Date.now() + ".png";
+        const up = await supa.storage.from(LOGO_BUCKET).upload(path, pf.logoBlob, { contentType: "image/png", upsert: true });
+        if (up.error) throw up.error;
+        const old = pf.logoPath; pf.logoPath = path; pf.logoBlob = null;
+        if (old && old !== path) { try { await supa.storage.from(LOGO_BUCKET).remove([old]); } catch (e) {} }
+      }
+      const row = {
+        user_id: state.user.id, first_name: first, last_name: $("pf-last").value.trim(),
+        agency: $("pf-agency").value.trim(), phone: $("pf-phone").value.trim(), logo_path: pf.logoPath,
+      };
+      const { data, error } = await supa.from("agent_profiles").upsert(row, { onConflict: "user_id" }).select("*").single();
+      if (error) throw error;
+      state.agent = data;
+      $("pf-ok").textContent = "הפרופיל נשמר ✓"; $("pf-ok").hidden = false;
+      toast("הפרופיל נשמר ✓");
+    } catch (err) {
+      showErr("pf-err", err.message || "שמירת הפרופיל נכשלה");
+    } finally { btn.disabled = false; }
+  });
+
   function switchTab(name) {
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
     $("tab-listings").hidden = name !== "listings";
@@ -1201,8 +1258,10 @@
     $("tab-leads").hidden = name !== "leads";
     $("tab-security").hidden = name !== "security";
     $("tab-analytics").hidden = name !== "analytics";
+    $("tab-profile").hidden = name !== "profile";
     if (name === "security") refreshSecurity();
     if (name === "analytics") loadAnalytics();
+    if (name === "profile") renderProfileTab();
   }
   document.querySelectorAll(".tab").forEach((t) =>
     t.addEventListener("click", () => { if (t.dataset.tab === "editor") openEditor(null); else switchTab(t.dataset.tab); }));

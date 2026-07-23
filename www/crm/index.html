@@ -157,6 +157,7 @@
       <button class="tab" data-tab="editor">➕ נכס חדש</button>
       <button class="tab" data-tab="leads">לידים <b id="leads-badge">0</b></button>
       <button class="tab" data-tab="analytics">📊 אנליטיקס</button>
+      <button class="tab" data-tab="profile">👤 פרופיל</button>
       <button class="tab" data-tab="security">🔐 אבטחה</button>
     </nav>
 
@@ -335,6 +336,31 @@
     </section>
 
     <!-- ---- analytics ---- -->
+    <!-- public profile / branding — logo, name, phone shown on the agent page & listings -->
+    <section class="panel" id="tab-profile" hidden>
+      <div class="panel-head"><h2>הפרופיל הציבורי שלי</h2></div>
+      <p class="muted" style="margin:0 0 14px">כך אתה מוצג בעמוד הסוכן שלך ובנכסים. שינויים נשמרים מיד.</p>
+      <div class="logo-row">
+        <div class="logo-preview" id="pf-logo-preview"><span>🏢</span></div>
+        <div>
+          <input id="pf-logo" type="file" accept="image/*" class="input" />
+          <div class="hint">התמונה שתוצג ליד השם שלך. PNG/JPG, נדחסת אוטומטית.</div>
+        </div>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <label class="field"><span>שם פרטי</span><input id="pf-first" class="input" maxlength="40" autocomplete="given-name" /></label>
+        <label class="field"><span>שם משפחה</span><input id="pf-last" class="input" maxlength="40" autocomplete="family-name" /></label>
+      </div>
+      <div class="grid2">
+        <label class="field"><span>משרד / סוכנות</span><input id="pf-agency" class="input" maxlength="80" /></label>
+        <label class="field"><span>טלפון</span><input id="pf-phone" class="input" maxlength="20" inputmode="tel" autocomplete="tel" placeholder="050-0000000" /></label>
+      </div>
+      <div id="pf-err" class="err" hidden></div>
+      <div id="pf-ok" class="ok-box" hidden></div>
+      <button id="pf-save" class="btn-primary" style="margin-top:12px">שמור פרופיל</button>
+      <a id="pf-view" class="btn-ghost" target="_blank" rel="noopener" style="margin-inline-start:8px">👁️ צפייה בעמוד שלי</a>
+    </section>
+
     <section class="panel" id="tab-analytics" hidden>
       <div class="panel-head">
         <h2>צפיות בנכסים שלי</h2>
@@ -374,6 +400,6 @@
   <script src="../js/oauth.js?v=18"></script>
   <script src="../js/describe-gen.js?v=16"></script>
   <script src="../js/geo.js?v=70"></script>
-  <script src="crm.js?v=29"></script>
+  <script src="crm.js?v=30"></script>
 </body>
 </html>
