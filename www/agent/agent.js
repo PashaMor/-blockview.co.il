@@ -71,11 +71,19 @@
     var id = param("id");
     if (!id) return done("notfound");
 
-    var pr = await supa.from("agent_profiles")
-      .select("first_name,last_name,agency,license_no,logo_path,phone,website")
-      .eq("user_id", id).maybeSingle();
-    var p = pr && pr.data;
-    if (!p) return done("notfound");
+    // profile and listings in parallel; show the page if EITHER exists
+    var results = await Promise.all([
+      supa.from("agent_profiles")
+        .select("first_name,last_name,agency,license_no,logo_path,phone,website")
+        .eq("user_id", id).maybeSingle(),
+      supa.from("listings")
+        .select("id,deal,price,rooms,size,type,title,buildings(name,city),listing_photos(path,sort)")
+        .eq("agent_id", id).eq("status", "approved").order("created_at", { ascending: false }),
+    ]);
+    var p = (results[0] && results[0].data) || null;
+    var rows = (results[1] && results[1].data) || [];
+    if (!p && !rows.length) return done("notfound");
+    p = p || {};                                   // no profile yet — show listings under a plain header
 
     var name = [p.first_name, p.last_name].filter(Boolean).join(" ") || p.agency || "סוכן";
     document.title = name + " · BlockView";
@@ -99,11 +107,6 @@
 
     done();
 
-    // approved listings only (RLS already limits anon to approved)
-    var lr = await supa.from("listings")
-      .select("id,deal,price,rooms,size,type,title,buildings(name,city),listing_photos(path,sort)")
-      .eq("agent_id", id).eq("status", "approved").order("created_at", { ascending: false });
-    var rows = (lr && lr.data) || [];
     $("l-count").textContent = rows.length;
     if (!rows.length) { $("l-empty").hidden = false; return; }
     $("listings").innerHTML = rows.map(listingCard).join("");
