@@ -170,6 +170,18 @@
   document.addEventListener("click", (e) => {
     if (!e.target.closest(".settings-wrap")) $("settings-menu").hidden = true;
   });
+  // the agent's own public profile page — the one to share on WhatsApp, a card, etc.
+  const profileUrl = () => "https://blockview.co.il/agent/?id=" + (state.user ? state.user.id : "");
+  $("sm-profile").addEventListener("click", () => { $("settings-menu").hidden = true; window.open(profileUrl(), "_blank", "noopener"); });
+  $("sm-copyprofile").addEventListener("click", async () => {
+    $("settings-menu").hidden = true;
+    const url = profileUrl();
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(url);
+      else { const t = document.createElement("textarea"); t.value = url; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
+      toast("הקישור לעמוד שלך הועתק ✓");
+    } catch (e) { toast(url); }
+  });
   $("sm-security").addEventListener("click", () => { $("settings-menu").hidden = true; switchTab("security"); });
   $("sm-site").addEventListener("click", () => { window.location.href = "https://blockview.co.il"; });
   $("sm-signout").addEventListener("click", () => supa.auth.signOut());
