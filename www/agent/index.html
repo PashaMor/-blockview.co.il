@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>סוכן · BlockView</title>
+  <meta name="description" content="עמוד סוכן ב-BlockView — הנכסים והפרטים של הסוכן." />
+  <link rel="stylesheet" href="agent.css?v=1" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="https://blockview.co.il"><img src="../logo.png?v=2" alt="BlockView" /></a>
+    <a class="back" href="https://blockview.co.il">← למפה</a>
+  </header>
+
+  <main id="wrap">
+    <div id="loading" class="state">טוען…</div>
+    <div id="notfound" class="state" hidden>הסוכן לא נמצא.</div>
+
+    <section id="profile" class="profile" hidden>
+      <div class="p-logo" id="p-logo">🏢</div>
+      <div class="p-id">
+        <h1 id="p-name"></h1>
+        <div class="p-agency" id="p-agency"></div>
+        <div class="p-license" id="p-license"></div>
+      </div>
+      <div class="p-actions" id="p-actions"></div>
+    </section>
+
+    <section id="listings-wrap" hidden>
+      <h2 class="sec-title"><span id="l-count">0</span> נכסים</h2>
+      <div id="listings" class="grid"></div>
+      <div id="l-empty" class="state" hidden>לסוכן זה אין עדיין נכסים פעילים.</div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <a href="https://blockview.co.il">BlockView</a> · מפת נדל"ן תלת-ממדית
+  </footer>
+
+  <script src="../vendor/supabase.min.js?v=1"></script>
+  <script src="../js/config.js?v=20"></script>
+  <script src="agent.js?v=1"></script>
+</body>
+</html>

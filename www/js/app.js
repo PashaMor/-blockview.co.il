@@ -59,32 +59,86 @@ let subs = new Set();
 const isSub = (bid) => subs.has(bid);
 async function toggleSub(bid) {
   if (!window.BVAuth || !BVAuth.isLoggedIn()) { if (window.BVAuth) BVAuth.openAuth(); return; }
-  if (subs.has(bid)) { subs.delete(bid); syncSubUI(); await BVAuth.removeFollow(bid); return; }
+  if (subs.has(bid)) { subs.delete(bid); delete EVENTS[bid]; delete SUB_SEEN[bid]; syncSubUI(); await BVAuth.removeFollow(bid); return; }
   if (!BVAuth.canAdd("follows", subs.size)) { BVAuth.showUpgrade("follows"); return; }
-  subs.add(bid); syncSubUI();
+  subs.add(bid); SUB_SEEN[bid] = new Date().toISOString(); syncSubUI();
   const err = await BVAuth.addFollow(bid);
-  if (err) { subs.delete(bid); syncSubUI(); err === "limit" ? BVAuth.showUpgrade("follows") : toast("שגיאה, נסה שוב"); }
+  if (err) { subs.delete(bid); syncSubUI(); err === "limit" ? BVAuth.showUpgrade("follows") : toast("שגיאה, נסה שוב"); return; }
+  loadBuildingEvents();   // pick up any existing events for the newly-followed building
 }
 
-// simulated change-feed for a building (until a backend provides real changes)
-const UPDATE_KINDS = [
-  { icon: "⬇️", text: "מחיר ירד ב־2.5% באחד הנכסים" },
-  { icon: "🆕", text: "נכס חדש פורסם בבניין" },
-  { icon: "✅", text: "נכס בבניין סומן כנמכר" },
-  { icon: "✏️", text: "עודכנו פרטי נכס בבניין" },
-  { icon: "📉", text: "ירידת מחיר נוספת בנכס להשכרה" },
-];
-const WHENS = ["היום", "אתמול", "לפני יומיים", "לפני 4 ימים", "לפני שבוע"];
-function buildingUpdates(bid) {
-  const h = hashHue(bid), n = 1 + (h % 3);
-  const out = [];
-  for (let i = 0; i < n; i++) {
-    const k = UPDATE_KINDS[(h + i) % UPDATE_KINDS.length];
-    out.push({ icon: k.icon, text: k.text, when: WHENS[(h + i) % WHENS.length] });
-  }
-  return out;
+/* Real change-feed. building_events is written by a DB trigger whenever a listing
+ * in a building actually changes (supabase/31_building_events.sql); RLS returns
+ * only the events for buildings this user follows. EVENTS caches them per
+ * building, SUB_SEEN holds each follow's last_seen_at for the unread badge. */
+const EVENTS = {};     // bid -> [{kind, meta, created_at, listing_id}] newest first
+const SUB_SEEN = {};   // bid -> ISO timestamp the user last opened the alerts sheet
+
+async function loadBuildingEvents() {
+  for (const k in EVENTS) delete EVENTS[k];
+  const supa = window.BVSupa;
+  if (!supa || !subs.size) { syncSubUI(); return; }
+  try {
+    const [fol, ev] = await Promise.all([
+      supa.from("follows").select("building_id, last_seen_at"),
+      supa.from("building_events")
+        .select("building_id, listing_id, kind, meta, created_at")
+        .order("created_at", { ascending: false }).limit(100),
+    ]);
+    (fol.data || []).forEach((r) => { SUB_SEEN[r.building_id] = r.last_seen_at; });
+    (ev.data || []).forEach((r) => { (EVENTS[r.building_id] || (EVENTS[r.building_id] = [])).push(r); });
+  } catch (e) { /* offline / signed out — leave the feed empty */ }
+  syncSubUI();
 }
-function alertsCount() { return [...subs].reduce((a, bid) => a + buildingUpdates(bid).length, 0); }
+
+// one event -> {icon, text, when} for the alerts sheet
+function eventView(r) {
+  var meta = r.meta || {};
+  var icon = "•", text = r.kind;
+  if (r.kind === "new_listing") { icon = "🆕"; text = t("ev_new_listing"); }
+  else if (r.kind === "sold")   { icon = "✅"; text = t("ev_sold"); }
+  else if (r.kind === "frozen") { icon = "⏸️"; text = t("ev_frozen"); }
+  else if (r.kind === "price_drop") {
+    icon = "⬇️"; text = t("ev_price_drop");
+    if (meta.old_price && meta.price && meta.price < meta.old_price) {
+      var pct = Math.round((1 - meta.price / meta.old_price) * 100);
+      if (pct > 0) text += " (−" + pct + "%)";
+    }
+  }
+  return { icon: icon, text: text, when: relTime(r.created_at), listing_id: r.listing_id, created_at: r.created_at };
+}
+function buildingUpdates(bid) { return (EVENTS[bid] || []).map(eventView); }
+
+// short, localized "when" — today / yesterday / a real date for anything older
+function relTime(iso) {
+  var then = Date.parse(iso); if (!then) return "";
+  var days = Math.floor((Date.now() - then) / 86400000);
+  if (days <= 0) return t("rt_today");
+  if (days === 1) return t("rt_yesterday");
+  var lang = (window.currentLang && window.currentLang()) || "he";
+  try { return new Date(then).toLocaleDateString(lang); }
+  catch (e) { return new Date(then).toLocaleDateString(); }
+}
+
+// unread = events newer than when the user last opened the alerts sheet
+function alertsCount() {
+  var n = 0;
+  subs.forEach(function (bid) {
+    var seen = SUB_SEEN[bid] ? Date.parse(SUB_SEEN[bid]) : 0;
+    (EVENTS[bid] || []).forEach(function (r) { if (Date.parse(r.created_at) > seen) n++; });
+  });
+  return n;
+}
+
+// opening the sheet clears the badge: stamp every follow as seen, now
+async function markAlertsSeen() {
+  if (!window.BVSupa || !subs.size) return;
+  var now = new Date().toISOString();
+  subs.forEach(function (bid) { SUB_SEEN[bid] = now; });
+  syncSubUI();
+  try { await window.BVSupa.from("follows").update({ last_seen_at: now }).in("building_id", [...subs]); }
+  catch (e) { /* best effort — the badge is already cleared locally */ }
+}
 
 function syncSubUI() {
   const c = document.getElementById("alertcount");
@@ -232,6 +286,7 @@ async function loadLiveData() {
         yard: !!r.yard, yard_size: r.yard_size != null ? +r.yard_size : null,
         floors_total: r.floors_total != null ? +r.floors_total : null,
         hasWhatsapp: waSet.has(r.id),
+        agentId: r.agent_id || null, posterType: r.poster_type || null,
         photos,
       });
     });
@@ -818,11 +873,15 @@ function descFor(l) {
 function safeHttp(u) { return /^https?:\/\//i.test(String(u || "")) ? u : null; }
 function extLinks(l) {
   const tour = safeHttp(l.tourUrl), site = safeHttp(l.websiteUrl);
-  if (!tour && !site) return "";
-  const a = (href, label) => `<a class="ext-link" href="${escHtml(href)}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+  // an agent listing links to that agent's public profile (their other properties)
+  const agent = (l.posterType === "agent" && l.agentId)
+    ? "https://blockview.co.il/agent/?id=" + encodeURIComponent(l.agentId) : null;
+  if (!tour && !site && !agent) return "";
+  const a = (href, label, ext) => `<a class="ext-link" href="${escHtml(href)}"${ext ? ' target="_blank" rel="noopener noreferrer"' : ""}>${label}</a>`;
   return `<div class="ext-links">` +
-    (tour ? a(tour, "🎥 " + t("virtual_tour")) : "") +
-    (site ? a(site, "🌐 " + t("listing_website")) : "") +
+    (tour ? a(tour, "🎥 " + t("virtual_tour"), true) : "") +
+    (site ? a(site, "🌐 " + t("listing_website"), true) : "") +
+    (agent ? a(agent, "🧑‍💼 " + t("agent_listings", "הנכסים של הסוכן"), false) : "") +
     `</div>`;
 }
 
