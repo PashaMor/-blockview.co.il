@@ -31,6 +31,19 @@
     try { return new URLSearchParams(location.search).get(name) || ""; } catch (e) { return ""; }
   }
 
+  // back arrow returns to the page you came from (the property), not the map;
+  // the href stays as the fallback for a direct open / new tab (no history).
+  (function () {
+    var back = document.querySelector(".back");
+    if (!back) return;
+    back.addEventListener("click", function (e) {
+      if (window.history && history.length > 1 && document.referrer) {
+        e.preventDefault();
+        history.back();
+      }
+    });
+  })();
+
   function typeHe(t) {
     return { flat: "דירה", house: "בית", penthouse: "פנטהאוז", studio: "סטודיו",
       office: "משרד", shop: "חנות", warehouse: "מחסן", other: "אחר" }[t] || "";
