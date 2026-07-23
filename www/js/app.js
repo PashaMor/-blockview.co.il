@@ -722,18 +722,23 @@ function renderAlerts() {
   const list = document.getElementById("alerts-list"), empty = document.getElementById("alerts-empty");
   if (!ids.length) { list.innerHTML = ""; empty.hidden = false; return; }
   empty.hidden = true;
+  // buildings with updates first, so a returning follower sees news at the top
+  ids.sort((a, c) => buildingUpdates(c).length - buildingUpdates(a).length);
   list.innerHTML = ids.map((bid) => {
     const b = BUILDINGS.find((x) => x.id === bid);
-    const rows = buildingUpdates(bid).map((u) =>
-      `<div class="alert-row"><span class="ar-ic">${u.icon}</span><span class="ar-tx">${u.text}</span><span class="ar-when">${u.when}</span></div>`).join("");
+    const ups = buildingUpdates(bid);
+    const rows = ups.length
+      ? ups.map((u) =>
+          `<div class="alert-row"><span class="ar-ic">${u.icon}</span><span class="ar-tx">${escHtml(u.text)}</span><span class="ar-when">${escHtml(u.when)}</span></div>`).join("")
+      : `<div class="alert-row muted"><span class="ar-tx">${escHtml(t("alerts_none_yet"))}</span></div>`;
     return `<div class="alert-group">
-      <div class="alert-head"><b>${escHtml(b.name)}</b><button class="alert-unsub" data-unsub="${bid}">ביטול מעקב</button></div>
+      <div class="alert-head"><b>${escHtml(b.name)}</b><button class="alert-unsub" data-unsub="${bid}">${escHtml(t("unfollow"))}</button></div>
       ${rows}
-      <button class="alert-open" data-open="${bid}">צפייה בבניין ←</button>
+      <button class="alert-open" data-open="${bid}">${escHtml(t("view_building"))} ←</button>
     </div>`;
   }).join("");
 }
-function openAlerts() { closeSheet(); closeListings(); closeFavs(); closeSearch(); closeAuthUI(); renderAlerts(); alertsSheet.classList.add("open"); alertsSheet.setAttribute("aria-hidden", "false"); }
+function openAlerts() { closeSheet(); closeListings(); closeFavs(); closeSearch(); closeAuthUI(); renderAlerts(); alertsSheet.classList.add("open"); alertsSheet.setAttribute("aria-hidden", "false"); markAlertsSeen(); }
 function closeAlerts() { alertsSheet.classList.remove("open"); alertsSheet.setAttribute("aria-hidden", "true"); }
 document.getElementById("open-alerts").addEventListener("click", openAlerts);
 document.getElementById("alerts-close").addEventListener("click", closeAlerts);
@@ -1403,6 +1408,7 @@ syncTermVisibility();  // the rental-term group only applies to rentals
 window.onUserData = function (favIds, subIds, notesObj, plan) {
   favs = new Set(favIds); subs = new Set(subIds); notes = notesObj || {}; window.userPlan = plan;
   syncFavUI(); syncSubUI();
+  loadBuildingEvents();   // real change-feed for the buildings this user follows
   if (selectedId) renderListings(BUILDINGS.find((b) => b.id === selectedId));
 };
 window.favCount = () => visibleFavs().length;

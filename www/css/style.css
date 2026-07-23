@@ -367,6 +367,7 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .ar-ic { font-size: 15px; }
 .ar-tx { flex: 1; color: var(--text); }
 .ar-when { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.alert-row.muted .ar-tx { color: var(--muted); font-style: italic; }
 .alert-open { margin-top: 10px; width: 100%; border: 0; background: var(--surface-2); color: var(--blue); font: inherit; font-weight: 700; font-size: 13px; padding: 9px; border-radius: 10px; cursor: pointer; }
 
 /* ---------- Listing card ---------- */
