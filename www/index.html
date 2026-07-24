@@ -34,8 +34,13 @@
         }
         show("[ERR] " + (e.message || (e.error && e.error.message) || "?") + " @ " + String(e.filename || "").split("/").pop() + ":" + (e.lineno || ""));
       }, true);
+      // A rejected promise is almost never what blanks the app — a real
+      // blank-screen crash is a parse/throw that comes through 'error' above.
+      // Stray rejections (a browser extension, an aborted fetch, a library)
+      // must NOT cover the page: log them, never overlay.
       window.addEventListener("unhandledrejection", function (e) {
-        var r = e.reason; show("[PROMISE] " + ((r && r.message) || r));
+        var r = e.reason;
+        if (window.console) console.warn("[BlockView] unhandled rejection:", (r && r.message) || r);
       });
     })();
   </script>
