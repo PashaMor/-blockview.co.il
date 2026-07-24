@@ -425,7 +425,7 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
    and gets clipped at the edge instead of shrinking. */
 .nb-groups { display: grid; gap: 12px; min-width: 0; }
 .nb-group { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-width: 0; }
-.nb-head { font-size: 13.5px; font-weight: 800; color: var(--text-soft); margin-bottom: 8px; }
+.nb-head { font-size: 16px; font-weight: 800; color: var(--ink); margin-bottom: 10px; }
 .nb-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; min-width: 0; }
 /* wraps to a second line rather than running off the edge on narrow phones */
 .nb-item { display: flex; align-items: center; flex-wrap: wrap; gap: 3px 9px; font-size: 14px; min-width: 0; }
