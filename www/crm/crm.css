@@ -302,3 +302,6 @@ main { max-width: 1080px; margin: 0 auto; padding: 20px; }
 /* office add-agent row */
 .of-add-row { display: flex; gap: 8px; align-items: center; margin: 6px 0 4px; }
 .of-add-row .input { flex: 1; }
+
+/* hide a tab count badge when it is zero */
+.tab b:empty { display: none; }

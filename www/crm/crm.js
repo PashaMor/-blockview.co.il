@@ -1179,7 +1179,7 @@
       .select("*, listings(title)")
       .order("created_at", { ascending: false });
     state.leads = data || [];
-    $("leads-badge").textContent = state.leads.filter((l) => l.status === "new").length;
+    $("leads-badge").textContent = state.leads.filter((l) => l.status === "new").length || "";
     renderStats(); renderLeads();
   }
 

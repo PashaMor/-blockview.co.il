@@ -277,8 +277,8 @@
       `<div class="stat"><b>${state.profiles.length}</b><span>משתמשים</span></div>` +
       `<div class="stat"><b>${state.profiles.filter((p) => p.plan === "pro").length}</b><span>מנויי Pro</span></div>` +
       `<div class="stat"><b>${state.leadCount}</b><span>לידים</span></div>`;
-    $("queue-badge").textContent = byStatus("pending");
-    $("agents-badge").textContent = state.apps.filter((a) => a.status === "pending").length;
+    $("queue-badge").textContent = byStatus("pending") || "";
+    $("agents-badge").textContent = state.apps.filter((a) => a.status === "pending").length || "";
   }
 
   /* ------------------------------------------------- agent applications */
@@ -783,7 +783,7 @@
   const OFST = { pending: "ממתין", approved: "מאושר", rejected: "נדחה", suspended: "מושהה" };
   function renderOffices() {
     const list = state.offices || [];
-    $("offices-badge").textContent = list.filter((o) => o.status === "pending").length;
+    $("offices-badge").textContent = list.filter((o) => o.status === "pending").length || "";
     const filter = ($("of-filter") && $("of-filter").value) || "pending";
     const rows = filter === "all" ? list : list.filter((o) => o.status === filter);
     const box = $("offices-list");
