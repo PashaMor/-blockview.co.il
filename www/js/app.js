@@ -6,6 +6,12 @@ const STYLES = {
 };
 const TLV = { center: [34.7715, 32.0632], zoom: 15.4, pitch: 58, bearing: -18 };
 const BLUE = "#0038B8", BLUE_HI = "#2E5BD6", WHITE = "#FBFBFD";
+// neighbour / no-listing buildings. A soft grey (not near-white) so that with the
+// flat light — needed to keep the highlighted blue building one uniform colour on
+// every face — the surrounding buildings still read as buildings and don't blow
+// out to blinding white. Their depth comes from the vertical wall gradient, not
+// the light.
+const CITY = "#DCE0E6";
 
 let mode = "light";
 try { mode = localStorage.getItem("blockview_theme") || "light"; } catch (e) {}
@@ -538,7 +544,10 @@ function addCustomLayers() {
 
   // all city buildings — white
   map.addLayer({ id: "city-3d", type: "fill-extrusion", source: "openmaptiles", "source-layer": "building", minzoom: 13,
-    paint: { "fill-extrusion-color": WHITE,
+    paint: { "fill-extrusion-color": CITY,
+      // the light is flat (so the blue building stays uniform), so the neighbours
+      // get their 3D form from this vertical gradient instead of directional light
+      "fill-extrusion-vertical-gradient": true,
       "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8],
       "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
       "fill-extrusion-opacity": 0.92 } });
@@ -558,15 +567,13 @@ function addCustomLayers() {
       "fill-extrusion-opacity": 1, "fill-extrusion-vertical-gradient": false,
       "fill-extrusion-color": ["case",
         ["boolean", ["feature-state", "selected"], false], BLUE_HI,
-        [">", ["get", "match"], 0], BLUE, WHITE],
+        [">", ["get", "match"], 0], BLUE, CITY],
     } });
-  // Light straight down, anchored to the map. The default light is anchored to
-  // the viewport, so as the camera turns, whichever wall faces it lights up and
-  // a building looks lit unevenly (one bright blue wall vs the roof). Overhead +
-  // map-anchored means the roof gets full colour and EVERY vertical wall is
-  // shaded by the same amount, so each building — the blue one and the white
-  // neighbours — reads as a clean, consistent solid with gentle top-down depth.
-  try { map.setLight({ anchor: "map", position: [1.5, 210, 0], color: "#ffffff", intensity: 0.28 }); } catch (e) {}
+  // Flat light: intensity 0 means no face is tinted by orientation, so the
+  // highlighted blue building is exactly one colour on the roof and every wall.
+  // The neighbours don't blow out because their base is a soft grey (CITY) and
+  // they get depth from their own vertical gradient above.
+  try { map.setLight({ anchor: "map", color: "#ffffff", intensity: 0 }); } catch (e) {}
   map.addLayer({ id: "bv-labels", type: "symbol", source: "blockview",
     layout: { "text-field": ["get", "label"], "text-size": 12, "text-offset": [0, -0.6], "text-anchor": "bottom", "text-font": ["Noto Sans Regular"] },
     paint: labelPaint() });
