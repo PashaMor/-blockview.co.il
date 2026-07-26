@@ -550,7 +550,12 @@ function addCustomLayers() {
       // render half a metre above the stored (real) height so our roof clears
       // the real building's roof — coplanar caps otherwise z-fight (the striped
       // flicker). Imperceptible at building scale, but it stops the tearing.
-      "fill-extrusion-height": ["+", ["coalesce", ["get", "height"], 24], 0.5], "fill-extrusion-base": 0, "fill-extrusion-opacity": 0.95,
+      "fill-extrusion-height": ["+", ["coalesce", ["get", "height"], 24], 0.5], "fill-extrusion-base": 0,
+      // fully opaque: at 0.95 the white city building underneath bled through the
+      // walls and washed the sides out (the roof looked fine only because it is
+      // raised above the white roof). vertical-gradient off so the walls stay the
+      // same solid colour as the roof instead of fading towards the base.
+      "fill-extrusion-opacity": 1, "fill-extrusion-vertical-gradient": false,
       "fill-extrusion-color": ["case",
         ["boolean", ["feature-state", "selected"], false], BLUE_HI,
         [">", ["get", "match"], 0], BLUE, WHITE],

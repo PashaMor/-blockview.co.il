@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>BlockView CRM — ניהול נכסים</title>
-  <link rel="stylesheet" href="crm.css?v=31" />
+  <link rel="stylesheet" href="crm.css?v=32" />
 </head>
 <body>
 
@@ -390,8 +390,13 @@
         <button id="of-save-btn" class="btn-primary" style="margin-top:12px">שמור פרטי משרד</button>
 
         <div class="panel-head" style="margin-top:26px"><h2>סוכני המשרד</h2></div>
+        <div id="of-add-row" class="of-add-row" hidden>
+          <input id="of-add-email" class="input" type="email" placeholder="אימייל הסוכן להוספה/הזמנה" autocomplete="off" />
+          <button id="of-add-btn" class="btn-primary">הוסף/הזמן</button>
+        </div>
+        <div id="of-add-hint" class="muted" hidden style="margin:6px 0 10px">סוכן רשום יצורף מיד; אימייל שאינו רשום יקבל הזמנה ויצורף כשירשם.</div>
+        <div id="of-add-err" class="err" hidden></div>
         <div id="of-members" class="rows"></div>
-        <p class="muted" id="of-members-hint" style="margin-top:8px">הזמנת וצירוף סוכנים ייפתחו בקרוב (שלב הבא).</p>
       </div>
     </section>
 
@@ -459,6 +464,6 @@
   <script src="../js/oauth.js?v=18"></script>
   <script src="../js/describe-gen.js?v=16"></script>
   <script src="../js/geo.js?v=70"></script>
-  <script src="crm.js?v=33"></script>
+  <script src="crm.js?v=32"></script>
 </body>
 </html>

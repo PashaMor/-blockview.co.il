@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>משרד · BlockView</title>
+  <meta name="description" content="עמוד משרד תיווך ב-BlockView — הסוכנים והנכסים של המשרד." />
+  <link rel="stylesheet" href="office.css?v=1" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="https://blockview.co.il"><img src="../logo.png?v=2" alt="BlockView" /></a>
+    <a class="back" href="https://blockview.co.il" title="חזרה" aria-label="חזרה"><span>חזרה</span><span class="arr">→</span></a>
+  </header>
+
+  <main id="wrap">
+    <div id="loading" class="state">טוען…</div>
+    <div id="notfound" class="state" hidden>המשרד לא נמצא.</div>
+
+    <section id="profile" class="profile" hidden>
+      <div class="p-logo" id="p-logo">🏢</div>
+      <div class="p-id">
+        <h1 id="p-name"></h1>
+        <div class="p-agency" id="p-city"></div>
+        <div class="p-license" id="p-license"></div>
+      </div>
+      <div class="p-actions" id="p-actions"></div>
+    </section>
+
+    <section id="agents-wrap" hidden>
+      <h2 class="sec-title"><span id="a-count">0</span> סוכנים</h2>
+      <div id="agents" class="agents-row"></div>
+    </section>
+
+    <section id="listings-wrap" hidden>
+      <h2 class="sec-title"><span id="l-count">0</span> נכסים</h2>
+      <div id="listings" class="grid"></div>
+      <div id="l-empty" class="state" hidden>אין עדיין נכסים פעילים במשרד.</div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <a href="https://blockview.co.il">BlockView</a> · מפת נדל"ן תלת-ממדית
+  </footer>
+
+  <script src="../vendor/supabase.min.js?v=1"></script>
+  <script src="../js/config.js?v=20"></script>
+  <script src="office.js?v=1"></script>
+</body>
+</html>

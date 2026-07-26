@@ -298,3 +298,7 @@ main { max-width: 1080px; margin: 0 auto; padding: 20px; }
 
 /* my-office tab */
 .of-status-row { display: flex; align-items: center; gap: 10px; }
+
+/* office add-agent row */
+.of-add-row { display: flex; gap: 8px; align-items: center; margin: 6px 0 4px; }
+.of-add-row .input { flex: 1; }

@@ -165,6 +165,11 @@
     }
     const { data } = await supa.from("profiles").select("role, terms_accepted_at").eq("id", state.user.id).single();
     state.role = (data && data.role) || "user";
+    // if this account was invited to an office, accepting it also makes them an
+    // agent (the owner vouched), so they skip the application gate.
+    if (state.role === "user") {
+      try { const inv = await supa.rpc("office_accept_invites"); if (inv && inv.data) state.role = "agent"; } catch (e) {}
+    }
     // record the sign-up consent; with email verification on it lands at first sign-in
     if (data && !data.terms_accepted_at && (savedConsent() || isSocial(session))) await recordConsent();
     const roleHe = state.role === "admin" ? "מנהל מערכת" : state.role === "agent" ? "סוכן נדל\"ן" : "משתמש";
@@ -1311,15 +1316,57 @@
   }
   async function renderOfficeMembers(officeId) {
     const box = $("of-members"); box.innerHTML = "";
+    const approved = ofc.office && ofc.office.status === "approved";
+    // adding agents is only allowed once the office is approved (the trust gate)
+    $("of-add-row").hidden = !approved;
+    $("of-add-hint").hidden = !approved;
     try {
-      const r = await supa.from("office_members").select("user_id,member_role,status,invited_email,joined_at").eq("office_id", officeId);
+      const r = await supa.from("office_members").select("user_id,member_role,status,invited_email,joined_at").eq("office_id", officeId).order("member_role");
       const rows = r.data || [];
-      box.innerHTML = rows.map((m) => `<div class="row"><div class="rmain">
-        <b>${esc(m.member_role === "owner" ? "בעל המשרד" : "סוכן")}</b>
-        <span class="rsub">${esc(m.user_id === state.user.id ? "אתה" : (m.invited_email || m.user_id || ""))}</span>
-      </div><span class="badge ${m.status === "active" ? "approved" : "pending"}">${m.status === "active" ? "פעיל" : "הוזמן"}</span></div>`).join("");
+      box.innerHTML = rows.map((m) => {
+        const isOwner = m.member_role === "owner";
+        const who = m.user_id === state.user.id ? "אתה" : (m.invited_email || m.user_id || "");
+        const rm = (!isOwner && approved)
+          ? `<button class="btn-bad" data-office-remove="${esc(m.user_id || "")}" data-email="${esc(m.invited_email || "")}">הסר</button>` : "";
+        return `<div class="row"><div class="rmain">
+          <b>${isOwner ? "בעל המשרד" : "סוכן"}</b>
+          <span class="rsub">${esc(who)}</span>
+        </div><div class="ractions">
+          <span class="badge ${m.status === "active" ? "approved" : "pending"}">${m.status === "active" ? "פעיל" : "הוזמן"}</span>
+          ${rm}
+        </div></div>`;
+      }).join("");
     } catch (e) {}
   }
+  if ($("of-add-btn")) $("of-add-btn").addEventListener("click", async () => {
+    $("of-add-err").hidden = true;
+    const o = ofc.office; if (!o) return;
+    const email = $("of-add-email").value.trim();
+    if (!email) return showErr("of-add-err", "נא להזין אימייל");
+    const btn = $("of-add-btn"); btn.disabled = true;
+    try {
+      const { data, error } = await supa.rpc("office_add_agent", { p_office: o.id, p_email: email });
+      if (error) throw error;
+      $("of-add-email").value = "";
+      toast(data && data.status === "active" ? "הסוכן צורף למשרד ✓" : "ההזמנה נשלחה ✓");
+      renderOfficeMembers(o.id);
+    } catch (err) {
+      const map = { NOT_OFFICE_OWNER: "רק בעל המשרד יכול להוסיף", OFFICE_NOT_APPROVED: "המשרד עדיין לא אושר",
+        BAD_EMAIL: "אימייל לא תקין", TARGET_IS_ADMIN: "לא ניתן לצרף מנהל מערכת", ALREADY_IN_OFFICE: "הסוכן כבר משויך למשרד אחר" };
+      showErr("of-add-err", map[(err.message || "").trim()] || err.message || "ההוספה נכשלה");
+    } finally { btn.disabled = false; }
+  });
+  if ($("of-members")) $("of-members").addEventListener("click", async (e) => {
+    const rb = e.target.closest("[data-office-remove]"); if (!rb) return;
+    const o = ofc.office; if (!o) return;
+    const ok = await askConfirm({ title: "הסרת סוכן", lines: ["הסוכן יוסר מהמשרד (יישאר סוכן במערכת)."], okText: "הסר", danger: true });
+    if (!ok) return;
+    const uid = rb.dataset.officeRemove;
+    if (!uid) { toast("הזמנה שטרם מומשה — תבוטל בקרוב"); return; }
+    const { error } = await supa.rpc("office_remove_member", { p_office: o.id, p_user: uid });
+    if (error) return toast("שגיאה: " + (error.message || error));
+    toast("הסוכן הוסר"); renderOfficeMembers(o.id);
+  });
   async function uploadOfficeLogo(blob, oldPath) {
     const path = state.user.id + "/office_" + Date.now() + ".png";
     const up = await supa.storage.from(LOGO_BUCKET).upload(path, blob, { contentType: "image/png", upsert: true });
