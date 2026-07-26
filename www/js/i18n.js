@@ -269,9 +269,12 @@
     },
   };
 
+  // Hebrew-only for now: the language switcher is hidden until listing content
+  // is translated too, so we ignore any saved choice and always start in Hebrew
+  // (also clears a stale "en" left from earlier testing). To restore multilingual
+  // behaviour, read blockview_lang here again and un-hide #lang-btn.
   let lang = "he";
-  try { lang = localStorage.getItem("blockview_lang") || "he"; } catch (e) {}
-  if (!T[lang]) lang = "he";
+  try { localStorage.setItem("blockview_lang", "he"); } catch (e) {}
 
   window.t = (k) => (T[lang] && T[lang][k]) || T.he[k] || k;
   window.currentLang = () => lang;
