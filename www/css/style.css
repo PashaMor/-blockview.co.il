@@ -831,3 +831,9 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
   font-weight: 700; font-size: 13.5px; color: var(--blue); background: #EDF2FC;
   border: 1px solid transparent; border-radius: 10px; padding: 8px 14px; text-decoration: none; }
 .contact-website:hover { border-color: var(--blue); }
+
+/* agent's office link inside the contact card (same look as the website link) */
+.contact-office { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
+  font-weight: 700; font-size: 13.5px; color: var(--blue); background: #EDF2FC;
+  border: 1px solid transparent; border-radius: 10px; padding: 8px 14px; text-decoration: none; margin-inline-end: 8px; }
+.contact-office:hover { border-color: var(--blue); }

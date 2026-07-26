@@ -267,7 +267,7 @@ async function loadLiveData() {
   try {
     const [B, L] = await Promise.all([
       BVDB.from("buildings_visible").select("*").then((r) => (r.error ? BVDB.from("buildings").select("*") : r)),
-      BVDB.from("listings").select("*, listing_photos(path,sort)").eq("status", "approved"),
+      BVDB.from("listings").select("*, listing_photos(path,sort), offices(id,name,status)").eq("status", "approved"),
     ]);
     if (B.error) throw B.error;
     if (L.error) throw L.error;
@@ -306,6 +306,9 @@ async function loadLiveData() {
         floors_total: r.floors_total != null ? +r.floors_total : null,
         hasWhatsapp: waSet.has(r.id),
         agentId: r.agent_id || null, posterType: r.poster_type || null,
+        // the agent's office, only when it's an approved brokerage
+        officeId: (r.offices && r.offices.status === "approved") ? r.offices.id : null,
+        officeName: (r.offices && r.offices.status === "approved") ? r.offices.name : null,
         createdAt: r.created_at || null,
         photos,
       });
@@ -910,9 +913,15 @@ async function renderContacts(lid) {
     const siteLink = site
       ? `<a class="contact-website" href="${escHtml(site)}" target="_blank" rel="noopener noreferrer">🌐 ${t("listing_website")}</a>`
       : "";
-    if (!rows.length && !siteLink) { box.innerHTML = ""; return; }
+    // the agent's office — shown only when the agent belongs to an approved office
+    const officeLink = (lst && lst.officeId)
+      ? `<a class="contact-office" href="https://blockview.co.il/office/?id=${encodeURIComponent(lst.officeId)}">🏢 ${escHtml(lst.officeName || t("agent_office", "המשרד של הסוכן"))}</a>`
+      : "";
+    if (!rows.length && !siteLink && !officeLink) { box.innerHTML = ""; return; }
     box.innerHTML = rows.map((c) => {
-      const nm = escHtml(c.name), role = c.role ? escHtml(c.role) : "";
+      const nm = escHtml(c.name);
+      // the contact's title, defaulting to "real-estate agent" on an agent listing
+      const role = c.role ? escHtml(c.role) : (lst && lst.posterType === "agent" ? t("realtor_title", "סוכן נדל\"ן") : "");
       const ph = escHtml(c.phone || ""), em = escHtml(c.email || "");
       const actions = c.masked
         ? `<button class="btn-primary locked reveal-contact">📞 <bdi class="ltr">${ph}</bdi> · ${t("show_contact")}</button>`
@@ -923,7 +932,7 @@ async function renderContacts(lid) {
           <div><div class="agent-name">${nm}</div><div class="agent-office">${role}</div></div></div>
         <div class="contact-btns">${actions}</div>
       </div>`;
-    }).join("") + siteLink;
+    }).join("") + officeLink + siteLink;
     box.querySelectorAll(".reveal-contact").forEach((b) =>
       b.addEventListener("click", (ev) => { ev.stopPropagation(); if (window.BVAuth) BVAuth.openAuth(); }));
   } catch (e) { box.innerHTML = ""; }
