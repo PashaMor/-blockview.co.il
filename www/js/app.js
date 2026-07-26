@@ -919,16 +919,15 @@ async function renderContacts(lid) {
         : "🏢";
       officeBlock = `<div class="contact-person office-block">
         <div class="agent"><div class="agent-av office-av">${logo}</div>
-          <div><div class="agent-name">${escHtml(lst.officeName || "")}</div>
-            <div class="agent-office">${t("office_label", "משרד תיווך")}</div></div></div>
-        <div class="contact-btns"><a class="btn-primary" href="${url}">🏢 ${t("office_page", "לביקור במשרד")}</a></div>
+          <div><div class="agent-name">${escHtml(lst.officeName || "")}</div></div></div>
+        <div class="contact-btns"><a class="btn-primary" href="${url}">🏢 לביקור במשרד</a></div>
       </div>`;
     }
     if (!rows.length && !officeBlock) { box.innerHTML = ""; return; }
     box.innerHTML = rows.map((c) => {
       const nm = escHtml(c.name);
       // the contact's title, defaulting to "real-estate agent" on an agent listing
-      const role = c.role ? escHtml(c.role) : (lst && lst.posterType === "agent" ? t("realtor_title", "סוכן נדל\"ן") : "");
+      const role = c.role ? escHtml(c.role) : (lst && lst.posterType === "agent" ? "סוכן נדל\"ן" : "");
       const ph = escHtml(c.phone || ""), em = escHtml(c.email || "");
       const actions = c.masked
         ? `<button class="btn-primary locked reveal-contact">📞 <bdi class="ltr">${ph}</bdi> · ${t("show_contact")}</button>`
