@@ -921,7 +921,7 @@ async function renderContacts(lid) {
         <div class="agent"><div class="agent-av office-av">${logo}</div>
           <div><div class="agent-name">${escHtml(lst.officeName || "")}</div>
             <div class="agent-office">${t("office_label", "משרד תיווך")}</div></div></div>
-        <div class="contact-btns"><a class="btn-primary" href="${url}">🏢 ${t("office_page", "עמוד המשרד")}</a></div>
+        <div class="contact-btns"><a class="btn-primary" href="${url}">🏢 ${t("office_page", "לביקור במשרד")}</a></div>
       </div>`;
     }
     if (!rows.length && !officeBlock) { box.innerHTML = ""; return; }
