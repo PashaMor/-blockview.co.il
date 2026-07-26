@@ -295,6 +295,8 @@
     if (lb) lb.textContent = (LANGS.find((l) => l.code === code) || {}).flag || "🌐";
     document.querySelectorAll("#lang-list .lang-opt").forEach((o) => o.classList.toggle("on", o.dataset.lang === code));
     if (window.reRender) window.reRender();
+    // swap listing titles/descriptions to the stored translations for this language
+    if (window.applyListingTranslations) window.applyListingTranslations(code);
   }
   window.applyLang = applyLang;
 

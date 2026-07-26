@@ -277,6 +277,7 @@ async function loadLiveData() {
       (grouped[r.building_id] = grouped[r.building_id] || []).push({
         id: r.id, deal: r.deal, price: +r.price, rooms: +r.rooms, size: +r.size, floor: +r.floor,
         title: r.title, description: r.description || "", tour: !!r.tour_url,
+        origTitle: r.title, origDescription: r.description || "",   // restore point for translations
         tourUrl: r.tour_url || null, websiteUrl: r.website_url || null,
         type: r.type, age: r.age,
         category: r.category || "residential",
@@ -303,6 +304,7 @@ async function loadLiveData() {
     }
     console.log("[BlockView] live data:", BUILDINGS.length, "buildings,", (L.data || []).length, "approved listings");
     healBuildingFootprints();     // fix any building still drawn as a plain box
+    applyTranslations(window.currentLang ? window.currentLang() : "he");  // show titles/desc in the app language
   } catch (e) {
     console.warn("[BlockView] live data failed, using sample data:", e.message);
   } finally {
@@ -381,6 +383,39 @@ async function healBuildingFootprints() {
     console.log("[BlockView] healed", healed, "building outline(s)");
   }
 }
+
+/* ---- show listing text in the app language --------------------------------
+ * Listings are written in one language; the stored translations (filled by
+ * /api/translate-listing) let us swap title/description to the chosen language.
+ * A listing with no row for that language falls back to the original — which is
+ * exactly the source language, so nothing is ever blank. Re-run on load and
+ * whenever the user switches language. */
+let translationLang = null;
+async function applyTranslations(lang) {
+  translationLang = lang;
+  // start from the originals every time, so switching languages is reversible
+  for (const bid in LISTINGS) LISTINGS[bid].forEach((l) => {
+    if (l.origTitle != null) l.title = l.origTitle;
+    if (l.origDescription != null) l.description = l.origDescription;
+  });
+  try {
+    const r = await BVDB.from("listing_translations").select("listing_id,title,description").eq("lang", lang);
+    if (translationLang !== lang) return;            // a newer switch superseded this one
+    const m = {};
+    (r.data || []).forEach((t) => (m[t.listing_id] = t));
+    for (const bid in LISTINGS) LISTINGS[bid].forEach((l) => {
+      const t = m[l.id];
+      if (t) { if (t.title) l.title = t.title; if (t.description) l.description = t.description; }
+    });
+  } catch (e) { /* table may not exist yet — originals stay */ }
+  indexData();
+  if (map.getSource && map.getSource("blockview")) map.getSource("blockview").setData(buildingsGeoJSON());
+  if (selectedId) { const b = BUILDINGS.find((x) => x.id === selectedId); if (b) renderListings(b); }
+  if (openDetailId && !document.getElementById("detail").hidden) openDetail(openDetailId);  // refresh open card
+}
+let openDetailId = null;
+// let the language selector refresh listing text without a full reload
+window.applyListingTranslations = function (lang) { if (LISTINGS && Object.keys(LISTINGS).length) applyTranslations(lang); };
 
 /* ---- Israel Railways: real national rail lines + stations -----------------
  * The heavy-rail network is large, so it lives in static GeoJSON files fetched
@@ -892,6 +927,7 @@ function extLinks(l) {
 
 function openDetail(lid) {
   const l = LISTING_INDEX[lid]; if (!l) return;
+  openDetailId = lid;
   const imgs = imagesFor(l);
   const per = l.deal === "rent" ? ' <span class="per">/ לחודש</span>' : "";
   const badge = dealBadge(l.deal, l.rentTerm);
@@ -969,7 +1005,7 @@ function openDetail(lid) {
     t.onclick = () => { hero.src = imgs[+t.dataset.i]; el.querySelectorAll(".thumb").forEach((x) => x.classList.remove("on")); t.classList.add("on"); };
   });
 }
-function closeDetail() { const el = document.getElementById("detail"); el.hidden = true; el.innerHTML = ""; }
+function closeDetail() { const el = document.getElementById("detail"); el.hidden = true; el.innerHTML = ""; openDetailId = null; }
 
 /* ------------------------------------------------------ what's nearby ----
  * Places around the building with an estimated walking time. Everything is
