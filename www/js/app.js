@@ -1015,11 +1015,89 @@ function openDetail(lid) {
   el.querySelector("#detail-close").onclick = closeDetail;
   el.onclick = (e) => { if (e.target === el) closeDetail(); };
   const hero = el.querySelector("#hero");
+  let heroIdx = 0;
+  hero.style.cursor = "zoom-in";
+  hero.onclick = () => openLightbox(imgs, heroIdx);   // tap the photo to zoom
   el.querySelectorAll(".thumb").forEach((t) => {
-    t.onclick = () => { hero.src = imgs[+t.dataset.i]; el.querySelectorAll(".thumb").forEach((x) => x.classList.remove("on")); t.classList.add("on"); };
+    t.onclick = () => { heroIdx = +t.dataset.i; hero.src = imgs[heroIdx]; el.querySelectorAll(".thumb").forEach((x) => x.classList.remove("on")); t.classList.add("on"); };
   });
 }
-function closeDetail() { const el = document.getElementById("detail"); el.hidden = true; el.innerHTML = ""; openDetailId = null; }
+function closeDetail() { closeLightbox(); const el = document.getElementById("detail"); el.hidden = true; el.innerHTML = ""; openDetailId = null; }
+
+/* ------------------------------------------------------ image lightbox ----
+ * Tap a listing photo to open it full-screen. Tap the image to zoom in toward
+ * the point touched (2.5x); when zoomed, drag to pan; tap again to zoom out.
+ * Prev / next step through all the photos. Conservative JS, pointer events so
+ * one path covers mouse and touch inside the Android WebView. */
+function closeLightbox() { const lb = document.getElementById("lightbox"); if (lb) lb.hidden = true; }
+function openLightbox(imgs, start) {
+  if (!imgs || !imgs.length) return;
+  let idx = start || 0;
+  let lb = document.getElementById("lightbox");
+  if (!lb) {
+    lb = document.createElement("div");
+    lb.id = "lightbox"; lb.hidden = true;
+    lb.innerHTML =
+      '<button class="lb-close" aria-label="סגור">✕</button>' +
+      '<button class="lb-nav lb-prev" aria-label="הקודם">‹</button>' +
+      '<img class="lb-img" alt="" />' +
+      '<button class="lb-nav lb-next" aria-label="הבא">›</button>' +
+      '<div class="lb-count"></div>';
+    document.body.appendChild(lb);
+  }
+  const img = lb.querySelector(".lb-img");
+  const count = lb.querySelector(".lb-count");
+  const prevB = lb.querySelector(".lb-prev"), nextB = lb.querySelector(".lb-next");
+  let scale = 1, tx = 0, ty = 0, ox = 50, oy = 50;
+  let dragging = false, sx = 0, sy = 0, moved = false;
+
+  function apply() {
+    img.style.transformOrigin = ox + "% " + oy + "%";
+    img.style.transform = "translate(" + tx + "px," + ty + "px) scale(" + scale + ")";
+  }
+  function reset() { scale = 1; tx = 0; ty = 0; ox = 50; oy = 50; img.classList.remove("zoomed"); apply(); }
+  function show() {
+    reset();
+    img.src = imgs[idx];
+    count.textContent = (idx + 1) + " / " + imgs.length;
+    const multi = imgs.length > 1;
+    prevB.style.display = nextB.style.display = multi ? "" : "none";
+    count.style.display = multi ? "" : "none";
+  }
+  function prev() { idx = (idx - 1 + imgs.length) % imgs.length; show(); }
+  function next() { idx = (idx + 1) % imgs.length; show(); }
+  function close() { lb.hidden = true; document.removeEventListener("keydown", onKey); }
+  function onKey(e) {
+    if (e.key === "Escape") close();
+    else if (e.key === "ArrowLeft") prev();
+    else if (e.key === "ArrowRight") next();
+  }
+
+  img.onpointerdown = (e) => {
+    if (scale === 1) return;                 // only pan while zoomed
+    dragging = true; moved = false; sx = e.clientX - tx; sy = e.clientY - ty;
+    try { img.setPointerCapture(e.pointerId); } catch (_) {}
+  };
+  img.onpointermove = (e) => { if (!dragging) return; tx = e.clientX - sx; ty = e.clientY - sy; moved = true; apply(); };
+  img.onpointerup = () => { dragging = false; };
+  img.onclick = (e) => {
+    e.stopPropagation();
+    if (moved) { moved = false; return; }    // that was a pan, not a tap
+    if (scale === 1) {
+      const r = img.getBoundingClientRect();
+      ox = ((e.clientX - r.left) / r.width) * 100;
+      oy = ((e.clientY - r.top) / r.height) * 100;
+      scale = 2.5; tx = 0; ty = 0; img.classList.add("zoomed"); apply();
+    } else reset();
+  };
+  prevB.onclick = (e) => { e.stopPropagation(); prev(); };
+  nextB.onclick = (e) => { e.stopPropagation(); next(); };
+  lb.querySelector(".lb-close").onclick = (e) => { e.stopPropagation(); close(); };
+  lb.onclick = (e) => { if (e.target === lb) close(); };   // tap the backdrop to close
+  document.addEventListener("keydown", onKey);
+  lb.hidden = false;
+  show();
+}
 
 /* ------------------------------------------------------ what's nearby ----
  * Places around the building with an estimated walking time. Everything is

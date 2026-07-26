@@ -542,7 +542,7 @@
     d.innerHTML =
       '<input class="selectbox c-name" maxlength="80" placeholder="' + T("contact_name", "שם איש קשר") + '" autocomplete="name" />' +
       '<div class="grid-2">' +
-        '<input class="selectbox c-phone" type="tel" maxlength="20" placeholder="' + T("contact_phone", "טלפון") + '" autocomplete="tel" />' +
+        '<input class="selectbox c-phone" type="tel" inputmode="numeric" maxlength="10" placeholder="' + T("contact_phone", "טלפון (10 ספרות)") + '" autocomplete="tel" />' +
         '<input class="selectbox c-email" type="email" maxlength="120" placeholder="' + T("contact_email", "אימייל (לא חובה)") + '" />' +
       "</div>" +
       '<label class="wa-check"><input type="checkbox" class="c-wa" /> ' + T("wa_has", "💬 המספר זמין בוואטסאפ") + '</label>' +
@@ -578,7 +578,7 @@
       const email = r.querySelector(".c-email").value.trim();
       if (!name && !phone && !email) return;                 // empty extra row: ignore
       if (name.length < 2) throw new Error(T("contact_name_bad", "נא למלא שם איש קשר"));
-      if (phone.replace(/\D/g, "").length < 6) throw new Error(T("contact_phone_bad", "נא למלא מספר טלפון תקין"));
+      if (phone.replace(/\D/g, "").length !== 10) throw new Error(T("contact_phone_bad", "מספר טלפון חייב להכיל 10 ספרות"));
       out.push({ name: name, phone: phone, email: email || null, whatsapp: !!r.querySelector(".c-wa").checked });
     });
     return out;
