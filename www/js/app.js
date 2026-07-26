@@ -564,7 +564,7 @@ function addCustomLayers() {
   // light colour by how much they face it, so the vertical walls came out a
   // brighter blue than the roof. A low intensity keeps every face ~the base
   // colour, so a highlighted building reads as one solid blue on all sides.
-  try { map.setLight({ anchor: "viewport", color: "#ffffff", intensity: 0.08 }); } catch (e) {}
+  try { map.setLight({ anchor: "viewport", color: "#ffffff", intensity: 0 }); } catch (e) {}
   map.addLayer({ id: "bv-labels", type: "symbol", source: "blockview",
     layout: { "text-field": ["get", "label"], "text-size": 12, "text-offset": [0, -0.6], "text-anchor": "bottom", "text-font": ["Noto Sans Regular"] },
     paint: labelPaint() });
