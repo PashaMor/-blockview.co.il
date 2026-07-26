@@ -1305,9 +1305,9 @@
     if (!o) { ofLogoInto("of-logo-preview", null, null); return; }
     $("of-status-badge").className = "badge " + (o.status === "approved" ? "approved" : o.status === "rejected" ? "rejected" : "pending");
     $("of-status-badge").textContent = OF_ST[o.status] || o.status;
-    $("of-status-tx").textContent = o.status === "pending" ? "המשרד ממתין לאישור מנהל." :
-      o.status === "approved" ? "המשרד מאושר. אפשר לצרף סוכנים (בקרוב)." :
-      o.status === "rejected" ? (o.admin_note || "הבקשה נדחתה.") : (o.admin_note || "המשרד מושהה.");
+    $("of-status-tx").innerHTML = o.status === "pending" ? "המשרד ממתין לאישור מנהל." :
+      o.status === "approved" ? ('המשרד מאושר. <a href="https://blockview.co.il/office/?id=' + o.id + '" target="_blank" rel="noopener">👁️ צפייה בעמוד המשרד</a>') :
+      o.status === "rejected" ? esc(o.admin_note || "הבקשה נדחתה.") : esc(o.admin_note || "המשרד מושהה.");
     $("of-m-name").value = o.name || ""; $("of-m-phone").value = o.phone || "";
     $("of-m-city").value = o.city || ""; $("of-m-address").value = o.address || "";
     ofLogoInto("of-m-logo-preview", o.logo_path, null);

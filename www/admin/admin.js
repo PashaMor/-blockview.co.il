@@ -213,7 +213,7 @@
 
   /* --------------------------------------------------------------- data */
   async function loadAll() {
-    const [L, P, B, Lead, A, AP, AU, REV, VW, OF] = await Promise.all([
+    const [L, P, B, Lead, A, AP, AU, REV, VW, OF, OM] = await Promise.all([
       supa.from("listings").select("*, buildings(name,address), listing_photos(id,path,sort), listing_contacts(name,phone,email,sort)").order("created_at", { ascending: false }),
       supa.from("profiles").select("*").order("created_at", { ascending: false }),
       supa.from("buildings").select("*").order("name"),
@@ -231,6 +231,8 @@
       supa.from("listing_views").select("listing_id,event"),
       // 34_offices.sql — brokerages awaiting/needing review (degrade if not run)
       supa.from("offices").select("*").order("created_at", { ascending: false }),
+      // 36_office_members.sql — the roster of each office
+      supa.from("office_members").select("office_id,user_id,member_role,status,invited_email"),
     ]);
     // clicks/views per listing: 'detail' is a listing opened, 'impression' is
     // shown in a building's sheet. Guarded so an agent viewing their own does
@@ -261,6 +263,7 @@
     state.appsMissing = !!A.error;
     state.pmap = {}; state.profiles.forEach((p) => (state.pmap[p.id] = p));
     state.offices = (OF && OF.data) || [];
+    state.officeMembers = (OM && OM.data) || [];
     renderStats(); renderQueue(); renderAll(); renderUsers(); renderBuildings(); renderRecent(); renderApps(); renderAgentLeads(); renderOffices();
   }
 
@@ -786,26 +789,44 @@
     const box = $("offices-list");
     if (!box) return;
     $("offices-empty").hidden = rows.length > 0;
+    const members = state.officeMembers || [];
+    const clicksOf = (lid) => (state.viewsByListing[lid] || {}).detail || 0;
     box.innerHTML = rows.map((o) => {
       const owner = state.pmap[o.owner_id];
       const canApprove = o.status !== "approved";
-      return `<div class="row" data-office="${esc(o.id)}">
-        <div class="rmain">
-          <div class="rtitle">${esc(o.name || "—")}</div>
-          <div class="rmeta">
-            <span>בעלים: ${esc(owner ? owner.email : o.owner_id)}</span>
-            ${o.license_no ? `<span>רישיון ${esc(o.license_no)}</span>` : ""}
-            ${o.city ? `<span>${esc(o.city)}</span>` : ""}
-            ${o.phone ? `<span>${esc(o.phone)}</span>` : ""}
-            <span>${esc(when(o.created_at))}</span>
-            <span class="badge ${esc(o.status === "approved" ? "approved" : o.status === "pending" ? "pending" : "draft")}">${esc(OFST[o.status] || o.status)}</span>
+      const roster = members.filter((m) => m.office_id === o.id);
+      const memberUids = roster.filter((m) => m.user_id).map((m) => m.user_id);
+      const officeListings = (state.listings || []).filter((l) => l.office_id === o.id);
+      const leadCount = (state.leads || []).filter((l) => officeListings.some((x) => x.id === l.listing_id)).length;
+      const clicks = officeListings.reduce((s, l) => s + clicksOf(l.id), 0);
+      const agents = roster.filter((m) => m.member_role !== "owner");
+      const rosterHtml = agents.length ? `<div class="al-props">` + agents.map((m) => {
+        const p = m.user_id ? state.pmap[m.user_id] : null;
+        const who = p ? p.email : (m.invited_email || "—");
+        return `<div class="al-prop"><span class="al-prop-title">${esc(who)}</span>
+          <span class="badge ${m.status === "active" ? "approved" : "pending"}">${m.status === "active" ? "פעיל" : "הוזמן"}</span></div>`;
+      }).join("") + `</div>` : `<div class="al-none" style="padding:6px 0">אין עדיין סוכנים</div>`;
+      return `<div class="al-agent" data-office="${esc(o.id)}">
+        <div class="al-head">
+          <div>
+            <b>${esc(o.name || "—")}</b>
+            <span class="badge ${esc(o.status === "approved" ? "approved" : o.status === "pending" ? "pending" : "draft")}" style="margin-inline-start:8px">${esc(OFST[o.status] || o.status)}</span>
+            <span class="al-email">בעלים: ${esc(owner ? owner.email : o.owner_id)}${o.city ? " · " + esc(o.city) : ""}${o.phone ? " · " + esc(o.phone) : ""}</span>
+            ${o.admin_note ? `<span class="al-email">${esc(o.admin_note)}</span>` : ""}
           </div>
-          ${o.admin_note ? `<div class="rsub">${esc(o.admin_note)}</div>` : ""}
+          <div class="al-counts">
+            <span>${agents.length} סוכנים</span>
+            <span>${officeListings.length} נכסים</span>
+            <span>👁️ ${clicks}</span>
+            <span class="al-leadcount"><b>${leadCount}</b> לידים</span>
+          </div>
         </div>
-        <div class="ractions">
+        <div class="al-section-lbl">סוכני המשרד</div>
+        ${rosterHtml}
+        <div class="ractions" style="padding:10px 14px">
           ${canApprove ? `<button class="btn-ok" data-office-approve="${esc(o.id)}">אשר</button>` : ""}
           ${o.status !== "rejected" ? `<button class="btn-bad" data-office-reject="${esc(o.id)}">דחה</button>` : ""}
-          ${o.status === "approved" ? `<button class="btn-ghost" data-office-suspend="${esc(o.id)}">השהה</button>` : ""}
+          ${o.status === "approved" ? `<button class="btn-ghost" data-office-suspend="${esc(o.id)}">השהה (ביטול הרשאת צירוף)</button>` : ""}
         </div>
       </div>`;
     }).join("");

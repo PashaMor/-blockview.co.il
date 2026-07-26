@@ -49,6 +49,18 @@ create policy leads_read on public.leads for select using (
     where l.id = leads.listing_id and o.owner_id = auth.uid())
 );
 
+-- the public office page lists an approved office's agents, so its active
+-- members are readable by anyone (membership of an approved office is public,
+-- like the agent profiles it links to). Pending/invited rows stay private.
+drop policy if exists office_members_read on public.office_members;
+create policy office_members_read on public.office_members for select using (
+  user_id = auth.uid()
+  or public.is_admin()
+  or exists (select 1 from public.offices o where o.id = office_members.office_id and o.owner_id = auth.uid())
+  or (status = 'active'
+      and exists (select 1 from public.offices o where o.id = office_members.office_id and o.status = 'approved'))
+);
+
 -- backfill office_id for listings whose agent is already in an office
 update public.listings l
    set office_id = m.office_id
