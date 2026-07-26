@@ -799,11 +799,12 @@
       const officeListings = (state.listings || []).filter((l) => l.office_id === o.id);
       const leadCount = (state.leads || []).filter((l) => officeListings.some((x) => x.id === l.listing_id)).length;
       const clicks = officeListings.reduce((s, l) => s + clicksOf(l.id), 0);
-      const agents = roster.filter((m) => m.member_role !== "owner");
+      // the owner is a broker who also lists, so they count as an agent too
+      const agents = roster.slice().sort((a, b) => (b.member_role === "owner") - (a.member_role === "owner"));
       const rosterHtml = agents.length ? `<div class="al-props">` + agents.map((m) => {
         const p = m.user_id ? state.pmap[m.user_id] : null;
         const who = p ? p.email : (m.invited_email || "—");
-        return `<div class="al-prop"><span class="al-prop-title">${esc(who)}</span>
+        return `<div class="al-prop"><span class="al-prop-title">${esc(who)}${m.member_role === "owner" ? " (בעלים)" : ""}</span>
           <span class="badge ${m.status === "active" ? "approved" : "pending"}">${m.status === "active" ? "פעיל" : "הוזמן"}</span></div>`;
       }).join("") + `</div>` : `<div class="al-none" style="padding:6px 0">אין עדיין סוכנים</div>`;
       return `<div class="al-agent" data-office="${esc(o.id)}">
