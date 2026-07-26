@@ -21,6 +21,30 @@
   const state = { deal: "sale", amen: {}, pending: [], buildings: [], address: null, footprint: null,
                   editId: null, savedPhotos: [], posterType: "owner" };
 
+  /* ---- price field: show thousands separators as you type (37500000 -> 37,500,000)
+   * The value is stored as a plain integer; commas are display-only and stripped
+   * on read (checkedPrice). Conservative JS — this input is type="text". */
+  function groupDigits(s) {
+    var digits = String(s == null ? "" : s).replace(/\D/g, "");
+    return digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "";
+  }
+  function wirePriceInput(el) {
+    if (!el) return;
+    el.addEventListener("input", function () {
+      var before = el.value, caret = el.selectionStart || 0;
+      var digitsLeft = before.slice(0, caret).replace(/\D/g, "").length;
+      var formatted = groupDigits(before);
+      el.value = formatted;
+      var pos = 0, seen = 0;
+      while (pos < formatted.length && seen < digitsLeft) {
+        if (/\d/.test(formatted.charAt(pos))) seen++;
+        pos++;
+      }
+      try { el.setSelectionRange(pos, pos); } catch (e) {}
+    });
+  }
+  wirePriceInput($("p-price"));
+
   /* ---------------------------------------------------- chooser modal ---- */
   {
     btn.addEventListener("click", () => { $("who-modal").hidden = false; });
@@ -189,7 +213,7 @@
     syncAmenSizeRows();
 
     $("p-title").value = l.title || "";
-    $("p-price").value = l.price || "";
+    $("p-price").value = l.price ? groupDigits(l.price) : "";
     $("p-rooms").value = l.rooms || "";
     $("p-size").value = l.size || "";
     $("p-floor").value = l.floor || 0;
@@ -430,7 +454,7 @@
   // ₪99M ceiling — the DB enforces it too (26_price_cap.sql)
   const MAX_PRICE = 99000000;
   function checkedPrice(v) {
-    const n = +v;
+    const n = +String(v == null ? "" : v).replace(/[^\d.]/g, "");   // drop the display commas
     if (!isFinite(n) || n <= 0) throw new Error(T("price_bad", "נא למלא מחיר תקין"));
     if (n > MAX_PRICE) throw new Error(T("price_max", "המחיר המרבי הוא ₪99,000,000"));
     return n;

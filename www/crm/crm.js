@@ -19,6 +19,29 @@
   const state = { user: null, role: "user", application: null, buildings: [], listings: [], leads: [], photos: [], pending: [],
                   logoPath: null, logoBlob: null, logoPreview: null, agent: null };
 
+  /* price field: thousands separators as you type (37500000 -> 37,500,000).
+     Display-only — stored as a plain integer, commas stripped on read. */
+  function groupDigits(s) {
+    var digits = String(s == null ? "" : s).replace(/\D/g, "");
+    return digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "";
+  }
+  function wirePriceInput(el) {
+    if (!el) return;
+    el.addEventListener("input", function () {
+      var before = el.value, caret = el.selectionStart || 0;
+      var digitsLeft = before.slice(0, caret).replace(/\D/g, "").length;
+      var formatted = groupDigits(before);
+      el.value = formatted;
+      var pos = 0, seen = 0;
+      while (pos < formatted.length && seen < digitsLeft) {
+        if (/\d/.test(formatted.charAt(pos))) seen++;
+        pos++;
+      }
+      try { el.setSelectionRange(pos, pos); } catch (e) {}
+    });
+  }
+  wirePriceInput($("f-price"));
+
   /* consent to the terms & privacy policy — the DB trigger stamps the real time,
      so this can be recorded but never back-dated (supabase/08_terms_consent.sql) */
   const CONSENT_KEY = "blockview_consent";
@@ -662,7 +685,7 @@
     $("f-term").value = (l && l.rent_term) || "long";
     syncTermField();
     $("f-title").value = l ? l.title : "";
-    $("f-price").value = l ? l.price : "";
+    $("f-price").value = l && l.price ? groupDigits(l.price) : "";
     $("f-rooms").value = l ? l.rooms : "";
     $("f-size").value = l ? l.size : "";
     $("f-floor").value = l ? l.floor : 0;
@@ -738,7 +761,7 @@
   // ₪99M ceiling — the DB enforces it too (26_price_cap.sql)
   const MAX_PRICE = 99000000;
   function checkedPrice(v) {
-    const n = +v;
+    const n = +String(v == null ? "" : v).replace(/[^\d.]/g, "");   // drop the display commas
     if (!isFinite(n) || n <= 0) throw new Error("נא למלא מחיר תקין");
     if (n > MAX_PRICE) throw new Error("המחיר המרבי הוא ₪99,000,000");
     return n;
