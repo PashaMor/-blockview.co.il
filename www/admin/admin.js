@@ -797,8 +797,19 @@
       const roster = members.filter((m) => m.office_id === o.id);
       const memberUids = roster.filter((m) => m.user_id).map((m) => m.user_id);
       const officeListings = (state.listings || []).filter((l) => l.office_id === o.id);
+      const leadsOf = (lid) => (state.leads || []).filter((x) => x.listing_id === lid).length;
       const leadCount = (state.leads || []).filter((l) => officeListings.some((x) => x.id === l.listing_id)).length;
       const clicks = officeListings.reduce((s, l) => s + clicksOf(l.id), 0);
+      const listingsHtml = officeListings.length ? `<div class="al-props">` + officeListings.map((l) => {
+        const p = state.pmap[l.agent_id];
+        return `<div class="al-prop">
+          <span class="al-prop-title">${esc(l.title || "—")}</span>
+          <span class="al-stat">${esc((p && p.email) || "")}</span>
+          <span class="badge ${esc(l.status)}">${esc(ST[l.status] || l.status)}</span>
+          <span class="al-stat">👁️ ${clicksOf(l.id)}</span>
+          <span class="al-stat">📩 ${leadsOf(l.id)}</span>
+        </div>`;
+      }).join("") + `</div>` : `<div class="al-none" style="padding:6px 0">אין נכסים במשרד</div>`;
       // the owner is a broker who also lists, so they count as an agent too
       const agents = roster.slice().sort((a, b) => (b.member_role === "owner") - (a.member_role === "owner"));
       const rosterHtml = agents.length ? `<div class="al-props">` + agents.map((m) => {
@@ -824,6 +835,8 @@
         </div>
         <div class="al-section-lbl">סוכני המשרד</div>
         ${rosterHtml}
+        <div class="al-section-lbl">נכסי המשרד</div>
+        ${listingsHtml}
         <div class="ractions" style="padding:10px 14px">
           ${canApprove ? `<button class="btn-ok" data-office-approve="${esc(o.id)}">אשר</button>` : ""}
           ${o.status !== "rejected" ? `<button class="btn-bad" data-office-reject="${esc(o.id)}">דחה</button>` : ""}
