@@ -6,12 +6,11 @@ const STYLES = {
 };
 const TLV = { center: [34.7715, 32.0632], zoom: 15.4, pitch: 58, bearing: -18 };
 const BLUE = "#0038B8", BLUE_HI = "#2E5BD6", WHITE = "#FBFBFD";
-// neighbour / no-listing buildings. A soft grey (not near-white) so that with the
-// flat light — needed to keep the highlighted blue building one uniform colour on
-// every face — the surrounding buildings still read as buildings and don't blow
-// out to blinding white. Their depth comes from the vertical wall gradient, not
-// the light.
-const CITY = "#DCE0E6";
+// neighbour / no-listing buildings. Kept close to white (the flat light — needed
+// so the highlighted blue building is one uniform colour on every face — would
+// blow pure white out to a blinding glare), just toned enough to sit calmly, with
+// depth coming from the vertical wall gradient rather than the light.
+const CITY = "#EAEDF1";
 
 let mode = "light";
 try { mode = localStorage.getItem("blockview_theme") || "light"; } catch (e) {}
