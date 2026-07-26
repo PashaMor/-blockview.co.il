@@ -165,11 +165,12 @@
     }
     const { data } = await supa.from("profiles").select("role, terms_accepted_at").eq("id", state.user.id).single();
     state.role = (data && data.role) || "user";
-    // if this account was invited to an office, accepting it also makes them an
-    // agent (the owner vouched), so they skip the application gate.
-    if (state.role === "user") {
-      try { const inv = await supa.rpc("office_accept_invites"); if (inv && inv.data) state.role = "agent"; } catch (e) {}
-    }
+    // a pending office invite is shown for the person to ACCEPT — never auto-joined
+    try {
+      const inv = await supa.rpc("office_pending_invites");
+      const rows = (inv && inv.data) || [];
+      if (rows.length) { showInvite(rows[0]); return; }
+    } catch (e) {}
     // record the sign-up consent; with email verification on it lands at first sign-in
     if (data && !data.terms_accepted_at && (savedConsent() || isSocial(session))) await recordConsent();
     const roleHe = state.role === "admin" ? "מנהל מערכת" : state.role === "agent" ? "סוכן נדל\"ן" : "משתמש";
@@ -185,8 +186,39 @@
     refreshSecurity();
   });
 
-  function hideAll() { ["gate", "apply", "mfa", "app"].forEach((n) => ($(n).hidden = true)); }
+  function hideAll() { ["gate", "apply", "mfa", "app", "invite"].forEach((n) => ($(n).hidden = true)); }
   function showGate() { hideAll(); $("gate").hidden = false; $("settings-btn").hidden = true; $("settings-menu").hidden = true; $("who").textContent = ""; }
+
+  /* ---- office invite: the person accepts (becomes an agent) or declines ---- */
+  let pendingInvite = null;
+  function showInvite(inv) {
+    pendingInvite = inv; hideAll();
+    $("invite-sub").textContent = 'המשרד "' + (inv.office_name || "") + '" הזמין אותך להצטרף כסוכן ב-BlockView.';
+    $("invite-err").hidden = true;
+    $("invite").hidden = false;
+    $("settings-btn").hidden = true;
+  }
+  async function respondInvite(accept) {
+    if (!pendingInvite) return;
+    $("invite-err").hidden = true;
+    const btn = accept ? $("invite-accept") : $("invite-decline"); btn.disabled = true;
+    try {
+      const { error } = await supa.rpc("office_respond_invite", { p_office: pendingInvite.office_id, p_accept: accept });
+      if (error) throw error;
+      pendingInvite = null;
+      toast(accept ? "הצטרפת למשרד ✓" : "ההזמנה נדחתה");
+      // re-run the auth flow: accepted -> now an agent and sees the CRM;
+      // declined -> back to whatever their role warrants (apply gate or CRM)
+      location.reload();
+    } catch (err) {
+      const map = { ALREADY_IN_OFFICE: "אתה כבר משויך למשרד אחר", OFFICE_NOT_APPROVED: "המשרד אינו מאושר", NO_INVITE: "ההזמנה אינה בתוקף" };
+      $("invite-err").textContent = map[(err.message || "").trim()] || err.message || "הפעולה נכשלה";
+      $("invite-err").hidden = false;
+    } finally { btn.disabled = false; }
+  }
+  $("invite-accept").addEventListener("click", () => respondInvite(true));
+  $("invite-decline").addEventListener("click", () => respondInvite(false));
+  $("invite-signout").addEventListener("click", () => supa.auth.signOut());
 
   /* ------------------------------------------------------ settings menu ---- */
   $("settings-btn").addEventListener("click", (e) => {

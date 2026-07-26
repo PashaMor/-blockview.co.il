@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>BlockView CRM — ניהול נכסים</title>
-  <link rel="stylesheet" href="crm.css?v=33" />
+  <link rel="stylesheet" href="crm.css?v=34" />
 </head>
 <body>
 
@@ -128,6 +128,19 @@
 
       <button id="ap-edit" class="btn-ghost" hidden>עריכה ושליחה מחדש</button>
       <button id="ap-signout2" class="btn-ghost" hidden>התנתק</button>
+    </div>
+  </section>
+
+  <!-- ===== office invite (someone was added to an office) ===== -->
+  <section id="invite" class="gate" hidden>
+    <div class="gate-card">
+      <div class="big">🏢</div>
+      <h1>הוזמנת להצטרף למשרד</h1>
+      <p class="muted" id="invite-sub"></p>
+      <div id="invite-err" class="err" hidden></div>
+      <button id="invite-accept" class="btn-primary">אישור והצטרפות</button>
+      <button id="invite-decline" class="btn-ghost">דחייה</button>
+      <button id="invite-signout" class="btn-ghost">התנתק</button>
     </div>
   </section>
 
@@ -464,6 +477,6 @@
   <script src="../js/oauth.js?v=18"></script>
   <script src="../js/describe-gen.js?v=16"></script>
   <script src="../js/geo.js?v=70"></script>
-  <script src="crm.js?v=33"></script>
+  <script src="crm.js?v=34"></script>
 </body>
 </html>
