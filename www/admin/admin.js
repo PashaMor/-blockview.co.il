@@ -265,6 +265,7 @@
     state.offices = (OF && OF.data) || [];
     state.officeMembers = (OM && OM.data) || [];
     renderStats(); renderQueue(); renderAll(); renderUsers(); renderBuildings(); renderRecent(); renderApps(); renderAgentLeads(); renderOffices();
+    setTabCounts();
   }
 
   const byStatus = (s) => state.listings.filter((l) => l.status === s).length;
@@ -779,12 +780,21 @@
   }
 
   /* ------------------------------------------------------------- users */
+  /* ---- total counts on the browse tabs (how many we have of each) ---- */
+  function setTabCounts() {
+    const set = (id, n) => { const el = $(id); if (el) el.textContent = n; };
+    set("listings-count", (state.listings || []).length);
+    set("users-count", (state.profiles || []).length);
+    set("agentleads-count", (state.profiles || []).filter((p) => p.role === "agent" || p.role === "admin").length);
+    set("buildings-count", (state.buildings || []).length);
+    set("offices-count", (state.offices || []).length);
+  }
+
   /* ---- offices: approve / reject / suspend brokerages ---- */
   const OFST = { pending: "ממתין", approved: "מאושר", rejected: "נדחה", suspended: "מושהה" };
   function renderOffices() {
     const list = state.offices || [];
-    $("offices-badge").textContent = list.filter((o) => o.status === "pending").length || "";
-    const filter = ($("of-filter") && $("of-filter").value) || "pending";
+    const filter = ($("of-filter") && $("of-filter").value) || "all";
     const rows = filter === "all" ? list : list.filter((o) => o.status === filter);
     const box = $("offices-list");
     if (!box) return;
