@@ -288,9 +288,15 @@ async function loadLiveData() {
         floors_total: r.floors_total != null ? +r.floors_total : null,
         hasWhatsapp: waSet.has(r.id),
         agentId: r.agent_id || null, posterType: r.poster_type || null,
+        createdAt: r.created_at || null,
         photos,
       });
     });
+    // newest listing first in every building. The listings grid flows in the
+    // document's direction, so the first card lands top-right in Hebrew/Arabic
+    // (RTL) and top-left in the other languages (LTR) with no extra work.
+    Object.keys(grouped).forEach((bid) =>
+      grouped[bid].sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0)));
     LISTINGS = grouped;
 
     indexData();
