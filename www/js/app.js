@@ -1025,7 +1025,7 @@ function openDetail(lid) {
       <div class="action-bar">
         ${isDbListing(l.id) ? `<button class="btn-lead" data-lead="${l.id}">${t("lead_send")}</button>` : ""}
         <button class="btn-ghost fav-toggle ${isFav(l.id) ? "on" : ""}" data-fav="${l.id}">${t("save")}</button>
-        ${l.hasWhatsapp ? `<button class="btn-wa" data-wa="${l.id}">${t("wa_contact")}</button>` : ""}
+        ${l.hasWhatsapp && signedIn() ? `<button class="btn-wa" data-wa="${l.id}">${t("wa_contact")}</button>` : ""}
         <button class="btn-ghost" data-share="${l.id}">${t("share")}</button>
       </div>
     </div>`;
