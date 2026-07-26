@@ -18,6 +18,14 @@
   const supa = () => window.BVSupa;
   const T = (k, fb) => (window.t ? window.t(k) : fb) || fb;
 
+  // publishing triggers a full page reload; show the saved confirmation once the
+  // fresh page (and bvToast) is ready
+  (function showPublishToast() {
+    let msg = null;
+    try { msg = sessionStorage.getItem("bv_publish_toast"); sessionStorage.removeItem("bv_publish_toast"); } catch (e) {}
+    if (msg) setTimeout(() => { if (window.bvToast) window.bvToast(msg); }, 900);
+  })();
+
   const state = { deal: "sale", amen: {}, pending: [], buildings: [], address: null, footprint: null,
                   editId: null, savedPhotos: [], posterType: "owner" };
 
@@ -755,13 +763,13 @@
       primeNearby(row.building_id);
 
       closePublish();
-      if (window.BVMyListings) window.BVMyListings.render();
-      if (window.reloadLiveData) window.reloadLiveData();
-      if (window.bvToast) {
-        window.bvToast(bouncedBack ? T("edit_bounced", "הנכס עודכן ונשלח לאישור מחדש")
-          : editing ? T("edit_saved", "הנכס עודכן ✓")
-          : T("pub_ok", "הנכס נשלח לאישור ✓"));
-      }
+      // full refresh of the site, as requested — the confirmation toast is
+      // stashed and shown again right after the reload (see showPublishToast)
+      const msg = bouncedBack ? T("edit_bounced", "הנכס עודכן ונשלח לאישור מחדש")
+        : editing ? T("edit_saved", "הנכס עודכן ✓")
+        : T("pub_ok", "הנכס נשלח לאישור ✓");
+      try { sessionStorage.setItem("bv_publish_toast", msg); } catch (e) {}
+      location.reload();
     } catch (err) {
       const el = $("p-err"); el.textContent = err.message || "שגיאה"; el.hidden = false;
     } finally {
