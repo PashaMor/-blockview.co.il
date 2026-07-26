@@ -6,11 +6,9 @@ const STYLES = {
 };
 const TLV = { center: [34.7715, 32.0632], zoom: 15.4, pitch: 58, bearing: -18 };
 const BLUE = "#0038B8", BLUE_HI = "#2E5BD6", WHITE = "#FBFBFD";
-// neighbour / no-listing buildings. Kept close to white (the flat light — needed
-// so the highlighted blue building is one uniform colour on every face — would
-// blow pure white out to a blinding glare), just toned enough to sit calmly, with
-// depth coming from the vertical wall gradient rather than the light.
-const CITY = "#EAEDF1";
+// neighbour / no-listing buildings — near white; the directional light shades
+// their walls for depth so they don't blow out.
+const CITY = "#F7F8FA";
 
 let mode = "light";
 try { mode = localStorage.getItem("blockview_theme") || "light"; } catch (e) {}
@@ -160,10 +158,25 @@ function syncSubUI() {
 const fmtPrice = (n) => "₪" + n.toLocaleString("he-IL");
 
 /* ---- geometry & matching ---- */
+// Grow an outline outward from its own centroid. Our building sits on top of the
+// grey OSM building; when our footprint is a touch smaller, grey walls peek out
+// beside ours. A few percent of padding makes our walls overhang and hide it.
+function padRing(coords, factor) {
+  if (!coords || !coords.length || !coords[0].length) return coords;
+  const outer = coords[0];
+  const closed = outer.length > 1 &&
+    outer[0][0] === outer[outer.length - 1][0] && outer[0][1] === outer[outer.length - 1][1];
+  const n = closed ? outer.length - 1 : outer.length;
+  let cx = 0, cy = 0;
+  for (let i = 0; i < n; i++) { cx += outer[i][0]; cy += outer[i][1]; }
+  cx /= n; cy /= n;
+  return coords.map((ring) => ring.map((p) => [cx + (p[0] - cx) * factor, cy + (p[1] - cy) * factor]));
+}
 function footprint(b) {
-  // real OSM outline when we have one; otherwise the old box around the point
-  if (b.footprint && b.footprint.coordinates && b.footprint.coordinates.length) return b.footprint.coordinates;
-  const x = b.lng, y = b.lat, w = b.w / 2, h = b.h / 2;
+  // real OSM outline when we have one; otherwise the old box around the point.
+  // Padded outward so the walls overhang the grey city building underneath.
+  if (b.footprint && b.footprint.coordinates && b.footprint.coordinates.length) return padRing(b.footprint.coordinates, 1.05);
+  const x = b.lng, y = b.lat, w = b.w / 2 * 1.05, h = b.h / 2 * 1.05;
   return [[[x - w, y - h], [x + w, y - h], [x + w, y + h], [x - w, y + h], [x - w, y - h]]];
 }
 // derived attributes (single source of truth for filters + detail)
@@ -568,11 +581,13 @@ function addCustomLayers() {
         ["boolean", ["feature-state", "selected"], false], BLUE_HI,
         [">", ["get", "match"], 0], BLUE, CITY],
     } });
-  // Flat light: intensity 0 means no face is tinted by orientation, so the
-  // highlighted blue building is exactly one colour on the roof and every wall.
-  // The neighbours don't blow out because their base is a soft grey (CITY) and
-  // they get depth from their own vertical gradient above.
-  try { map.setLight({ anchor: "map", color: "#ffffff", intensity: 0 }); } catch (e) {}
+  // Overhead, map-anchored light. Pointing straight down (polar 0) means the roof
+  // gets full colour and every vertical wall is shaded by the SAME amount no
+  // matter which way it faces or how the camera turns — so buildings get real
+  // top-down depth (the neighbours look 3D again) while a building's four walls
+  // stay even with each other. The blue building reads solid because its footprint
+  // is padded to hide the grey underneath (footprint()).
+  try { map.setLight({ anchor: "map", position: [1.5, 210, 0], color: "#ffffff", intensity: 0.32 }); } catch (e) {}
   map.addLayer({ id: "bv-labels", type: "symbol", source: "blockview",
     layout: { "text-field": ["get", "label"], "text-size": 12, "text-offset": [0, -0.6], "text-anchor": "bottom", "text-font": ["Noto Sans Regular"] },
     paint: labelPaint() });
