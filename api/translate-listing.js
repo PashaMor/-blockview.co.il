@@ -34,10 +34,12 @@ module.exports = async function handler(req, res) {
     const description = String(listing.description || "").trim();
     if (!title && !description) return res.status(200).json({ ok: true, empty: true });
 
-    // which languages are already stored for this listing
+    // which languages are already stored for this listing (empty if the table
+    // isn't there yet — run 35_listing_translations.sql)
     const er = await fetch(base + "listing_translations?listing_id=eq." + encodeURIComponent(id) + "&select=lang", { headers: h });
+    const existing = await er.json();
     const have = {};
-    (await er.json()).forEach((r) => (have[r.lang] = true));
+    if (Array.isArray(existing)) existing.forEach((r) => (have[r.lang] = true));
 
     const token = await googleToken("https://www.googleapis.com/auth/cloud-translation");
 
