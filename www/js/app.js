@@ -865,7 +865,13 @@ async function renderContacts(lid) {
       rows = (r.data || []).map((c) => ({ name: c.name, role: c.role, sort: c.sort,
                                           phone: c.phone_mask, email: c.email_mask, masked: true }));
     }
-    if (!rows.length) { box.innerHTML = ""; return; }
+    // the listing's page on the agent's own website — shown inside the contact card
+    const lst = LISTING_INDEX[lid];
+    const site = lst && /^https?:\/\//i.test(String(lst.websiteUrl || "")) ? lst.websiteUrl : null;
+    const siteLink = site
+      ? `<a class="contact-website" href="${escHtml(site)}" target="_blank" rel="noopener noreferrer">🌐 ${t("listing_website")}</a>`
+      : "";
+    if (!rows.length && !siteLink) { box.innerHTML = ""; return; }
     box.innerHTML = rows.map((c) => {
       const nm = escHtml(c.name), role = c.role ? escHtml(c.role) : "";
       const ph = escHtml(c.phone || ""), em = escHtml(c.email || "");
@@ -878,7 +884,7 @@ async function renderContacts(lid) {
           <div><div class="agent-name">${nm}</div><div class="agent-office">${role}</div></div></div>
         <div class="contact-btns">${actions}</div>
       </div>`;
-    }).join("");
+    }).join("") + siteLink;
     box.querySelectorAll(".reveal-contact").forEach((b) =>
       b.addEventListener("click", (ev) => { ev.stopPropagation(); if (window.BVAuth) BVAuth.openAuth(); }));
   } catch (e) { box.innerHTML = ""; }
@@ -918,9 +924,11 @@ function extLinks(l) {
     ? "https://blockview.co.il/agent/?id=" + encodeURIComponent(l.agentId) : null;
   if (!tour && !site && !agent) return "";
   const a = (href, label, ext) => `<a class="ext-link" href="${escHtml(href)}"${ext ? ' target="_blank" rel="noopener noreferrer"' : ""}>${label}</a>`;
+  // the listing-website link moved into the contact card (renderContacts); keep
+  // the tour and the agent-profile links here
+  if (!tour && !agent) return "";
   return `<div class="ext-links">` +
     (tour ? a(tour, "🎥 " + t("virtual_tour"), true) : "") +
-    (site ? a(site, "🌐 " + t("listing_website"), true) : "") +
     (agent ? a(agent, "🧑‍💼 " + t("agent_listings", "הנכסים של הסוכן"), false) : "") +
     `</div>`;
 }

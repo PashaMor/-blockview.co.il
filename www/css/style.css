@@ -806,3 +806,9 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .acc-home-title { font-size: 14px; font-weight: 700; color: var(--ink); }
 .acc-home-sub { font-size: 12.5px; color: var(--text-soft); margin-top: 2px; line-height: 1.5; }
 .acc-home-search { position: relative; margin-top: 9px; }
+
+/* the listing-website link, inside the contact card */
+.contact-website { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
+  font-weight: 700; font-size: 13.5px; color: var(--blue); background: #EDF2FC;
+  border: 1px solid transparent; border-radius: 10px; padding: 8px 14px; text-decoration: none; }
+.contact-website:hover { border-color: var(--blue); }
