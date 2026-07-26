@@ -837,3 +837,8 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
   font-weight: 700; font-size: 13.5px; color: var(--blue); background: #EDF2FC;
   border: 1px solid transparent; border-radius: 10px; padding: 8px 14px; text-decoration: none; margin-inline-end: 8px; }
 .contact-office:hover { border-color: var(--blue); }
+
+/* office as a contact row: logo avatar, name, and a button like the phone one */
+.office-av { background: var(--surface-2, #f5f7f9); overflow: hidden; }
+.office-av img { width: 100%; height: 100%; object-fit: cover; }
+.office-block { margin-top: 6px; }

@@ -267,7 +267,7 @@ async function loadLiveData() {
   try {
     const [B, L] = await Promise.all([
       BVDB.from("buildings_visible").select("*").then((r) => (r.error ? BVDB.from("buildings").select("*") : r)),
-      BVDB.from("listings").select("*, listing_photos(path,sort), offices(id,name,status)").eq("status", "approved"),
+      BVDB.from("listings").select("*, listing_photos(path,sort), offices(id,name,status,logo_path,phone)").eq("status", "approved"),
     ]);
     if (B.error) throw B.error;
     if (L.error) throw L.error;
@@ -309,6 +309,7 @@ async function loadLiveData() {
         // the agent's office, only when it's an approved brokerage
         officeId: (r.offices && r.offices.status === "approved") ? r.offices.id : null,
         officeName: (r.offices && r.offices.status === "approved") ? r.offices.name : null,
+        officeLogo: (r.offices && r.offices.status === "approved") ? r.offices.logo_path : null,
         createdAt: r.created_at || null,
         photos,
       });
@@ -907,17 +908,23 @@ async function renderContacts(lid) {
       rows = (r.data || []).map((c) => ({ name: c.name, role: c.role, sort: c.sort,
                                           phone: c.phone_mask, email: c.email_mask, masked: true }));
     }
-    // the listing's page on the agent's own website — shown inside the contact card
     const lst = LISTING_INDEX[lid];
-    const site = lst && /^https?:\/\//i.test(String(lst.websiteUrl || "")) ? lst.websiteUrl : null;
-    const siteLink = site
-      ? `<a class="contact-website" href="${escHtml(site)}" target="_blank" rel="noopener noreferrer">🌐 ${t("listing_website")}</a>`
-      : "";
-    // the agent's office — shown only when the agent belongs to an approved office
-    const officeLink = (lst && lst.officeId)
-      ? `<a class="contact-office" href="https://blockview.co.il/office/?id=${encodeURIComponent(lst.officeId)}">🏢 ${escHtml(lst.officeName || t("agent_office", "המשרד של הסוכן"))}</a>`
-      : "";
-    if (!rows.length && !siteLink && !officeLink) { box.innerHTML = ""; return; }
+    // the agent's office as its own contact row: logo avatar, name, and a button.
+    // Shown only when the agent belongs to an approved office.
+    let officeBlock = "";
+    if (lst && lst.officeId) {
+      const url = "https://blockview.co.il/office/?id=" + encodeURIComponent(lst.officeId);
+      const logo = lst.officeLogo
+        ? `<img src="${escHtml(BVDB.storage.from("agent-logos").getPublicUrl(lst.officeLogo).data.publicUrl)}" alt="" />`
+        : "🏢";
+      officeBlock = `<div class="contact-person office-block">
+        <div class="agent"><div class="agent-av office-av">${logo}</div>
+          <div><div class="agent-name">${escHtml(lst.officeName || "")}</div>
+            <div class="agent-office">${t("office_label", "משרד תיווך")}</div></div></div>
+        <div class="contact-btns"><a class="btn-primary" href="${url}">🏢 ${t("office_page", "עמוד המשרד")}</a></div>
+      </div>`;
+    }
+    if (!rows.length && !officeBlock) { box.innerHTML = ""; return; }
     box.innerHTML = rows.map((c) => {
       const nm = escHtml(c.name);
       // the contact's title, defaulting to "real-estate agent" on an agent listing
@@ -932,7 +939,7 @@ async function renderContacts(lid) {
           <div><div class="agent-name">${nm}</div><div class="agent-office">${role}</div></div></div>
         <div class="contact-btns">${actions}</div>
       </div>`;
-    }).join("") + officeLink + siteLink;
+    }).join("") + officeBlock;
     box.querySelectorAll(".reveal-contact").forEach((b) =>
       b.addEventListener("click", (ev) => { ev.stopPropagation(); if (window.BVAuth) BVAuth.openAuth(); }));
   } catch (e) { box.innerHTML = ""; }
@@ -972,11 +979,9 @@ function extLinks(l) {
     ? "https://blockview.co.il/agent/?id=" + encodeURIComponent(l.agentId) : null;
   if (!tour && !site && !agent) return "";
   const a = (href, label, ext) => `<a class="ext-link" href="${escHtml(href)}"${ext ? ' target="_blank" rel="noopener noreferrer"' : ""}>${label}</a>`;
-  // the listing-website link moved into the contact card (renderContacts); keep
-  // the tour and the agent-profile links here
-  if (!tour && !agent) return "";
   return `<div class="ext-links">` +
     (tour ? a(tour, "🎥 " + t("virtual_tour"), true) : "") +
+    (site ? a(site, "🌐 " + t("listing_website"), true) : "") +
     (agent ? a(agent, "🧑‍💼 " + t("agent_listings", "הנכסים של הסוכן"), false) : "") +
     `</div>`;
 }
