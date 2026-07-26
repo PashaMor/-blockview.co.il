@@ -560,11 +560,13 @@ function addCustomLayers() {
         ["boolean", ["feature-state", "selected"], false], BLUE_HI,
         [">", ["get", "match"], 0], BLUE, WHITE],
     } });
-  // Flatten the map's directional light. By default it tints faces towards the
-  // light colour by how much they face it, so the vertical walls came out a
-  // brighter blue than the roof. A low intensity keeps every face ~the base
-  // colour, so a highlighted building reads as one solid blue on all sides.
-  try { map.setLight({ anchor: "viewport", color: "#ffffff", intensity: 0 }); } catch (e) {}
+  // Light straight down, anchored to the map. The default light is anchored to
+  // the viewport, so as the camera turns, whichever wall faces it lights up and
+  // a building looks lit unevenly (one bright blue wall vs the roof). Overhead +
+  // map-anchored means the roof gets full colour and EVERY vertical wall is
+  // shaded by the same amount, so each building — the blue one and the white
+  // neighbours — reads as a clean, consistent solid with gentle top-down depth.
+  try { map.setLight({ anchor: "map", position: [1.5, 210, 0], color: "#ffffff", intensity: 0.28 }); } catch (e) {}
   map.addLayer({ id: "bv-labels", type: "symbol", source: "blockview",
     layout: { "text-field": ["get", "label"], "text-size": 12, "text-offset": [0, -0.6], "text-anchor": "bottom", "text-font": ["Noto Sans Regular"] },
     paint: labelPaint() });
