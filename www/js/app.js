@@ -923,7 +923,9 @@ async function renderContacts(lid) {
         <div class="contact-btns"><a class="btn-primary" href="${url}">🏢 לביקור במשרד</a></div>
       </div>`;
     }
-    if (!rows.length && !officeBlock) { box.innerHTML = ""; return; }
+    // tour / website / agent-profile links live inside the contact card too
+    const links = extLinks(lst);
+    if (!rows.length && !officeBlock && !links) { box.innerHTML = ""; return; }
     box.innerHTML = rows.map((c) => {
       const nm = escHtml(c.name);
       // the contact's title, defaulting to "real-estate agent" on an agent listing
@@ -938,7 +940,7 @@ async function renderContacts(lid) {
           <div><div class="agent-name">${nm}</div><div class="agent-office">${role}</div></div></div>
         <div class="contact-btns">${actions}</div>
       </div>`;
-    }).join("") + officeBlock;
+    }).join("") + officeBlock + links;
     box.querySelectorAll(".reveal-contact").forEach((b) =>
       b.addEventListener("click", (ev) => { ev.stopPropagation(); if (window.BVAuth) BVAuth.openAuth(); }));
   } catch (e) { box.innerHTML = ""; }
@@ -1010,7 +1012,6 @@ function openDetail(lid) {
         <div class="spec-grid">${specRows(l).map(([k, v]) => `<div class="spec"><span class="sk">${k}</span><span class="sv">${v}</span></div>`).join("")}</div>
         <h3 class="d-sec">${t("descr")}</h3>
         <ul class="d-desc">${descFor(l).map((d) => `<li>${escHtml(d)}</li>`).join("")}</ul>
-        ${extLinks(l)}
         <div id="nearby-box"></div>
         <h3 class="d-sec">${t("my_note")}</h3>
         <textarea id="note-input" class="note-input" placeholder="${t("note_ph")}"></textarea>
@@ -1019,7 +1020,6 @@ function openDetail(lid) {
           <div id="contact-area" class="contact-area"></div>
           ${signedIn() ? "" : `<p class="contact-hint">${t("contact_locked")}</p>`}
         </div>
-        <p class="disclaimer">נתונים לדוגמה — אב-טיפוס BlockView. התמונות להמחשה בלבד.</p>
       </div>
       <!-- always reachable: stays pinned while the card scrolls -->
       <div class="action-bar">
