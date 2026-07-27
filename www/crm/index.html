@@ -169,6 +169,7 @@
       <button class="tab active" data-tab="listings">הנכסים שלי</button>
       <button class="tab" data-tab="editor">➕ נכס חדש</button>
       <button class="tab" data-tab="leads">לידים <b id="leads-badge"></b></button>
+      <button class="tab" data-tab="reports">דיווחים <b id="reports-badge"></b></button>
       <button class="tab" data-tab="analytics">📊 אנליטיקס</button>
       <button class="tab" data-tab="profile">👤 פרופיל</button>
       <button class="tab" data-tab="office">🏢 המשרד שלי</button>
@@ -349,6 +350,13 @@
       <div id="leads-empty" class="empty" hidden>אין לידים עדיין. כשגולשים ייצרו קשר על נכס שלך, הם יופיעו כאן.</div>
     </section>
 
+    <!-- ---- reports on my listings ---- -->
+    <section class="panel" id="tab-reports" hidden>
+      <div class="panel-head"><h2>דיווחים על הנכסים שלי</h2></div>
+      <div id="reports-list" class="leads"></div>
+      <div id="reports-empty" class="empty" hidden>אין דיווחים. אם גולש ידווח על נכס שלך, הוא יופיע כאן.</div>
+    </section>
+
     <!-- ---- analytics ---- -->
     <!-- office: create a brokerage, then manage it once an admin approves -->
     <section class="panel" id="tab-office" hidden>
@@ -477,6 +485,6 @@
   <script src="../js/oauth.js?v=18"></script>
   <script src="../js/describe-gen.js?v=16"></script>
   <script src="../js/geo.js?v=70"></script>
-  <script src="crm.js?v=34"></script>
+  <script src="crm.js?v=35"></script>
 </body>
 </html>

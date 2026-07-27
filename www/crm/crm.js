@@ -588,7 +588,7 @@
   });
 
   /* ------------------------------------------------------------ data ---- */
-  async function loadAll() { await loadMyAgentProfile(); await loadBuildings(); await loadListings(); await loadLeads(); }
+  async function loadAll() { await loadMyAgentProfile(); await loadBuildings(); await loadListings(); await loadLeads(); await loadReports(); }
 
   // name + phone the agent gave when applying — used to prefill a listing's contact
   async function loadMyAgentProfile() {
@@ -1215,6 +1215,50 @@
     renderStats(); renderLeads();
   }
 
+  /* ---- reports on my listings (44_listing_reports.sql) ---- */
+  const REP_REASON = {
+    unavailable: "לא זמין / נמכר", wrong_price: "מחיר שגוי", wrong_details: "פרטים שגויים",
+    misleading_photos: "תמונות מטעות", scam: "הונאה / ספאם", offensive: "תוכן פוגעני", other: "אחר",
+  };
+  const REP_ST = { new: "חדש", reviewed: "נבדק", dismissed: "נדחה", actioned: "טופל" };
+  async function loadReports() {
+    // RLS returns only reports on this agent's own listings
+    const { data } = await supa.from("listing_reports")
+      .select("*, listings(title)").order("created_at", { ascending: false });
+    state.reports = data || [];
+    $("reports-badge").textContent = state.reports.filter((r) => r.status === "new").length || "";
+    renderReports();
+  }
+  function renderReports() {
+    const box = $("reports-list");
+    if (!box) return;
+    $("reports-empty").hidden = state.reports.length > 0;
+    box.innerHTML = state.reports.map((r) => {
+      const when = new Date(r.created_at).toLocaleString("he-IL");
+      return `<div class="lead">
+        <div class="lead-top">
+          <div><span class="lead-name">🚩 ${esc(REP_REASON[r.reason] || r.reason)}</span></div>
+          <span class="lead-when">${esc(when)}</span>
+        </div>
+        <div class="lead-for">על הנכס: ${esc((r.listings || {}).title || "—")}</div>
+        ${r.details ? `<div class="lead-msg">${esc(r.details)}</div>` : ""}
+        <div class="lead-actions">
+          <span class="badge ${r.status === "new" ? "pending" : r.status === "actioned" ? "approved" : "draft"}">${esc(REP_ST[r.status] || r.status)}</span>
+          ${r.status === "new" ? `<button class="btn-ghost" data-rep="${esc(r.id)}" data-to="reviewed">סמן כנבדק</button>` : ""}
+          ${r.status !== "dismissed" ? `<button class="btn-ghost" data-rep="${esc(r.id)}" data-to="dismissed">התעלם</button>` : ""}
+        </div>
+      </div>`;
+    }).join("");
+  }
+  const repList = $("reports-list");
+  if (repList) repList.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-rep]");
+    if (!b) return;
+    const { error } = await supa.from("listing_reports").update({ status: b.dataset.to }).eq("id", b.dataset.rep);
+    if (error) return toast("שגיאה בעדכון");
+    await loadReports();
+  });
+
   function renderLeads() {
     $("leads-empty").hidden = state.leads.length > 0;
     $("leads-list").innerHTML = state.leads.map((l) => {
@@ -1457,6 +1501,7 @@
     $("tab-listings").hidden = name !== "listings";
     $("tab-editor").hidden = name !== "editor";
     $("tab-leads").hidden = name !== "leads";
+    $("tab-reports").hidden = name !== "reports";
     $("tab-security").hidden = name !== "security";
     $("tab-analytics").hidden = name !== "analytics";
     $("tab-profile").hidden = name !== "profile";
