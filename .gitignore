@@ -17,6 +17,10 @@ android/capacitor-cordova-android-plugins/
 *.jks
 keystore.properties
 
+# Apple App Store Connect API key — secret, upload to Codemagic only
+*.p8
+AuthKey_*.p8
+
 # local / temp
 build_*.txt
 server.log
