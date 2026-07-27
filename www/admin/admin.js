@@ -456,6 +456,7 @@
       <div class="ractions">
         ${withActions ? `<button class="btn-ok" data-approve="${esc(l.id)}">אשר</button>
                          <button class="btn-bad" data-reject="${esc(l.id)}">דחה</button>` : ""}
+        <a class="btn-edit" href="https://blockview.co.il/?listing=${esc(l.id)}" target="_blank" rel="noopener">👁 צפה</a>
         <button class="btn-edit" data-editlisting="${esc(l.id)}">✏️ ערוך</button>
         ${!withActions ? `<select class="input" data-status="${esc(l.id)}">
             ${(Object.keys(ST).indexOf(l.status) < 0 ? [l.status] : []).concat(Object.keys(ST))
