@@ -26,8 +26,11 @@ create table if not exists public.listing_reports (
                 ('unavailable','wrong_price','wrong_details','misleading_photos','scam','offensive','other')),
   details     text check (details is null or length(details) <= 1000),
   status      text not null default 'new' check (status in ('new','reviewed','dismissed','actioned')),
+  notified_at timestamptz,               -- set once the agent has been emailed (dedupe)
   created_at  timestamptz not null default now()
 );
+-- for an existing table (re-run): add the column if it is missing
+alter table public.listing_reports add column if not exists notified_at timestamptz;
 create index if not exists listing_reports_agent_idx   on public.listing_reports (agent_id, created_at desc);
 create index if not exists listing_reports_listing_idx on public.listing_reports (listing_id, created_at desc);
 
@@ -86,5 +89,27 @@ drop policy if exists listing_reports_update on public.listing_reports;
 create policy listing_reports_update on public.listing_reports for update
   using (agent_id = auth.uid() or public.is_admin())
   with check (agent_id = auth.uid() or public.is_admin());
+
+-- ============================================== submit + return the id ====
+-- The reporter can't read the row back (read is agent/admin only), so a plain
+-- insert...returning fails under RLS. This SECURITY DEFINER helper inserts and
+-- returns the new id (so the client can trigger the "you have a report" email),
+-- while re-checking the listing is approved. The set_report_owner + rate-limit
+-- triggers still fire on the insert, so agent_id/reporter_id and the caps hold.
+create or replace function public.submit_listing_report(
+  p_listing_id uuid, p_reason text, p_details text default null
+) returns uuid
+language plpgsql security definer set search_path = public as $$
+declare v_id uuid;
+begin
+  if not exists (select 1 from public.listings where id = p_listing_id and status = 'approved') then
+    raise exception 'LISTING_NOT_APPROVED' using errcode = 'P0001';
+  end if;
+  insert into public.listing_reports (listing_id, reason, details)
+  values (p_listing_id, p_reason, nullif(btrim(coalesce(p_details, '')), ''))
+  returning id into v_id;
+  return v_id;
+end; $$;
+grant execute on function public.submit_listing_report(uuid, text, text) to anon, authenticated;
 
 select 'listing_reports ready — reports reach the agent CRM and the admin console' as note;

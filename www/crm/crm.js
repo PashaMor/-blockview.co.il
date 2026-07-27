@@ -1244,14 +1244,37 @@
         ${r.details ? `<div class="lead-msg">${esc(r.details)}</div>` : ""}
         <div class="lead-actions">
           <span class="badge ${r.status === "new" ? "pending" : r.status === "actioned" ? "approved" : "draft"}">${esc(REP_ST[r.status] || r.status)}</span>
-          ${r.status === "new" ? `<button class="btn-ghost" data-rep="${esc(r.id)}" data-to="reviewed">סמן כנבדק</button>` : ""}
-          ${r.status !== "dismissed" ? `<button class="btn-ghost" data-rep="${esc(r.id)}" data-to="dismissed">התעלם</button>` : ""}
+          ${(r.reason === "unavailable" && r.status !== "actioned" && r.status !== "dismissed")
+            ? `<button class="btn-primary" data-repapprove="${esc(r.id)}" data-listing="${esc(r.listing_id)}" data-title="${esc((r.listings || {}).title || "")}">אשר — הסר את הנכס</button>
+               <button class="btn-ghost" data-rep="${esc(r.id)}" data-to="dismissed">דחה</button>`
+            : (r.status === "new" ? `<button class="btn-ghost" data-rep="${esc(r.id)}" data-to="reviewed">סמן כנבדק</button>` : "") +
+              (r.status !== "dismissed" ? `<button class="btn-ghost" data-rep="${esc(r.id)}" data-to="dismissed">התעלם</button>` : "")}
         </div>
       </div>`;
     }).join("");
   }
   const repList = $("reports-list");
   if (repList) repList.addEventListener("click", async (e) => {
+    // approve a "sold / not relevant" report -> remove the listing from the map
+    const ap = e.target.closest("[data-repapprove]");
+    if (ap) {
+      const ok = await askConfirm({
+        danger: true,
+        title: "הסרת הנכס מהמפה",
+        lines: ['אישור הדיווח יסמן את הנכס "' + (ap.dataset.title || "") + '" כלא זמין ויסיר אותו מהמפה.',
+                "אפשר לפרסם אותו מחדש בעתיד מתוך רשימת הנכסים."],
+        okText: "אשר והסר",
+      });
+      if (!ok) return;
+      // sold removes it from the public map (map shows approved only) and keeps
+      // the record; the agent owns the listing, so RLS permits the update
+      const up = await supa.from("listings").update({ status: "sold" }).eq("id", ap.dataset.listing);
+      if (up.error) return toast("שגיאה בהסרת הנכס: " + up.error.message);
+      await supa.from("listing_reports").update({ status: "actioned" }).eq("id", ap.dataset.repapprove);
+      toast("הנכס הוסר מהמפה");
+      await loadListings(); await loadReports();
+      return;
+    }
     const b = e.target.closest("[data-rep]");
     if (!b) return;
     const { error } = await supa.from("listing_reports").update({ status: b.dataset.to }).eq("id", b.dataset.rep);

@@ -1350,13 +1350,19 @@ document.getElementById("report-form").addEventListener("submit", async (e) => {
   const reason = document.getElementById("report-reason").value;
   const details = document.getElementById("report-details").value.trim();
   btn.disabled = true;
-  // agent_id + reporter_id are set by the DB trigger — never sent from here
-  const res = await BVDB.from("listing_reports").insert({ listing_id: reportFor, reason: reason, details: details || null });
+  // submit via the RPC so we get the new report id back (a guest can't read the
+  // row under RLS). agent_id + reporter_id are still set by the insert trigger.
+  const res = await BVDB.rpc("submit_listing_report", { p_listing_id: reportFor, p_reason: reason, p_details: details || null });
   btn.disabled = false;
   if (res.error) {
     err.textContent = /TOO_MANY_REPORTS/.test(res.error.message || "") ? t("report_too_many") : t("report_error");
     err.hidden = false;
     return;
+  }
+  // email the listing's agent (best-effort; the report is already saved). The
+  // function picks the recipient from the report server-side and sends once.
+  if (res.data) {
+    try { BVDB.functions.invoke("listing-reported", { body: { report_id: res.data } }); } catch (e) {}
   }
   closeReport();
   toast(t("report_ok"));
