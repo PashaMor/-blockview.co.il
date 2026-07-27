@@ -12,9 +12,6 @@ workflows:
     integrations:
       app_store_connect: BlockView ASC        # must match the integration name you create
     environment:
-      ios_signing:
-        distribution_type: app_store           # Codemagic auto-creates cert + provisioning profile
-        bundle_identifier: com.blockview.app
       vars:
         BUNDLE_ID: "com.blockview.app"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
@@ -35,8 +32,14 @@ workflows:
         script: |
           cd ios/App
           agvtool new-version -all $(($BUILD_NUMBER + 1))
-      - name: Fetch signing files
-        script: xcode-project use-profiles
+      - name: Set up code signing (create cert + profile if missing)
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
       - name: Build .ipa
         script: |
           xcode-project build-ipa \
