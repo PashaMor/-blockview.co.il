@@ -1,5 +1,29 @@
 # BlockView — Google Play listing
 
+## Release (v1.0, versionCode 1)
+- **Release name (internal):** `1.0 (1) – First release`
+- **Release notes** (Play tagged format — Hebrew uses legacy code `iw`, NOT `he`):
+```
+<iw-IL>
+גרסה ראשונה של BlockView 🎉
+• מפת תלת-ממד אינטראקטיבית — הקישו על בניין וראו את הדירות שבתוכו
+• דירות למכירה ולהשכרה, ישירות מבעלים וסוכנים
+• סינון לפי מחיר, חדרים ושטח
+• שמירת מועדפים ומעקב אחר בניינים
+• פרסום נכס תוך דקות
+• תמיכה ב-6 שפות
+</iw-IL>
+<en-US>
+Welcome to BlockView 🎉
+• Interactive 3D map — tap a building and see the apartments inside
+• Homes for sale and rent, straight from owners and agents
+• Filter by price, rooms and size
+• Save favorites and follow buildings
+• Publish a property in minutes
+• Available in 6 languages
+</en-US>
+```
+
 ## Fields
 - **App name:** BlockView
 - **Category:** House & Home

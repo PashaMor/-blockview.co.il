@@ -225,12 +225,14 @@ function buildingMatches(id) { return (LISTINGS[id] || []).filter(passes); }
 function buildingsGeoJSON() {
   return {
     type: "FeatureCollection",
-    features: BUILDINGS.map((b, i) => ({
-      type: "Feature", id: i,
-      properties: { bid: b.id, name: b.name, height: b.height, match: buildingMatches(b.id).length,
-        label: b.name + " · " + buildingMatches(b.id).length },
-      geometry: { type: "Polygon", coordinates: footprint(b) },
-    })),
+    features: BUILDINGS.map((b, i) => {
+      const n = buildingMatches(b.id).length;   // once, not twice (this runs for every building on every setData)
+      return {
+        type: "Feature", id: i,
+        properties: { bid: b.id, name: b.name, height: b.height, match: n, label: b.name + " · " + n },
+        geometry: { type: "Polygon", coordinates: footprint(b) },
+      };
+    }),
   };
 }
 let idToIndex = {};
@@ -239,7 +241,8 @@ function indexData() {
   idToIndex = Object.fromEntries(BUILDINGS.map((b, i) => [b.id, i]));
   LISTING_INDEX = {};
   for (const bid in LISTINGS) {
-    const b = BUILDINGS.find((x) => x.id === bid);
+    // idToIndex, not BUILDINGS.find — the find made this O(buildings × listings)
+    const b = BUILDINGS[idToIndex[bid]];
     if (!b) continue;
     LISTINGS[bid].forEach((l) => (LISTING_INDEX[l.id] = { ...l, building: b }));
   }
@@ -263,14 +266,81 @@ const BVDB = window.supabase.createClient(
   { auth: { persistSession: false, autoRefreshToken: false } }
 );
 
+// PostgREST caps a response at 1000 rows; with more buildings/listings than that,
+// the map silently lost the rest. Page through until the table is exhausted.
+async function fetchAllRows(table, select, filter) {
+  const PAGE = 1000;
+  let from = 0, out = [];
+  for (;;) {
+    let q = BVDB.from(table).select(select);
+    if (filter) q = filter(q);
+    const { data, error } = await q.range(from, from + PAGE - 1);
+    if (error) throw error;
+    out = out.concat(data || []);
+    if (!data || data.length < PAGE) break;
+    from += PAGE;
+  }
+  return out;
+}
+
+/* ---- offline cache: paint instantly on revisit, refresh in the background ----
+ * Stale-while-revalidate. Kept in IndexedDB because building footprints are too
+ * big for localStorage. Degrades to no-cache if IndexedDB is unavailable (old
+ * WebView / private mode). Works the same on the website and in the app. */
+var BV_CACHE_VER = 1;   // bump to discard old caches after a data-shape change
+function idbOpen() {
+  return new Promise(function (resolve, reject) {
+    try {
+      var req = indexedDB.open("bvcache", 1);
+      req.onupgradeneeded = function () { req.result.createObjectStore("kv"); };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error); };
+    } catch (e) { reject(e); }
+  });
+}
+function idbGet(key) {
+  return idbOpen().then(function (db) {
+    return new Promise(function (resolve) {
+      var r = db.transaction("kv", "readonly").objectStore("kv").get(key);
+      r.onsuccess = function () { resolve(r.result); };
+      r.onerror = function () { resolve(null); };
+    });
+  }).catch(function () { return null; });
+}
+function idbSet(key, val) {
+  return idbOpen().then(function (db) {
+    return new Promise(function (resolve) {
+      var r = db.transaction("kv", "readwrite").objectStore("kv").put(val, key);
+      r.onsuccess = function () { resolve(true); };
+      r.onerror = function () { resolve(false); };
+    });
+  }).catch(function () { return false; });
+}
+async function hydrateFromCache() {
+  try {
+    var c = await idbGet("data");
+    if (!c || c.ver !== BV_CACHE_VER || !c.buildings || !c.buildings.length) return false;
+    BUILDINGS = c.buildings;
+    LISTINGS = c.listings || {};
+    indexData();
+    if (map.getSource("blockview")) map.getSource("blockview").setData(buildingsGeoJSON());
+    fillCities();
+    updateTotal();
+    syncFavUI();
+    return true;
+  } catch (e) { return false; }
+}
+function saveCache() {
+  try { idbSet("data", { ver: BV_CACHE_VER, buildings: BUILDINGS, listings: LISTINGS }); } catch (e) {}
+}
+
 async function loadLiveData() {
   try {
-    const [B, L] = await Promise.all([
-      BVDB.from("buildings_visible").select("*").then((r) => (r.error ? BVDB.from("buildings").select("*") : r)),
-      BVDB.from("listings").select("*, listing_photos(path,sort), offices(id,name,status,logo_path,phone)").eq("status", "approved"),
+    const [Bdata, Ldata] = await Promise.all([
+      fetchAllRows("buildings_visible", "*").catch(() => fetchAllRows("buildings", "*")),
+      fetchAllRows("listings", "*, listing_photos(path,sort), offices(id,name,status,logo_path,phone)", (q) => q.eq("status", "approved")),
     ]);
-    if (B.error) throw B.error;
-    if (L.error) throw L.error;
+    const B = { data: Bdata }, L = { data: Ldata };
     if (!(B.data || []).length) { console.warn("[BlockView] no buildings in DB — map stays empty"); return; }
 
     BUILDINGS = B.data.map((b) => ({
@@ -331,6 +401,7 @@ async function loadLiveData() {
       b ? renderListings(b) : deselect();
     }
     console.log("[BlockView] live data:", BUILDINGS.length, "buildings,", (L.data || []).length, "approved listings");
+    saveCache();                  // stale-while-revalidate: next visit paints from this instantly
     healBuildingFootprints();     // fix any building still drawn as a plain box
     applyTranslations(window.currentLang ? window.currentLang() : "he");  // show titles/desc in the app language
   } catch (e) {
@@ -484,17 +555,26 @@ function addRailNetwork(before) {
  * the building under each of ours and copy it, so the blue block is exactly as
  * tall as the building it stands for. Only works for buildings on screen, so it
  * runs on every "idle"; each building is matched once. */
+// queryRenderedFeatures is expensive; with ~1000+ buildings, matching every one
+// in a single idle froze the main thread. Cap the work per pass and, if more
+// on-screen buildings still need it, continue on the next tick — so the map stays
+// responsive and heights fill in over a second instead of in one long block.
+let heightPassPending = false;
 function matchBuildingHeights() {
   if (!map.getLayer || !map.getLayer("city-3d")) return;
-  let changed = false;
-  BUILDINGS.forEach((b) => {
-    if (b.heightMatched || !isFinite(b.lat) || !isFinite(b.lng)) return;
+  let changed = false, budget = 40, moreOnScreen = false;
+  const cw = map.getCanvas().width, ch = map.getCanvas().height;
+  for (let i = 0; i < BUILDINGS.length; i++) {
+    const b = BUILDINGS[i];
+    if (b.heightMatched || !isFinite(b.lat) || !isFinite(b.lng)) continue;
     var pt;
-    try { pt = map.project([b.lng, b.lat]); } catch (e) { return; }
-    if (pt.x < 0 || pt.y < 0 || pt.x > map.getCanvas().width || pt.y > map.getCanvas().height) return; // off screen
+    try { pt = map.project([b.lng, b.lat]); } catch (e) { continue; }
+    if (pt.x < 0 || pt.y < 0 || pt.x > cw || pt.y > ch) continue;   // off screen — skip (cheap)
+    if (budget <= 0) { moreOnScreen = true; break; }                // hit the per-pass cap
+    budget--;
     var feats = map.queryRenderedFeatures(
       [[pt.x - 3, pt.y - 3], [pt.x + 3, pt.y + 3]], { layers: ["city-3d"] });
-    if (!feats.length) { b.heightMatched = true; return; }   // no base building here (e.g. empty lot)
+    if (!feats.length) { b.heightMatched = true; continue; }        // no base building here (e.g. empty lot)
     var h = 0;
     feats.forEach((f) => { var rh = +(f.properties && f.properties.render_height); if (isFinite(rh) && rh > h) h = rh; });
     if (h > 2 && Math.abs(h - b.height) > 0.5) {
@@ -503,10 +583,14 @@ function matchBuildingHeights() {
       try { fetch("/api/footprint?id=" + encodeURIComponent(b.id) + "&height=" + h, { method: "POST" }).catch(function () {}); } catch (e) {}
     }
     b.heightMatched = true;
-  });
+  }
   if (changed && map.getSource("blockview")) {
     map.getSource("blockview").setData(buildingsGeoJSON());
     if (selectedId) setSelectedState(selectedId, true);
+  }
+  if (moreOnScreen && !heightPassPending) {   // finish the rest without blocking
+    heightPassPending = true;
+    setTimeout(function () { heightPassPending = false; matchBuildingHeights(); }, 120);
   }
 }
 
@@ -592,7 +676,9 @@ function addCustomLayers() {
   // stay even with each other. The blue building reads solid because its footprint
   // is padded to hide the grey underneath (footprint()).
   try { map.setLight({ anchor: "map", position: [1.5, 210, 0], color: "#ffffff", intensity: 0.32 }); } catch (e) {}
-  map.addLayer({ id: "bv-labels", type: "symbol", source: "blockview",
+  // minzoom: with ~1000+ buildings, rendering every label at city overview meant
+  // heavy per-frame label collision. They're only readable up close anyway.
+  map.addLayer({ id: "bv-labels", type: "symbol", source: "blockview", minzoom: 14,
     layout: { "text-field": ["get", "label"], "text-size": 12, "text-offset": [0, -0.6], "text-anchor": "bottom", "text-font": ["Noto Sans Regular"] },
     paint: labelPaint() });
 
@@ -627,7 +713,9 @@ map.on("load", () => {
   addCustomLayers();
   updateTotal();
   applyTheme(mode, false); // sync the toggle icon to the loaded theme
-  loadLiveData();          // swap the sample data for real listings from Supabase
+  // paint from the last cached data immediately (instant on revisit), then fetch
+  // fresh and update. First-ever visit has no cache and just waits for the fetch.
+  hydrateFromCache().then(loadLiveData);   // swap the sample data for real listings from Supabase
   // let other scripts refresh the map after they change a listing
   window.reloadLiveData = loadLiveData;
   // once the map settles, size each blue building to the real one beneath it
