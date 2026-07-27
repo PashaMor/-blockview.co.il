@@ -213,7 +213,7 @@
 
   /* --------------------------------------------------------------- data */
   async function loadAll() {
-    const [L, P, B, Lead, A, AP, AU, REV, VW, OF, OM] = await Promise.all([
+    const [L, P, B, Lead, A, AP, AU, REV, VW, OF, OM, RP] = await Promise.all([
       supa.from("listings").select("*, buildings(name,address), listing_photos(id,path,sort), listing_contacts(name,phone,email,sort)").order("created_at", { ascending: false }),
       supa.from("profiles").select("*").order("created_at", { ascending: false }),
       supa.from("buildings").select("*").order("name"),
@@ -233,6 +233,8 @@
       supa.from("offices").select("*").order("created_at", { ascending: false }),
       // 36_office_members.sql — the roster of each office
       supa.from("office_members").select("office_id,user_id,member_role,status,invited_email"),
+      // 44_listing_reports.sql — user reports on listings (degrade if not run)
+      supa.from("listing_reports").select("*, listings(title, buildings(name,address))").order("created_at", { ascending: false }),
     ]);
     // clicks/views per listing: 'detail' is a listing opened, 'impression' is
     // shown in a building's sheet. Guarded so an agent viewing their own does
@@ -264,7 +266,8 @@
     state.pmap = {}; state.profiles.forEach((p) => (state.pmap[p.id] = p));
     state.offices = (OF && OF.data) || [];
     state.officeMembers = (OM && OM.data) || [];
-    renderStats(); renderQueue(); renderAll(); renderUsers(); renderBuildings(); renderRecent(); renderApps(); renderAgentLeads(); renderOffices();
+    state.reports = (RP && RP.data) || [];
+    renderStats(); renderQueue(); renderAll(); renderUsers(); renderBuildings(); renderRecent(); renderApps(); renderAgentLeads(); renderOffices(); renderReports();
     setTabCounts();
   }
 
@@ -788,7 +791,52 @@
     set("agentleads-count", (state.profiles || []).filter((p) => p.role === "agent" || p.role === "admin").length);
     set("buildings-count", (state.buildings || []).length);
     set("offices-count", (state.offices || []).length);
+    set("reports-badge", (state.reports || []).filter((r) => r.status === "new").length || "");
   }
+
+  /* ---- user reports on listings (44_listing_reports.sql) ---- */
+  const REP_REASON = {
+    unavailable: "לא זמין / נמכר", wrong_price: "מחיר שגוי", wrong_details: "פרטים שגויים",
+    misleading_photos: "תמונות מטעות", scam: "הונאה / ספאם", offensive: "תוכן פוגעני", other: "אחר",
+  };
+  const REP_ST = { new: "חדש", reviewed: "נבדק", dismissed: "נדחה", actioned: "טופל" };
+  function renderReports() {
+    const f = ($("rep-status") && $("rep-status").value) || "new";
+    const rows = (state.reports || []).filter((r) => f === "all" || r.status === f);
+    $("reports-empty").hidden = rows.length > 0;
+    $("reports-list").innerHTML = rows.map((r) => {
+      const l = r.listings || {}, b = (l.buildings) || {};
+      const agent = state.pmap[r.agent_id];
+      return `<div class="row" data-id="${esc(r.id)}">
+        <div class="rthumb">🚩</div>
+        <div class="rmain">
+          <div class="rtitle">${esc(REP_REASON[r.reason] || r.reason)}</div>
+          <div class="rsub">${esc(l.title || "—")}${b.address ? " · " + esc(b.address) : ""}</div>
+          ${r.details ? `<div class="rsub">${esc(r.details)}</div>` : ""}
+          <div class="rmeta">
+            <span>סוכן: ${esc(agent ? agent.email : "—")}</span>
+            <span>${esc(when(r.created_at))}</span>
+            <span class="badge ${r.status === "new" ? "pending" : r.status === "actioned" ? "approved" : "draft"}">${esc(REP_ST[r.status] || r.status)}</span>
+          </div>
+        </div>
+        <div class="ractions">
+          <a class="btn-edit" href="https://blockview.co.il/?listing=${esc(r.listing_id)}" target="_blank" rel="noopener">↗ נכס</a>
+          <select class="input" data-repstatus="${esc(r.id)}">
+            ${Object.keys(REP_ST).map((s) => `<option value="${s}"${s === r.status ? " selected" : ""}>${REP_ST[s]}</option>`).join("")}
+          </select>
+        </div>
+      </div>`;
+    }).join("");
+  }
+  document.addEventListener("change", async (e) => {
+    const rs = e.target.closest("[data-repstatus]");
+    if (!rs) return;
+    const { error } = await supa.from("listing_reports").update({ status: rs.value }).eq("id", rs.dataset.repstatus);
+    if (error) return toast("שגיאה: " + error.message);
+    toast("סטטוס הדיווח עודכן"); loadAll();
+  });
+  const repFilter = $("rep-status");
+  if (repFilter) repFilter.addEventListener("change", renderReports);
 
   /* ---- offices: approve / reject / suspend brokerages ---- */
   const OFST = { pending: "ממתין", approved: "מאושר", rejected: "נדחה", suspended: "מושהה" };
@@ -1373,7 +1421,7 @@
   /* -------------------------------------------------------------- tabs */
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("active", x === t));
-    ["overview", "queue", "agents", "listings", "users", "agentleads", "offices", "buildings", "new"].forEach((n) => ($("tab-" + n).hidden = n !== t.dataset.tab));
+    ["overview", "queue", "agents", "listings", "users", "agentleads", "offices", "buildings", "reports", "new"].forEach((n) => ($("tab-" + n).hidden = n !== t.dataset.tab));
   }));
 
   /* ---- create a listing from a pasted JSON blob (no SQL) ----------------

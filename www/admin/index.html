@@ -90,6 +90,7 @@
       <button class="tab" data-tab="agentleads">סוכנים ולידים <b class="tab-count" id="agentleads-count"></b></button>
       <button class="tab" data-tab="offices">משרדים <b class="tab-count" id="offices-count"></b></button>
       <button class="tab" data-tab="buildings">בניינים <b class="tab-count" id="buildings-count"></b></button>
+      <button class="tab" data-tab="reports">דיווחים <b id="reports-badge"></b></button>
       <button class="tab" data-tab="new" hidden>➕ נכס חדש</button>
     </nav>
 
@@ -106,6 +107,24 @@
       <div class="panel-head"><h2>ממתינים לאישור</h2></div>
       <div id="queue-list" class="rows"></div>
       <div id="queue-empty" class="empty" hidden>אין נכסים הממתינים לאישור. 🎉</div>
+    </section>
+
+    <!-- listing reports -->
+    <section class="panel" id="tab-reports" hidden>
+      <div class="panel-head">
+        <h2>דיווחים על נכסים</h2>
+        <div class="filters">
+          <select id="rep-status" class="input">
+            <option value="new">חדשים</option>
+            <option value="reviewed">נבדקו</option>
+            <option value="dismissed">נדחו</option>
+            <option value="actioned">טופלו</option>
+            <option value="all">הכל</option>
+          </select>
+        </div>
+      </div>
+      <div id="reports-list" class="rows"></div>
+      <div id="reports-empty" class="empty" hidden>אין דיווחים בסטטוס הזה.</div>
     </section>
 
     <!-- agent applications -->
@@ -322,6 +341,6 @@
   <script src="../js/config.js?v=17"></script>
   <script src="../js/analytics.js?v=2"></script>
   <script src="../js/oauth.js?v=18"></script>
-  <script src="admin.js?v=37"></script>
+  <script src="admin.js?v=38"></script>
 </body>
 </html>
