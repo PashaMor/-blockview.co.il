@@ -845,3 +845,8 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 
 /* tour/website links now live inside the contact card */
 .contact-area .ext-links { margin-top: 10px; }
+
+/* report a listing — quiet, low-emphasis action in the bar */
+.btn-report { font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; padding: 10px 14px;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text-soft); }
+.btn-report:hover { border-color: #C0392B; color: #C0392B; }

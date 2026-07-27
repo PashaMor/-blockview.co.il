@@ -44,8 +44,8 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=95" />
-  <link rel="stylesheet" href="css/style.css?v=101" />
+  <link rel="stylesheet" href="vendor/maplibre-gl.css?v=102" />
+  <link rel="stylesheet" href="css/style.css?v=102" />
 </head>
 <body>
   <div id="map"></div>
@@ -496,6 +496,39 @@
     </form>
   </section>
 
+  <!-- Report a listing (goes to the agent + the admin console) -->
+  <section id="report-sheet" class="sheet" aria-hidden="true">
+    <div class="sheet-handle"></div>
+    <button class="sheet-x" id="report-close" aria-label="close">✕</button>
+    <div class="building-head">
+      <div class="bh-eyebrow" data-i18n="report_eyebrow">דיווח</div>
+      <h2 data-i18n="report_title">דיווח על נכס</h2>
+      <div class="b-address" id="report-for">—</div>
+    </div>
+    <form id="report-form" class="sheet-body">
+      <div class="fgroup">
+        <label data-i18n="report_reason">סיבת הדיווח</label>
+        <select id="report-reason" class="selectbox" required>
+          <option value="unavailable" data-i18n="report_r_unavailable">הנכס כבר לא זמין / נמכר</option>
+          <option value="wrong_price" data-i18n="report_r_wrong_price">המחיר שגוי או מטעה</option>
+          <option value="wrong_details" data-i18n="report_r_wrong_details">פרטים שגויים</option>
+          <option value="misleading_photos" data-i18n="report_r_photos">תמונות מטעות</option>
+          <option value="scam" data-i18n="report_r_scam">חשד להונאה / ספאם</option>
+          <option value="offensive" data-i18n="report_r_offensive">תוכן פוגעני</option>
+          <option value="other" data-i18n="report_r_other">אחר</option>
+        </select>
+      </div>
+      <div class="fgroup">
+        <label data-i18n="report_details">פירוט (לא חובה)</label>
+        <textarea id="report-details" class="selectbox" rows="3" maxlength="1000"></textarea>
+      </div>
+      <input id="report-hp" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true" />
+      <p class="field-hint" data-i18n="report_hint">הדיווח יישלח לבעל הנכס ולצוות BlockView לבדיקה.</p>
+      <div id="report-err" class="auth-error" hidden></div>
+      <button type="submit" id="report-submit" class="sheet-apply" data-i18n="report_send">שלח דיווח</button>
+    </form>
+  </section>
+
   <!-- Become an agent (same application the CRM takes) -->
   <section id="agent-sheet" class="sheet" aria-hidden="true">
     <div class="sheet-handle"></div>
@@ -663,24 +696,25 @@
     </div>
   </div>
 
-  <script src="vendor/maplibre-gl.js?v=95"></script>
-  <script src="vendor/supabase.min.js?v=95"></script>
-  <script src="js/config.js?v=95"></script>
-  <script src="js/analytics.js?v=95"></script>
-  <script src="js/oauth.js?v=95"></script>
-  <script src="js/geo.js?v=95"></script>
-  <script src="js/i18n.js?v=96"></script>
-  <script src="js/confirm.js?v=95"></script>
-  <script src="js/data.js?v=95"></script>
-  <script src="js/track.js?v=95"></script>
-  <script src="js/app.js?v=101"></script>
-  <script src="js/auth.js?v=95"></script>
-  <script src="js/home-loc.js?v=95"></script>
-  <script src="js/describe-gen.js?v=95"></script>
-  <script src="js/publish.js?v=95"></script>
-  <script src="js/my-listings.js?v=95"></script>
-  <script src="js/agent-apply.js?v=95"></script>
-  <script src="js/app-badge.js?v=95"></script>
-  <script src="js/legal-modal.js?v=95"></script>
+  <script src="vendor/maplibre-gl.js?v=102"></script>
+  <script src="vendor/supabase.min.js?v=102"></script>
+  <script src="js/config.js?v=102"></script>
+  <script src="js/analytics.js?v=102"></script>
+  <script src="js/oauth.js?v=102"></script>
+  <script src="js/geo.js?v=102"></script>
+  <script src="js/i18n.js?v=102"></script>
+  <script src="js/confirm.js?v=102"></script>
+  <script src="js/data.js?v=102"></script>
+  <script src="js/track.js?v=102"></script>
+  <script src="js/app.js?v=102"></script>
+  <script src="js/auth.js?v=102"></script>
+  <script src="js/billing.js?v=102"></script>
+  <script src="js/home-loc.js?v=102"></script>
+  <script src="js/describe-gen.js?v=102"></script>
+  <script src="js/publish.js?v=102"></script>
+  <script src="js/my-listings.js?v=102"></script>
+  <script src="js/agent-apply.js?v=102"></script>
+  <script src="js/app-badge.js?v=102"></script>
+  <script src="js/legal-modal.js?v=102"></script>
 </body>
 </html>

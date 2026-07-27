@@ -1027,6 +1027,7 @@ function openDetail(lid) {
         <button class="btn-ghost fav-toggle ${isFav(l.id) ? "on" : ""}" data-fav="${l.id}">${t("save")}</button>
         ${l.hasWhatsapp && signedIn() ? `<button class="btn-wa" data-wa="${l.id}">${t("wa_contact")}</button>` : ""}
         <button class="btn-ghost" data-share="${l.id}">${t("share")}</button>
+        ${isDbListing(l.id) ? `<button class="btn-report" data-report="${l.id}" title="${t("report_listing")}">${t("report_listing")}</button>` : ""}
       </div>
     </div>`;
   el.hidden = false;
@@ -1046,6 +1047,7 @@ function openDetail(lid) {
   }));
   el.querySelectorAll("[data-share]").forEach((b) => (b.onclick = (ev) => { ev.stopPropagation(); if (window.BVTrack) BVTrack.share(b.dataset.share); shareListing(b.dataset.share); }));
   el.querySelectorAll("[data-lead]").forEach((b) => (b.onclick = (ev) => { ev.stopPropagation(); openLead(b.dataset.lead); }));
+  el.querySelectorAll("[data-report]").forEach((b) => (b.onclick = (ev) => { ev.stopPropagation(); openReport(b.dataset.report); }));
   const ta = el.querySelector("#note-input");
   if (window.BVAuth && BVAuth.isLoggedIn()) {
     ta.value = getNote(l.id);
@@ -1320,6 +1322,46 @@ document.getElementById("lead-form").addEventListener("submit", async (e) => {
   toast(t("lead_ok"));
 });
 
+/* ---------------------------------------------------- report a listing ----
+ * Anyone may report an approved listing. RLS delivers it to the listing's own
+ * agent (their CRM) and to admins (the console); the agent/reporter ids are set
+ * server-side so a report can't be forged or aimed elsewhere. */
+const reportSheet = document.getElementById("report-sheet");
+let reportFor = null;
+function openReport(lid) {
+  const l = LISTING_INDEX[lid];
+  if (!l || !isDbListing(lid)) return;
+  reportFor = lid;
+  closeAllSheets(); closeAuthUI();
+  document.getElementById("report-err").hidden = true;
+  document.getElementById("report-for").textContent = l.title + " — " + l.building.address;
+  document.getElementById("report-form").reset();
+  reportSheet.classList.add("open");
+  reportSheet.setAttribute("aria-hidden", "false");
+}
+function closeReport() { reportSheet.classList.remove("open"); reportSheet.setAttribute("aria-hidden", "true"); }
+document.getElementById("report-close").addEventListener("click", closeReport);
+document.getElementById("report-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const err = document.getElementById("report-err");
+  err.hidden = true;
+  if (document.getElementById("report-hp").value) { closeReport(); return; }  // bot
+  const btn = document.getElementById("report-submit");
+  const reason = document.getElementById("report-reason").value;
+  const details = document.getElementById("report-details").value.trim();
+  btn.disabled = true;
+  // agent_id + reporter_id are set by the DB trigger — never sent from here
+  const res = await BVDB.from("listing_reports").insert({ listing_id: reportFor, reason: reason, details: details || null });
+  btn.disabled = false;
+  if (res.error) {
+    err.textContent = /TOO_MANY_REPORTS/.test(res.error.message || "") ? t("report_too_many") : t("report_error");
+    err.hidden = false;
+    return;
+  }
+  closeReport();
+  toast(t("report_ok"));
+});
+
 /* -------------------------------------------------------- filter wiring ---- */
 function refreshBuildings() {
   if (map.getSource("blockview")) {
@@ -1590,7 +1632,7 @@ window.subCount = () => subs.size;
 window.bvToast = (m) => toast(m);
 // closeDetail too: the detail card sits above the sheets, so an auth sheet opened
 // from inside it (contact / note / save) would otherwise appear behind it
-window.closeAllSheets = function () { closeDetail(); closeSheet(); closeListings(); closeFavs(); closeAlerts(); closeSearch(); closeLead(); };
+window.closeAllSheets = function () { closeDetail(); closeSheet(); closeListings(); closeFavs(); closeAlerts(); closeSearch(); closeLead(); closeReport(); };
 window.reRender = function () {
   updateTotal();
   if (typeof updatePriceUI === "function") updatePriceUI();
