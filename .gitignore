@@ -15,6 +15,7 @@ android/capacitor-cordova-android-plugins/
 *.aab
 *.keystore
 *.jks
+keystore.properties
 
 # local / temp
 build_*.txt
