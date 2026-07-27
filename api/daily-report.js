@@ -320,7 +320,7 @@ async function dbStats(day) {
   }
 
   const window_ = "&created_at=gte." + from + "&created_at=lt." + to;
-  const [listings, approved, leads, signups, pending, agentsNew, agentsPending] = await Promise.all([
+  const [listings, approved, leads, signups, pending, agentsNew, agentsPending, reportsNew, reportsOpen] = await Promise.all([
     count("listings", window_),
     count("listings", window_ + "&status=eq.approved"),
     count("leads", window_),
@@ -328,8 +328,12 @@ async function dbStats(day) {
     count("listings", "&status=eq.pending"),
     count("agent_applications", window_),
     count("agent_applications", "&status=eq.pending"),
+    // reports filed in the window, and total still awaiting review (44_listing_reports.sql).
+    // tolerate the table not existing yet — the rest of the digest must not fail.
+    count("listing_reports", window_).catch(function () { return null; }),
+    count("listing_reports", "&status=eq.new").catch(function () { return null; }),
   ]);
-  return { listings, approved, leads, signups, pending, agentsNew, agentsPending };
+  return { listings, approved, leads, signups, pending, agentsNew, agentsPending, reportsNew, reportsOpen };
 }
 
 function nextDay(day) {
@@ -381,13 +385,15 @@ function buildMessage(x) {
     L.push("📬 פניות חדשות: <b>" + x.db.leads + "</b>");
     L.push("🙋 נרשמים חדשים: " + x.db.signups);
     L.push("🧑‍💼 מתווכים שנרשמו: <b>" + x.db.agentsNew + "</b>");
+    if (x.db.reportsNew != null) L.push("🚩 דיווחים חדשים: <b>" + x.db.reportsNew + "</b>");
 
-    // the two queues an admin has to act on — call them out together
-    const queue = x.db.pending + x.db.agentsPending;
+    // the queues an admin has to act on — call them out together
+    const queue = x.db.pending + x.db.agentsPending + (x.db.reportsOpen || 0);
     L.push("");
     L.push("<b>ממתין לאישור שלך</b>");
     L.push("⏳ נכסים: <b>" + x.db.pending + "</b>");
     L.push("⏳ מתווכים: <b>" + x.db.agentsPending + "</b>");
+    if (x.db.reportsOpen != null) L.push("🚩 דיווחים לטיפול: <b>" + x.db.reportsOpen + "</b>");
     if (queue > 0) L.push("👉 admin.blockview.co.il");
   } else {
     L.push("<b>הפעילות במערכת</b>: ⚠️ " + esc(x.db ? x.db.error : "no data"));
