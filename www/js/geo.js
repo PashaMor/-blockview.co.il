@@ -224,17 +224,30 @@
     return {
       osmId: chosen.el.type + "/" + chosen.el.id,
       polygon: { type: "Polygon", coordinates: [ring] },
-      height: heightFromTags(tags),
+      height: heightFromTags(tags, ring),
       center: ringCenter(ring),
     };
   }
 
-  function heightFromTags(t) {
+  function heightFromTags(t, ring) {
+    var base = null;
     var h = parseFloat(t.height || t["building:height"]);
-    if (isFinite(h) && h > 2) return h;
     var lv = parseFloat(t["building:levels"]);
-    if (isFinite(lv) && lv > 0) return Math.round(lv * 3 + 1);
-    return null;                                   // let the DB default decide
+    if (isFinite(h) && h > 2) base = h;
+    else if (isFinite(lv) && lv > 0) base = lv * 3 + 1;
+    if (base == null) return null;                 // unknown -> let the DB default decide
+    // clamp by footprint so a bad tag / sliver way can't render as a thin spike
+    var minSide = 12;
+    if (ring && ring.length) {
+      var minx = 180, maxx = -180, miny = 90, maxy = -90;
+      ring.forEach(function (p) {
+        if (p[0] < minx) minx = p[0]; if (p[0] > maxx) maxx = p[0];
+        if (p[1] < miny) miny = p[1]; if (p[1] > maxy) maxy = p[1];
+      });
+      minSide = Math.max(4, Math.min((maxx - minx) * 94000, (maxy - miny) * 111000));
+    }
+    var cap = Math.min(120, Math.max(15, minSide * 4));
+    return Math.round(Math.max(8, Math.min(base, cap)));
   }
   function ringCenter(ring) {
     var x = 0, y = 0, n = ring.length - 1;

@@ -150,7 +150,7 @@ function pick(data, lat, lng) {
   return {
     osmId: chosen.el.type + "/" + chosen.el.id,
     polygon: { type: "Polygon", coordinates: [ring] },
-    height: heightOf(chosen.el.tags || {}),
+    height: heightOf(chosen.el.tags || {}, ring),
     center: center(ring.map((p) => ({ lon: p[0], lat: p[1] }))),
   };
 }
@@ -171,12 +171,29 @@ function center(g) {
   });
   return [(minx + maxx) / 2, (miny + maxy) / 2];
 }
-function heightOf(t) {
+// Real OSM height, CLAMPED by the footprint so a bad tag (or a sliver way) can
+// never render as a thin spike, and nothing is a pancake. Same rule the demo
+// backfill used, so creation-time and backfilled heights agree.
+function heightOf(t, ring) {
+  let base = 24;
   const h = parseFloat(t.height || t["building:height"]);
-  if (isFinite(h) && h > 2) return h;
   const lv = parseFloat(t["building:levels"]);
-  if (isFinite(lv) && lv > 0) return Math.round(lv * 3 + 1);
-  return 24;
+  if (isFinite(h) && h > 2) base = h;
+  else if (isFinite(lv) && lv > 0) base = lv * 3 + 1;
+  return clampHeight(base, ring);
+}
+function clampHeight(base, ring) {
+  let minSide = 12;
+  if (ring && ring.length) {
+    let minx = 180, maxx = -180, miny = 90, maxy = -90;
+    ring.forEach((p) => {
+      if (p[0] < minx) minx = p[0]; if (p[0] > maxx) maxx = p[0];
+      if (p[1] < miny) miny = p[1]; if (p[1] > maxy) maxy = p[1];
+    });
+    minSide = Math.max(4, Math.min((maxx - minx) * 94000, (maxy - miny) * 111000));
+  }
+  const cap = Math.min(120, Math.max(15, minSide * 4));   // a building can't be far taller than it is wide
+  return Math.round(Math.max(8, Math.min(base, cap)));
 }
 
 function env(name) {
