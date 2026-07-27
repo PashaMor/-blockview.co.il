@@ -36,21 +36,20 @@ workflows:
         script: |
           set -ex
           keychain initialize
-          # Create a fresh distribution certificate WITH a private key generated
-          # on this machine (existing Expo/RevenueCat certs can't be reused — their
-          # private keys live elsewhere). Fails loudly if we're at Apple's cert limit.
-          app-store-connect certificates create \
-            --type IOS_DISTRIBUTION \
-            --save
-          # Create + download the App Store provisioning profile for our bundle id.
+          # Generate a private key locally — a new distribution certificate is
+          # created FROM this key, so its identity is usable on this machine
+          # (existing Expo/RevenueCat certs can't be reused; their keys live elsewhere).
+          openssl genrsa -out /tmp/blockview_cert_key.pem 2048
+          # Create + download the distribution cert (from our key) AND the App Store
+          # provisioning profile for the bundle id, in one go.
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --certificate-key=@file:/tmp/blockview_cert_key.pem \
             --create \
             --platform IOS \
             --verbose
-          # Load cert(s) + key(s) into the build keychain.
+          # Load cert + key into the build keychain, then apply the profile to Xcode.
           keychain add-certificates
-          # Apply the downloaded profile to the Xcode project (manual signing).
           xcode-project use-profiles --verbose
           echo "--- Provisioning profiles present: ---"
           ls -la "$HOME/Library/MobileDevice/Provisioning Profiles/" || true
