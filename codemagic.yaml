@@ -1,0 +1,54 @@
+# Codemagic CI — builds the Capacitor iOS app on a cloud Mac and ships it to TestFlight.
+# One-time setup in the Codemagic UI (see store/ios/SETUP.md):
+#   1. Connect this GitHub repo (PashaMor/-blockview.co.il).
+#   2. Team settings → Integrations → App Store Connect → add an API key,
+#      and name the integration EXACTLY:  BlockView ASC
+#   3. Run the "ios-testflight" workflow.
+workflows:
+  ios-testflight:
+    name: iOS TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: BlockView ASC        # must match the integration name you create
+    environment:
+      ios_signing:
+        distribution_type: app_store           # Codemagic auto-creates cert + provisioning profile
+        bundle_identifier: com.blockview.app
+      vars:
+        BUNDLE_ID: "com.blockview.app"
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+      node: 20
+      xcode: 16.2                              # App Store requires the iOS 18 SDK (Xcode 16)
+      cocoapods: default
+    scripts:
+      - name: Install npm dependencies
+        script: npm ci
+      - name: Capacitor sync iOS (copies www + plugins into the Xcode project)
+        script: npx cap sync ios
+      - name: Generate iOS app icons
+        script: npx capacitor-assets generate --ios || true
+      - name: Pod install
+        script: cd ios/App && pod install
+      - name: Set build number from Codemagic build index
+        script: |
+          cd ios/App
+          agvtool new-version -all $(($BUILD_NUMBER + 1))
+      - name: Fetch signing files
+        script: xcode-project use-profiles
+      - name: Build .ipa
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        # Optional: auto-add the build to a TestFlight group once processed.
+        # beta_groups:
+        #   - "Internal Testers"
