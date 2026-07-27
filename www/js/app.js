@@ -562,7 +562,7 @@ function addRailNetwork(before) {
 let heightPassPending = false;
 function matchBuildingHeights() {
   if (!map.getLayer || !map.getLayer("city-3d")) return;
-  let changed = false, budget = 40, moreOnScreen = false;
+  let changed = false, budget = 12, moreOnScreen = false;   // small pass = no visible hitch after a pan
   const cw = map.getCanvas().width, ch = map.getCanvas().height;
   for (let i = 0; i < BUILDINGS.length; i++) {
     const b = BUILDINGS[i];
@@ -678,7 +678,7 @@ function addCustomLayers() {
   try { map.setLight({ anchor: "map", position: [1.5, 210, 0], color: "#ffffff", intensity: 0.32 }); } catch (e) {}
   // minzoom: with ~1000+ buildings, rendering every label at city overview meant
   // heavy per-frame label collision. They're only readable up close anyway.
-  map.addLayer({ id: "bv-labels", type: "symbol", source: "blockview", minzoom: 14,
+  map.addLayer({ id: "bv-labels", type: "symbol", source: "blockview", minzoom: 15,
     layout: { "text-field": ["get", "label"], "text-size": 12, "text-offset": [0, -0.6], "text-anchor": "bottom", "text-font": ["Noto Sans Regular"] },
     paint: labelPaint() });
 
@@ -742,10 +742,21 @@ map.on("load", () => {
     });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") setOpen(false); });
   })();
-  // interactions (query-based so they survive style switches)
+  // interactions (query-based so they survive style switches).
+  // The hover cursor used to run queryRenderedFeatures on EVERY mousemove — with
+  // ~1000+ buildings that fired constantly while dragging and made panning janky.
+  // Skip it entirely while the map is moving, and otherwise cap it to one query
+  // per animation frame.
+  let hoverRaf = 0, hoverPt = null;
   map.on("mousemove", (e) => {
-    const hit = map.queryRenderedFeatures(e.point, { layers: ["bv-buildings"] });
-    map.getCanvas().style.cursor = hit.length ? "pointer" : "";
+    if (map.isMoving()) { map.getCanvas().style.cursor = ""; return; }
+    hoverPt = e.point;
+    if (hoverRaf) return;
+    hoverRaf = requestAnimationFrame(() => {
+      hoverRaf = 0;
+      const hit = map.queryRenderedFeatures(hoverPt, { layers: ["bv-buildings"] });
+      map.getCanvas().style.cursor = hit.length ? "pointer" : "";
+    });
   });
   map.on("click", (e) => {
     const hit = map.queryRenderedFeatures(e.point, { layers: ["bv-buildings"] });
