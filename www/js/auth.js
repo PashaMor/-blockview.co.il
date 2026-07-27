@@ -58,6 +58,7 @@
   /* ---------- public API used by app.js ---------- */
   window.BVAuth = {
     isLoggedIn: () => !!state.user,
+    userId: () => state.user && state.user.id,
     plan: () => state.plan,
     canAdd(kind, count) { return count < (limits[state.plan] || limits.free)[kind]; },
     async addFav(id) {
@@ -315,9 +316,10 @@
   $("upgrade-close").addEventListener("click", () => (upModal.hidden = true));
   $("upgrade-go").addEventListener("click", () => {
     const sel = document.querySelector(".pro-plan.on");
-    const price = sel && sel.dataset.plan === "month" ? "₪7.90 לחודש" : "₪54.90 לשנה";
+    const period = sel && sel.dataset.plan === "month" ? "month" : "year";
     upModal.hidden = true;
-    if (window.bvToast) window.bvToast(`תשלום (${price}) יתווסף בקרוב 💳`);
+    if (window.BVBilling) window.BVBilling.upgrade(period);
+    else if (window.bvToast) window.bvToast("התשלום ייפתח בקרוב 💳");
   });
 
   /* ---------- clean up after a social redirect ---------- */

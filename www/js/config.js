@@ -31,11 +31,29 @@ window.BLOCKVIEW_CONFIG = {
   /* Version of the Terms / Privacy Policy the user is asked to accept. Keep it
    * equal to the "last updated" date in www/legal/lang/*.js — bumping it here is
    * what marks older acceptances as out of date. */
-  LEGAL_VERSION: "2026-07-20",
+  LEGAL_VERSION: "2026-07-27",
 
   // Free-tier limits (keep in sync with supabase/schema.sql).
   LIMITS: {
     free: { favorites: 3, follows: 0 },
     pro:  { favorites: Infinity, follows: Infinity },
+  },
+
+  /* RevenueCat — powers the Pro subscription. All values here are PUBLIC (SDK
+   * keys / hosted links); the secret key + webhook secret live in Vercel env only.
+   * Purchases sync to profiles.plan via /api/revenuecat-webhook. Fill these from
+   * the RevenueCat dashboard (see supabase/43_revenuecat.sql header + setup notes):
+   *   ENTITLEMENT   the entitlement id that unlocks Pro (must match the webhook).
+   *   ANDROID_KEY   RevenueCat public SDK key for Google Play ("goog_…"), used by
+   *                 the @revenuecat/purchases-capacitor plugin in the app.
+   *   WEB_CHECKOUT  RevenueCat Web Billing purchase link. A string, or
+   *                 { month, year } for a per-period link. We append
+   *                 ?app_user_id=<supabase uid> so the webhook maps the buyer.
+   *   PRODUCTS      RevenueCat package/product identifiers per period (Android). */
+  REVENUECAT: {
+    ENTITLEMENT: "pro",
+    ANDROID_KEY: "",
+    WEB_CHECKOUT: "",
+    PRODUCTS: { month: "", year: "" },
   },
 };

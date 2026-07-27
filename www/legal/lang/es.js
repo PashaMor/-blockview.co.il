@@ -1,7 +1,7 @@
 /* BlockView — legal content: Spanish. */
 window.BVLEGAL = window.BVLEGAL || {};
 window.BVLEGAL.es = {
-  updated: "20 de julio de 2026",
+  updated: "27 de julio de 2026",
   ui: {
     back: "← Volver al sitio",
     toc: "Contenido",
@@ -12,12 +12,12 @@ window.BVLEGAL.es = {
   /* ============================================================ TERMS ==== */
   terms: {
     title: "Términos del Servicio",
-    intro: "Le damos la bienvenida a BlockView, un mapa inmobiliario en 3D en el que usted toca un edificio y ve las viviendas que contiene. Los presentes Términos constituyen un acuerdo vinculante entre usted y BlockView (\"nosotros\", \"el Servicio\") y se aplican al sitio web blockview.co.il, a la aplicación móvil, al CRM para agentes y a cualquier servicio relacionado. El uso del Servicio implica la aceptación de estos Términos. Si no está de acuerdo con ellos, le rogamos que no utilice el Servicio.",
+    intro: "Le damos la bienvenida a BlockView, un mapa inmobiliario en 3D en el que usted toca un edificio y ve las viviendas que contiene. Los presentes Términos constituyen un acuerdo vinculante entre usted y BlockView, operada y gestionada por UpliftB LLC (n.º de sociedad 0008077027) y Mor Media (n.º de sociedad 309485167) (\"nosotros\", \"el Servicio\"), y se aplican al sitio web blockview.co.il, a la aplicación móvil, al CRM para agentes y a cualquier servicio relacionado. El uso del Servicio implica la aceptación de estos Términos. Si no está de acuerdo con ellos, le rogamos que no utilice el Servicio.",
     sections: [
       {
         h: "Generalidades",
         p: [
-          "El Servicio es operado por BlockView. Le rogamos que lea estos Términos junto con nuestra Política de Privacidad, que forma parte integrante de los mismos.",
+          "El Servicio es operado por BlockView, gestionada por UpliftB LLC (n.º de sociedad 0008077027) y Mor Media (n.º de sociedad 309485167). Le rogamos que lea estos Términos junto con nuestra Política de Privacidad, que forma parte integrante de los mismos.",
           "El Servicio se encuentra en desarrollo activo. Es posible que encuentre errores, cambios en la interfaz, datos de demostración o información incompleta. Podemos modificar, suspender o descontinuar cualquier parte del Servicio en cualquier momento.",
         ],
       },
@@ -43,6 +43,7 @@ window.BVLEGAL.es = {
           "BlockView es una plataforma de información: mostramos anuncios publicados por propietarios y por agentes inmobiliarios. No somos parte de ninguna transacción, no intermediamos operaciones, no representamos a ninguna de las partes y no prestamos asesoramiento jurídico, fiscal, pericial ni financiero.",
           "Todo contacto, negociación, visita, pago o contrato se realiza exclusivamente entre las partes implicadas. Recomendamos encarecidamente verificar cada inmueble de forma independiente, incluidos los asientos del registro de la propiedad, los derechos de edificación, el estado físico y el precio.",
           "No extraemos anuncios de otros sitios web. Cada anuncio es enviado directamente por la persona que lo publica.",
+          "No obstante, podemos en cualquier momento añadir servicios adicionales en los que sí seamos parte de la transacción, a diferencia de la situación actual. En tal caso, estos Términos se actualizarán en consecuencia y se enviará un correo electrónico a todos los usuarios informándoles del cambio y de los nuevos Términos.",
         ],
       },
       {
@@ -59,6 +60,7 @@ window.BVLEGAL.es = {
           "El acceso como agente se concede únicamente después de que usted presente una solicitud y un administrador la apruebe. Podemos solicitar los datos de su agencia y su número de licencia de agente, y podemos rechazar una solicitud o revocar el acceso a nuestra discreción.",
           "La intermediación inmobiliaria en Israel requiere una licencia conforme a la Ley de Agentes Inmobiliarios, 5756-1996. Disponer de una licencia válida y cumplir la legislación aplicable es responsabilidad exclusiva del agente.",
           "El agente solo puede publicar y gestionar los inmuebles que esté autorizado a comercializar, y debe retirar los anuncios que hayan dejado de ser vigentes.",
+          "El sitio web y la aplicación también disponen de un servicio de comentarios (Feedback) que permite a los usuarios informar de un anuncio que ha dejado de ser vigente. Al recibir dicho aviso, se envía un correo electrónico a quien publicó el anuncio pidiéndole que confirme que, en efecto, ya no es vigente. Si no responde, se entenderá como su consentimiento para que congelemos o eliminemos el anuncio de la base de datos de anuncios. Podemos hacerlo para preservar la calidad de la base de datos y la vigencia de su información.",
         ],
       },
       {
@@ -71,9 +73,10 @@ window.BVLEGAL.es = {
       {
         h: "Contenido que usted publica y licencia que otorga",
         p: [
-          "El contenido que usted publica (textos, fotografías, enlaces a visitas virtuales) sigue siendo suyo. Al publicarlo, usted nos otorga una licencia no exclusiva, mundial y libre de regalías para mostrarlo, almacenarlo, copiarlo, redimensionarlo y adaptarlo con el fin de operar y promocionar el Servicio.",
-          "Usted confirma que es titular de los derechos sobre el contenido o que está autorizado a utilizarlo, y que este no vulnera derechos de autor, marcas, la privacidad ni ningún otro derecho.",
-          "No publique fotografías de personas sin su consentimiento ni contenido ajeno al inmueble que se está publicando.",
+          "El contenido que usted publica (anuncios, textos, fotografías, enlaces a visitas virtuales) sigue siendo suyo. No obstante, al publicarlo, usted nos otorga una licencia no exclusiva, mundial y libre de regalías para utilizarlo —incluidos mostrarlo, almacenarlo, copiarlo, redimensionarlo, adaptarlo, distribuirlo y reutilizarlo— con fines operativos, de marketing y publicitarios, para operar y promocionar el Servicio.",
+          "Usted confirma que es titular de los derechos sobre el contenido o que está autorizado a utilizarlo, y que este no vulnera derechos de autor, marcas, la privacidad ni ningún otro derecho. No publique fotografías de personas sin su consentimiento ni contenido ajeno al inmueble que se está publicando.",
+          "Podemos conservar el contenido en nuestros sistemas incluso después de que el anuncio haya sido retirado, con fines operativos o legales. Además, algunos servicios o secciones pueden estar operados por terceros, por lo que el contenido que usted publique podría transmitírseles o mostrarse en ellos.",
+          "Usted es el único responsable de la veracidad del contenido. No nos comprometemos a comprobar ni verificar la información, y no estamos obligados a pagarle por el uso del contenido. Cualquier reclamación o problema legal derivado del contenido es de su exclusiva responsabilidad.",
         ],
       },
       {
@@ -111,8 +114,8 @@ window.BVLEGAL.es = {
       {
         h: "Mapas y contenido de terceros",
         p: [
-          "Los mapas base y los datos de los edificios se muestran a través de servicios cartográficos externos basados en OpenStreetMap y sus colaboradores. Las posiciones, alturas y contornos de los edificios son aproximaciones y no constituyen un levantamiento geodésico ni un plano vinculante.",
-          "Los enlaces a sitios externos (por ejemplo, visitas virtuales) no son responsabilidad nuestra.",
+          "Los mapas base y los datos de los edificios se muestran a través de servicios de cartografía y contenidos proporcionados por terceros. Las posiciones, alturas y contornos de los edificios son solo aproximaciones y no constituyen un levantamiento geodésico ni un plano vinculante.",
+          "Los enlaces a sitios o servicios externos (por ejemplo, visitas virtuales) pueden aparecer dentro del Servicio y no son responsabilidad nuestra. Todo uso de ellos queda sujeto a los términos de los terceros que los proporcionan.",
         ],
       },
       {
@@ -167,7 +170,7 @@ window.BVLEGAL.es = {
       {
         h: "Quiénes somos",
         p: [
-          "BlockView opera un mapa inmobiliario en 3D en el que las personas encuentran viviendas en venta y en alquiler. A efectos de la normativa de privacidad, somos el responsable del tratamiento de la información que se describe a continuación.",
+          "BlockView, operada y gestionada por UpliftB LLC (n.º de sociedad 0008077027) y Mor Media (n.º de sociedad 309485167), opera un mapa inmobiliario en 3D en el que las personas encuentran viviendas en venta y en alquiler. A efectos de la normativa de privacidad, somos el responsable del tratamiento de la información que se describe a continuación.",
           "Consultas sobre privacidad: privacy@blockview.co.il",
         ],
       },
@@ -206,9 +209,9 @@ window.BVLEGAL.es = {
         h: "Con quién compartimos la información",
         p: ["La información se comunica únicamente a los siguientes destinatarios:"],
         ul: [
-          "Proveedores de infraestructura: servicios de almacenamiento, base de datos y autenticación (Supabase) y alojamiento del sitio web (Vercel), que actúan por cuenta nuestra y están obligados a proteger los datos;",
-          "Servicios cartográficos: la carga del mapa envía una solicitud al proveedor de teselas cartográficas, que puede ver su dirección IP. El contenido del mapa se basa en OpenStreetMap y sus colaboradores;",
-          "Google o Apple: únicamente si ha optado por iniciar sesión con ellos;",
+          "Proveedores de infraestructura: servicios de almacenamiento, base de datos, autenticación y alojamiento del sitio web, que actúan por cuenta nuestra y están obligados a proteger los datos;",
+          "Servicios cartográficos: la carga del mapa envía una solicitud al proveedor de teselas cartográficas, que puede ver su dirección IP. Los datos del mapa son solo una aproximación y no constituyen una medición vinculante;",
+          "Servicios de inicio de sesión externos: únicamente si ha optado por iniciar sesión con ellos;",
           "Quien publica el anuncio: recibe los datos de la consulta que usted le ha enviado;",
           "Autoridades: cuando así lo exija la ley o una orden judicial, o para proteger nuestros derechos y la seguridad de los usuarios.",
         ],

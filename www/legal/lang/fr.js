@@ -1,7 +1,7 @@
 /* BlockView — legal content: French. */
 window.BVLEGAL = window.BVLEGAL || {};
 window.BVLEGAL.fr = {
-  updated: "20 juillet 2026",
+  updated: "27 juillet 2026",
   ui: {
     back: "← Retour au site",
     toc: "Sommaire",
@@ -12,12 +12,12 @@ window.BVLEGAL.fr = {
   /* ============================================================ TERMS ==== */
   terms: {
     title: "Conditions générales d'utilisation",
-    intro: "Bienvenue sur BlockView — une carte immobilière en 3D où il vous suffit de toucher un bâtiment pour découvrir les appartements qu'il abrite. Les présentes Conditions constituent un accord contraignant entre vous et BlockView (« nous », « le Service ») et couvrent le site blockview.co.il, l'application mobile, le CRM destiné aux agents ainsi que tout service connexe. L'utilisation du Service vaut acceptation des présentes Conditions. Si vous n'y adhérez pas, nous vous invitons à ne pas utiliser le Service.",
+    intro: "Bienvenue sur BlockView — une carte immobilière en 3D où il vous suffit de toucher un bâtiment pour découvrir les appartements qu'il abrite. Les présentes Conditions constituent un accord contraignant entre vous et BlockView, exploité et géré par UpliftB LLC (n° de société 0008077027) et Mor Media (n° de société 309485167) (« nous », « le Service »), et couvrent le site blockview.co.il, l'application mobile, le CRM destiné aux agents ainsi que tout service connexe. L'utilisation du Service vaut acceptation des présentes Conditions. Si vous n'y adhérez pas, nous vous invitons à ne pas utiliser le Service.",
     sections: [
       {
         h: "Généralités",
         p: [
-          "Le Service est exploité par BlockView. Nous vous invitons à lire les présentes Conditions conjointement avec notre Politique de confidentialité, qui en fait partie intégrante.",
+          "Le Service est exploité par BlockView, gérée par UpliftB LLC (n° de société 0008077027) et Mor Media (n° de société 309485167). Nous vous invitons à lire les présentes Conditions conjointement avec notre Politique de confidentialité, qui en fait partie intégrante.",
           "Le Service fait l'objet d'un développement continu. Vous pouvez rencontrer des anomalies, des modifications d'interface, des données de démonstration ou des informations incomplètes. Nous pouvons modifier, suspendre ou interrompre toute partie du Service à tout moment.",
         ],
       },
@@ -43,6 +43,7 @@ window.BVLEGAL.fr = {
           "BlockView est une plateforme d'information : nous affichons des annonces publiées par des propriétaires et des agents immobiliers. Nous ne sommes partie à aucune transaction, nous n'exerçons aucune activité d'intermédiation, nous ne représentons aucune des parties et nous ne fournissons aucun conseil juridique, fiscal, d'expertise ou financier.",
           "Toute prise de contact, négociation, visite, paiement ou contrat relève exclusivement des parties concernées. Nous vous recommandons vivement de vérifier chaque bien de manière indépendante, y compris les inscriptions au registre foncier, les droits à construire, l'état physique et le prix.",
           "Nous n'extrayons aucune annonce d'autres sites web. Chaque annonce est déposée directement par la personne qui la publie.",
+          "Cela étant, nous pouvons à tout moment ajouter des services supplémentaires dans le cadre desquels nous deviendrions partie à la transaction, contrairement à la situation actuelle. Le cas échéant, les présentes Conditions seront mises à jour en conséquence et un e-mail sera envoyé à l'ensemble des utilisateurs pour les informer du changement et des nouvelles Conditions.",
         ],
       },
       {
@@ -59,6 +60,7 @@ window.BVLEGAL.fr = {
           "L'accès agent n'est accordé qu'après le dépôt d'une demande et son approbation par un administrateur. Nous pouvons vous demander les coordonnées de votre agence et votre numéro de licence d'agent immobilier, et nous pouvons refuser une demande ou révoquer l'accès à notre discrétion.",
           "L'intermédiation immobilière en Israël requiert une licence au titre de la loi sur les agents immobiliers, 5756-1996. La détention d'une licence valide et le respect de la législation applicable relèvent de la seule responsabilité de l'agent.",
           "Un agent ne peut publier et gérer que les biens qu'il est autorisé à commercialiser, et doit retirer les annonces qui ne sont plus d'actualité.",
+          "Le site et l'application proposent également un service de signalement (Feedback) permettant aux utilisateurs de signaler une annonce qui n'est plus d'actualité. À la réception d'un tel signalement, un e-mail est envoyé à l'annonceur lui demandant de confirmer que l'annonce n'est effectivement plus d'actualité. En l'absence de réponse, cela vaut consentement de sa part à ce que nous gelions ou supprimions l'annonce de la base de données. Nous pouvons le faire afin de préserver la qualité de la base et la pertinence des informations qu'elle contient.",
         ],
       },
       {
@@ -71,9 +73,10 @@ window.BVLEGAL.fr = {
       {
         h: "Contenus que vous mettez en ligne et licence que vous concédez",
         p: [
-          "Les contenus que vous mettez en ligne (textes, photos, liens de visite virtuelle) vous appartiennent. En les téléversant, vous nous concédez une licence non exclusive, mondiale et gratuite pour les afficher, les stocker, les copier, les redimensionner et les adapter aux fins d'exploitation et de promotion du Service.",
-          "Vous confirmez détenir les droits sur ces contenus ou être autorisé à les utiliser, et qu'ils ne portent atteinte à aucun droit d'auteur, marque, droit à la vie privée ou autre droit.",
-          "Ne mettez pas en ligne de photos de personnes sans leur consentement et ne publiez pas de contenus sans rapport avec le bien concerné.",
+          "Les contenus que vous mettez en ligne (annonces, textes, photos, liens de visite virtuelle) vous appartiennent. Toutefois, en les téléversant, vous nous concédez une licence non exclusive, mondiale et gratuite pour les utiliser — notamment les afficher, les stocker, les copier, les redimensionner, les adapter, les diffuser et les réutiliser — à des fins opérationnelles, marketing et publicitaires, aux fins d'exploitation et de promotion du Service.",
+          "Vous confirmez détenir les droits sur ces contenus ou être autorisé à les utiliser, et qu'ils ne portent atteinte à aucun droit d'auteur, marque, droit à la vie privée ou autre droit. Ne mettez pas en ligne de photos de personnes sans leur consentement et ne publiez pas de contenus sans rapport avec le bien concerné.",
+          "Nous pouvons conserver les contenus dans nos systèmes même après le retrait de l'annonce, à des fins opérationnelles ou juridiques. En outre, certains services ou rubriques peuvent être exploités par des tiers ; les contenus que vous mettez en ligne peuvent donc leur être transmis ou être affichés chez eux.",
+          "Vous êtes seul responsable de l'exactitude des contenus. Nous ne nous engageons pas à contrôler ni à vérifier les informations, et nous ne sommes pas tenus de vous rémunérer pour l'utilisation des contenus. Toute réclamation ou tout problème juridique découlant des contenus relève de votre seule responsabilité.",
         ],
       },
       {
@@ -111,8 +114,8 @@ window.BVLEGAL.fr = {
       {
         h: "Cartographie et contenus de tiers",
         p: [
-          "Les fonds de carte et les données de bâtiments sont affichés au moyen de services cartographiques externes reposant sur OpenStreetMap et ses contributeurs. Les emplacements, hauteurs et contours des bâtiments sont des approximations et ne constituent ni un levé géodésique ni un plan opposable.",
-          "Les liens vers des sites externes (par exemple des visites virtuelles) n'engagent pas notre responsabilité.",
+          "Les fonds de carte et les données de bâtiments sont affichés au moyen de services de cartographie et de contenus fournis par des tiers. Les emplacements, hauteurs et contours des bâtiments ne sont que des approximations et ne constituent ni un levé géodésique ni un plan opposable.",
+          "Des liens vers des sites ou services externes (par exemple des visites virtuelles) peuvent apparaître au sein du Service et n'engagent pas notre responsabilité. Toute utilisation de ceux-ci est soumise aux conditions des tiers qui les fournissent.",
         ],
       },
       {
@@ -167,7 +170,7 @@ window.BVLEGAL.fr = {
       {
         h: "Qui nous sommes",
         p: [
-          "BlockView exploite une carte immobilière en 3D permettant de trouver des appartements à vendre et à louer. Au sens du droit de la protection des données, nous sommes le responsable du traitement des informations décrites ci-dessous.",
+          "BlockView, exploitée et gérée par UpliftB LLC (n° de société 0008077027) et Mor Media (n° de société 309485167), exploite une carte immobilière en 3D permettant de trouver des appartements à vendre et à louer. Au sens du droit de la protection des données, nous sommes le responsable du traitement des informations décrites ci-dessous.",
           "Questions relatives à la confidentialité : privacy@blockview.co.il",
         ],
       },
@@ -206,9 +209,9 @@ window.BVLEGAL.fr = {
         h: "Avec qui nous partageons les informations",
         p: ["Les informations ne sont divulguées qu'aux destinataires suivants :"],
         ul: [
-          "Prestataires d'infrastructure — services de stockage, de base de données et d'authentification (Supabase) et hébergement du site (Vercel), qui agissent pour notre compte et sont tenus de protéger les données ;",
-          "Services cartographiques — le chargement de la carte envoie une requête au fournisseur de tuiles cartographiques, qui peut voir votre adresse IP. Le contenu cartographique repose sur OpenStreetMap et ses contributeurs ;",
-          "Google ou Apple — uniquement si vous avez choisi de vous connecter par leur intermédiaire ;",
+          "Prestataires d'infrastructure — services de stockage, de base de données, d'authentification et d'hébergement du site, qui agissent pour notre compte et sont tenus de protéger les données ;",
+          "Services cartographiques — le chargement de la carte envoie une requête au fournisseur de tuiles cartographiques, qui peut voir votre adresse IP. Les données cartographiques ne sont qu'une approximation et ne constituent pas une mesure opposable ;",
+          "Services de connexion externes — uniquement si vous avez choisi de vous connecter par leur intermédiaire ;",
           "L'annonceur — reçoit les informations de la demande que vous lui avez adressée ;",
           "Les autorités — lorsque la loi ou une décision de justice l'exige, ou pour protéger nos droits et la sécurité des utilisateurs.",
         ],

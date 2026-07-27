@@ -1,7 +1,7 @@
 /* BlockView — legal content: English. */
 window.BVLEGAL = window.BVLEGAL || {};
 window.BVLEGAL.en = {
-  updated: "20 July 2026",
+  updated: "27 July 2026",
   ui: {
     back: "← Back to the site",
     toc: "Contents",
@@ -12,12 +12,12 @@ window.BVLEGAL.en = {
   /* ============================================================ TERMS ==== */
   terms: {
     title: "Terms of Service",
-    intro: "Welcome to BlockView — a 3D real-estate map where you tap a building and see the apartments inside it. These Terms are a binding agreement between you and BlockView (\"we\", \"the Service\"), and they cover the blockview.co.il website, the mobile app, the agent CRM and any related service. Using the Service means you accept these Terms. If you do not agree, please do not use the Service.",
+    intro: "Welcome to BlockView — a 3D real-estate map where you tap a building and see the apartments inside it. These Terms are a binding agreement between you and BlockView, operated and managed by UpliftB LLC (Company No. 0008077027) and Mor Media (Company No. 309485167) (\"we\", \"the Service\"), and they cover the blockview.co.il website, the mobile app, the agent CRM and any related service. Using the Service means you accept these Terms. If you do not agree, please do not use the Service.",
     sections: [
       {
         h: "General",
         p: [
-          "The Service is operated by BlockView. Please read these Terms together with our Privacy Policy, which forms an integral part of them.",
+          "The Service is operated by BlockView, managed by UpliftB LLC (Company No. 0008077027) and Mor Media (Company No. 309485167). Please read these Terms together with our Privacy Policy, which forms an integral part of them.",
           "The Service is under active development. You may encounter bugs, interface changes, demonstration data or incomplete information. We may change, suspend or discontinue any part of the Service at any time.",
         ],
       },
@@ -43,6 +43,7 @@ window.BVLEGAL.en = {
           "BlockView is an information platform: we display listings published by property owners and real-estate agents. We are not a party to any transaction, we do not broker deals, we do not represent any side, and we do not provide legal, tax, appraisal or financial advice.",
           "Any contact, negotiation, viewing, payment or contract is solely between the parties involved. We strongly recommend verifying every property independently, including land-registry records, building rights, physical condition and price.",
           "We do not scrape listings from other websites. Every listing is submitted directly by the person publishing it.",
+          "That said, we may at any time add further services in which we do become a party to the transaction, unlike today. If that happens, these Terms will be updated accordingly and an email will be sent to all users notifying them of the change and of the new Terms.",
         ],
       },
       {
@@ -59,6 +60,7 @@ window.BVLEGAL.en = {
           "Agent access is granted only after you submit an application and an administrator approves it. We may ask for your brokerage details and broker licence number, and we may refuse an application or revoke access at our discretion.",
           "Real-estate brokerage in Israel requires a licence under the Real Estate Brokers Law, 5756-1996. Holding a valid licence and complying with applicable law is the agent's sole responsibility.",
           "An agent may publish and manage only properties they are authorised to market, and must remove listings that are no longer relevant.",
+          "The website and app also run a Feedback service that lets users report a listing that is no longer relevant. When we receive such a report, an email is sent to the listing's publisher asking them to confirm it is indeed no longer relevant. If the publisher does not respond, this is treated as their consent for us to freeze or delete the listing from the listings database. We may do so to keep the database accurate and its information relevant.",
         ],
       },
       {
@@ -71,9 +73,10 @@ window.BVLEGAL.en = {
       {
         h: "Content you upload and the licence you grant",
         p: [
-          "Content you upload (text, photos, virtual-tour links) remains yours. By uploading it you grant us a non-exclusive, worldwide, royalty-free licence to display, store, copy, resize and adapt it for the purpose of operating and promoting the Service.",
-          "You confirm that you own the rights to the content or are permitted to use it, and that it does not infringe copyright, trademarks, privacy or any other right.",
-          "Do not upload photos of people without their consent, and do not upload content unrelated to the property being published.",
+          "Content you upload (listings, text, photos, virtual-tour links) remains yours. However, by uploading it you grant us a non-exclusive, worldwide, royalty-free licence to use it — including to display, store, copy, resize, adapt, distribute and re-use it — for operational, marketing and promotional purposes, in order to operate and promote the Service.",
+          "You confirm that you own the rights to the content or are permitted to use it, and that it does not infringe copyright, trademarks, privacy or any other right. Do not upload photos of people without their consent, and do not upload content unrelated to the property being published.",
+          "We may retain the content in our systems even after the listing has been removed, for operational or legal purposes. In addition, some services or sections may be operated by third parties, so content you upload may be transferred to or displayed by them.",
+          "You are solely responsible for the accuracy of the content. We do not undertake to check or verify the information, and we are not required to pay you for the use of the content. Any claim or legal issue arising from the content is your sole responsibility.",
         ],
       },
       {
@@ -111,8 +114,8 @@ window.BVLEGAL.en = {
       {
         h: "Maps and third-party content",
         p: [
-          "Base maps and building data are displayed through external mapping services based on OpenStreetMap and its contributors. Building positions, heights and outlines are approximations and are not a geodetic survey or a binding plan.",
-          "Links to external sites (for example virtual tours) are not our responsibility.",
+          "Base maps and building data are displayed through mapping services and content provided by third parties. Building positions, heights and outlines are approximations only and are not a geodetic survey or a binding plan.",
+          "Links to external sites or services (for example virtual tours) may appear within the Service and are not our responsibility. Any use of them is subject to the terms of the third parties that provide them.",
         ],
       },
       {
@@ -167,7 +170,7 @@ window.BVLEGAL.en = {
       {
         h: "Who we are",
         p: [
-          "BlockView operates a 3D real-estate map where people find apartments for sale and for rent. For the purposes of privacy law we are the controller of the information described below.",
+          "BlockView, operated and managed by UpliftB LLC (Company No. 0008077027) and Mor Media (Company No. 309485167), runs a 3D real-estate map where people find apartments for sale and for rent. For the purposes of privacy law we are the controller of the information described below.",
           "Privacy questions: privacy@blockview.co.il",
         ],
       },
@@ -206,9 +209,9 @@ window.BVLEGAL.en = {
         h: "Who we share information with",
         p: ["Information is disclosed only to the following:"],
         ul: [
-          "Infrastructure providers — storage, database and authentication services (Supabase) and website hosting (Vercel), which act on our behalf and are bound to protect the data;",
-          "Map services — loading the map sends a request to the map-tile provider, which may see your IP address. Map content is based on OpenStreetMap and its contributors;",
-          "Google or Apple — only if you chose to sign in with them;",
+          "Infrastructure providers — storage, database, authentication and website-hosting services, which act on our behalf and are bound to protect the data;",
+          "Map services — loading the map sends a request to the map-tile provider, which may see your IP address. Map data is an approximation only and is not a binding measurement;",
+          "External sign-in services — only if you chose to sign in with them;",
           "The listing publisher — receives the enquiry details you sent them;",
           "Authorities — where required by law, court order, or to protect our rights and the safety of users.",
         ],
