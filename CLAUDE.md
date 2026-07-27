@@ -112,7 +112,7 @@ capacitor.config.json  server.url points at the hosted site
   (`Capacitor.Plugins.Browser`, falling back to `_system`) — navigating the
   WebView to another host replaces the map with no way back.
 - **Roles:** `user` | `agent` | `admin`. Agents use the CRM; admins use the console.
-- **Plans:** free = 3 saves / 0 follows (following is Pro-only). Pro = ₪7.90/mo or ₪54.90/yr.
+- **Plans:** free = 3 saves / 0 follows (following is Pro-only). Pro = ₪2.99/mo or ₪16.99/yr.
 - **2FA:** mandatory for admins (enforced via `aal2` in the DB), optional for agents.
 - **Languages:** HE (default), EN, ES, AR, FR, RU. HE/AR are RTL. Hebrew-first UI.
 - New listings land in `pending` and only appear on the map once an admin approves.
