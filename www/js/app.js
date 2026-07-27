@@ -567,6 +567,11 @@ function matchBuildingHeights() {
   for (let i = 0; i < BUILDINGS.length; i++) {
     const b = BUILDINGS[i];
     if (b.heightMatched || !isFinite(b.lat) || !isFinite(b.lng)) continue;
+    // A building with a real footprint already sits on the right spot with a
+    // sensible height; height-matching it means a queryRenderedFeatures + a full
+    // setData re-tile per building as you pan — the thing that made dragging lag.
+    // Only the fallback boxes (no footprint) actually need it.
+    if (b.footprint) { b.heightMatched = true; continue; }
     var pt;
     try { pt = map.project([b.lng, b.lat]); } catch (e) { continue; }
     if (pt.x < 0 || pt.y < 0 || pt.x > cw || pt.y > ch) continue;   // off screen — skip (cheap)
