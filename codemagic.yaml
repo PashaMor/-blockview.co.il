@@ -17,7 +17,7 @@ workflows:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
       node: 20
-      xcode: 16.2                              # App Store requires the iOS 18 SDK (Xcode 16)
+      xcode: latest                            # Apple now requires the iOS 26 SDK (Xcode 26+)
       cocoapods: default
     scripts:
       - name: Install npm dependencies
