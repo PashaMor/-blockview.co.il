@@ -850,3 +850,12 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .btn-report { font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; padding: 10px 14px;
   border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text-soft); }
 .btn-report:hover { border-color: #C0392B; color: #C0392B; }
+
+/* ---- "מה יש בנכס" — property features grid ---- */
+.feat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin: 8px 0 4px; }
+.feat { display: flex; align-items: center; gap: 8px; padding: 9px 11px; border: 1px solid var(--line);
+  border-radius: 11px; font-size: 13.5px; color: var(--muted); background: var(--surface); opacity: .55; }
+.feat.on { color: var(--ink); opacity: 1; font-weight: 600; border-color: var(--line); background: var(--surface-2); }
+.feat-ic { font-size: 16px; line-height: 1; flex: none; }
+.feat.on .feat-ic { filter: none; }
+.feat:not(.on) .feat-ic { filter: grayscale(1); }

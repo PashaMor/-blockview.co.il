@@ -743,6 +743,7 @@
     $("f-elevator").checked = !!(l && l.elevator);
     $("f-balcony").checked = !!(l && l.balcony);
     $("f-yard").checked = !!(l && l.yard);
+    ["safe_room","ac","storage","accessible","bars","solar","renovated"].forEach((k) => { $("f-"+k).checked = !!(l && l[k]); });
     $("f-balcony-size").value = l && l.balcony_size != null ? l.balcony_size : "";
     $("f-yard-size").value = l && l.yard_size != null ? l.yard_size : "";
     syncSizeFields();
@@ -1050,6 +1051,13 @@
         balcony_size: $("f-balcony").checked ? (+$("f-balcony-size").value || null) : null,
         yard: $("f-yard").checked,
         yard_size: $("f-yard").checked ? (+$("f-yard-size").value || null) : null,
+        safe_room: $("f-safe_room").checked,
+        ac: $("f-ac").checked,
+        storage: $("f-storage").checked,
+        accessible: $("f-accessible").checked,
+        bars: $("f-bars").checked,
+        solar: $("f-solar").checked,
+        renovated: $("f-renovated").checked,
       };
       const id = $("f-id").value;
       let listingId = id;

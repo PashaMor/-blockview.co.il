@@ -373,6 +373,8 @@ async function loadLiveData() {
         furnished: !!r.furnished, pets: !!r.pets, parking: !!r.parking, elevator: !!r.elevator,
         balcony: !!r.balcony, balcony_size: r.balcony_size != null ? +r.balcony_size : null,
         yard: !!r.yard, yard_size: r.yard_size != null ? +r.yard_size : null,
+        accessible: !!r.accessible, ac: !!r.ac, bars: !!r.bars, storage: !!r.storage,
+        solar: !!r.solar, renovated: !!r.renovated, safe_room: !!r.safe_room,
         floors_total: r.floors_total != null ? +r.floors_total : null,
         hasWhatsapp: waSet.has(r.id),
         agentId: r.agent_id || null, posterType: r.poster_type || null,
@@ -1049,6 +1051,37 @@ async function renderContacts(lid) {
       b.addEventListener("click", (ev) => { ev.stopPropagation(); if (window.BVAuth) BVAuth.openAuth(); }));
   } catch (e) { box.innerHTML = ""; }
 }
+/* "מה יש בנכס" — the property's features as a grid, present ones highlighted and
+ * absent ones dimmed (like Yad2/Madlan). Single source of truth for the icons and
+ * labels, reused by the publish and CRM forms via FEATURE_KEYS. */
+const LISTING_FEATURES = [
+  { key: "elevator",   icon: "🛗", label: "מעלית" },
+  { key: "parking",    icon: "🅿️", label: "חניה" },
+  { key: "safe_room",  icon: "🛡️", label: "ממ\"ד" },
+  { key: "ac",         icon: "❄️", label: "מיזוג" },
+  { key: "balcony",    icon: "🌇", label: "מרפסת" },
+  { key: "storage",    icon: "📦", label: "מחסן" },
+  { key: "accessible", icon: "♿", label: "גישה לנכים" },
+  { key: "bars",       icon: "🪟", label: "סורגים" },
+  { key: "solar",      icon: "☀️", label: "דוד שמש" },
+  { key: "renovated",  icon: "🛠️", label: "משופצת" },
+  { key: "furnished",  icon: "🛋️", label: "מרוהט" },
+  { key: "yard",       icon: "🌳", label: "חצר" },
+  { key: "pets",       icon: "🐾", label: "מותר בע\"ח" },
+];
+function featuresSection(l) {
+  // furniture & pets are rental concerns — only meaningful when renting
+  const items = LISTING_FEATURES.filter((f) => (l.deal === "sale" ? (f.key !== "furnished" && f.key !== "pets") : true));
+  const cells = items.map((f) => {
+    const on = !!l[f.key];
+    let label = f.label;
+    if (f.key === "balcony" && on && l.balcony_size) label += " · " + l.balcony_size + " מ\"ר";
+    if (f.key === "yard" && on && l.yard_size) label += " · " + l.yard_size + " מ\"ר";
+    return `<div class="feat${on ? " on" : ""}"><span class="feat-ic">${f.icon}</span><span class="feat-tx">${label}</span></div>`;
+  }).join("");
+  return `<h3 class="d-sec">${t("in_property")}</h3><div class="feat-grid">${cells}</div>`;
+}
+
 function specRows(l) {
   const a = attrs(l);
   const rows = [
@@ -1116,6 +1149,7 @@ function openDetail(lid) {
         <div class="spec-grid">${specRows(l).map(([k, v]) => `<div class="spec"><span class="sk">${k}</span><span class="sv">${v}</span></div>`).join("")}</div>
         <h3 class="d-sec">${t("descr")}</h3>
         <ul class="d-desc">${descFor(l).map((d) => `<li>${escHtml(d)}</li>`).join("")}</ul>
+        ${featuresSection(l)}
         <div id="nearby-box"></div>
         <h3 class="d-sec">${t("my_note")}</h3>
         <textarea id="note-input" class="note-input" placeholder="${t("note_ph")}"></textarea>

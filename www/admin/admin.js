@@ -695,6 +695,7 @@
     $("e-yard").checked = !!l.yard;
     $("e-balcony-size").value = l.balcony_size != null ? l.balcony_size : "";
     $("e-yard-size").value = l.yard_size != null ? l.yard_size : "";
+    ["safe_room","ac","storage","accessible","bars","solar","renovated"].forEach((k) => { const el = $("e-"+k); if (el) el.checked = !!l[k]; });
     $("e-tour").value = l.tour_url || "";
     $("e-website").value = l.website_url || "";
     $("e-desc").value = l.description || "";
@@ -730,6 +731,13 @@
       elevator: $("e-elevator").checked,
       balcony: $("e-balcony").checked,
       balcony_size: $("e-balcony").checked ? (numOrNull($("e-balcony-size").value)) : null,
+      safe_room: $("e-safe_room").checked,
+      ac: $("e-ac").checked,
+      storage: $("e-storage").checked,
+      accessible: $("e-accessible").checked,
+      bars: $("e-bars").checked,
+      solar: $("e-solar").checked,
+      renovated: $("e-renovated").checked,
       yard: $("e-yard").checked,
       yard_size: $("e-yard").checked ? (numOrNull($("e-yard-size").value)) : null,
       tour_url: $("e-tour").value.trim() || null,
