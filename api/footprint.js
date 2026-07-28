@@ -192,7 +192,10 @@ function clampHeight(base, ring) {
     });
     minSide = Math.max(4, Math.min((maxx - minx) * 94000, (maxy - miny) * 111000));
   }
-  const cap = Math.min(120, Math.max(15, minSide * 4));   // a building can't be far taller than it is wide
+  // Generous garbage-guard, not a real limit: allow genuine towers (TA reaches
+  // ~240m, and skyscrapers are slim) while still blocking an absurd needle from a
+  // bad tag on a sliver way.
+  const cap = Math.min(300, Math.max(45, minSide * 11));
   return Math.round(Math.max(8, Math.min(base, cap)));
 }
 

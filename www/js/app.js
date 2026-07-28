@@ -287,7 +287,7 @@ async function fetchAllRows(table, select, filter) {
  * Stale-while-revalidate. Kept in IndexedDB because building footprints are too
  * big for localStorage. Degrades to no-cache if IndexedDB is unavailable (old
  * WebView / private mode). Works the same on the website and in the app. */
-var BV_CACHE_VER = 2;   // bump to discard old caches after a data-shape change
+var BV_CACHE_VER = 3;   // bump to discard old caches after a data-shape change
 function idbOpen() {
   return new Promise(function (resolve, reject) {
     try {

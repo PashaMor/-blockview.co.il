@@ -203,7 +203,7 @@
     state.editId = l.id;
     state.editStatus = l.status;
     state.pending = [];
-    state.amen = { furnished: !!l.furnished, pets: !!l.pets, parking: !!l.parking, elevator: !!l.elevator, balcony: !!l.balcony, yard: !!l.yard };
+    state.amen = { furnished: !!l.furnished, pets: !!l.pets, parking: !!l.parking, elevator: !!l.elevator, balcony: !!l.balcony, yard: !!l.yard, safe_room: !!l.safe_room, ac: !!l.ac, storage: !!l.storage, accessible: !!l.accessible, bars: !!l.bars, solar: !!l.solar, renovated: !!l.renovated };
     state.deal = l.deal;
     state.address = null; state.footprint = null;
 
@@ -715,6 +715,13 @@
         parking: !!state.amen.parking,
         elevator: !!state.amen.elevator,
         balcony: !!state.amen.balcony,
+        safe_room: !!state.amen.safe_room,
+        ac: !!state.amen.ac,
+        storage: !!state.amen.storage,
+        accessible: !!state.amen.accessible,
+        bars: !!state.amen.bars,
+        solar: !!state.amen.solar,
+        renovated: !!state.amen.renovated,
         balcony_size: state.amen.balcony ? (+$("p-balcony-size").value || null) : null,
         yard: !!state.amen.yard,
         yard_size: state.amen.yard ? (+$("p-yard-size").value || null) : null,

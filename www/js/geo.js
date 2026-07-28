@@ -246,7 +246,7 @@
       });
       minSide = Math.max(4, Math.min((maxx - minx) * 94000, (maxy - miny) * 111000));
     }
-    var cap = Math.min(120, Math.max(15, minSide * 4));
+    var cap = Math.min(300, Math.max(45, minSide * 11));   // generous: real towers OK, only block absurd sliver spikes
     return Math.round(Math.max(8, Math.min(base, cap)));
   }
   function ringCenter(ring) {
