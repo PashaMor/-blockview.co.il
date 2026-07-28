@@ -212,11 +212,26 @@
   $("na-signout").addEventListener("click", () => supa.auth.signOut());
 
   /* --------------------------------------------------------------- data */
+  // PostgREST caps a response at 1000 rows; the admin must see (and count) every
+  // listing/building, so page through until the table is exhausted. Pass a
+  // factory because a supabase query builder is single-use.
+  async function fetchAllPages(make) {
+    const PAGE = 1000; let from = 0, out = [], firstErr = null;
+    for (;;) {
+      const { data, error } = await make().range(from, from + PAGE - 1);
+      if (error) { firstErr = error; break; }
+      out = out.concat(data || []);
+      if (!data || data.length < PAGE) break;
+      from += PAGE;
+    }
+    return { data: out, error: firstErr };
+  }
+
   async function loadAll() {
     const [L, P, B, Lead, A, AP, AU, REV, VW, OF, OM, RP] = await Promise.all([
-      supa.from("listings").select("*, buildings(name,address), listing_photos(id,path,sort), listing_contacts(name,phone,email,sort)").order("created_at", { ascending: false }),
+      fetchAllPages(() => supa.from("listings").select("*, buildings(name,address), listing_photos(id,path,sort), listing_contacts(name,phone,email,sort)").order("created_at", { ascending: false })),
       supa.from("profiles").select("*").order("created_at", { ascending: false }),
-      supa.from("buildings").select("*").order("name"),
+      fetchAllPages(() => supa.from("buildings").select("*").order("name")),
       supa.from("leads").select("id,agent_id,name,phone,email,message,status,created_at,listing_id,listings(title)").order("created_at", { ascending: false }),
       // 07_agent_applications.sql may not have been run yet — degrade gracefully
       supa.from("agent_applications").select("*").order("created_at", { ascending: false }),
@@ -544,7 +559,9 @@
       return (l.title + " " + (b.name || "") + " " + (b.address || "")).toLowerCase().includes(q);
     });
     $("all-empty").hidden = rows.length > 0;
-    $("all-list").innerHTML = rows.map((l) => listingRow(l, false)).join("");
+    const CAP = 400;   // keep the DOM light; the tab badge shows the real total
+    $("all-list").innerHTML = rows.slice(0, CAP).map((l) => listingRow(l, false)).join("") +
+      (rows.length > CAP ? `<div class="empty">מציג ${CAP} מתוך ${rows.length}. חדד בחיפוש או בסטטוס כדי לראות עוד.</div>` : "");
   }
   $("l-search").addEventListener("input", renderAll);
   $("l-status").addEventListener("change", renderAll);
@@ -1377,14 +1394,18 @@
       return ((b.name || "") + " " + (b.address || "") + " " + (b.city || "") + " " + (b.id || "")).toLowerCase().includes(q);
     });
     $("bl-count").textContent = rows.length;
-    $("buildings-list").innerHTML = rows.map((b) => `
+    // count listings per building ONCE (was O(buildings × listings) inline)
+    const perB = {};
+    state.listings.forEach((l) => { perB[l.building_id] = (perB[l.building_id] || 0) + 1; });
+    const CAP = 400;   // keep the DOM light; the count above is the real total
+    $("buildings-list").innerHTML = rows.slice(0, CAP).map((b) => `
       <div class="row">
         <div class="rthumb">🏢</div>
         <div class="rmain">
           <div class="rtitle">${esc(b.name)}</div>
           <div class="rsub">${esc(b.address)} · ${esc(b.city)}</div>
           <div class="rmeta"><span>${esc(b.id)}</span><span>${esc(b.lng)}, ${esc(b.lat)}</span>
-            <span>${state.listings.filter((l) => l.building_id === b.id).length} נכסים</span>
+            <span>${perB[b.id] || 0} נכסים</span>
             <span class="badge ${b.verified === false ? "pending" : "approved"}">${b.verified === false ? "לא מאומת" : "מאומת"}</span>
             ${b.footprint ? `<span class="badge approved">מתאר אמיתי</span>` : `<span class="badge draft">ללא מתאר</span>`}
             ${b.source && b.source !== "manual" ? `<span>${esc(b.source)}</span>` : ""}</div>
@@ -1394,7 +1415,9 @@
           ${b.verified === false ? `<button class="btn-ok" data-verifyb="${esc(b.id)}">אמת</button>` : ""}
           <button class="btn-bad" data-delb="${esc(b.id)}">מחק</button>
         </div>
-      </div>`).join("") || `<div class="empty">אין בניינים בסינון הזה.</div>`;
+      </div>`).join("") +
+      (rows.length > CAP ? `<div class="empty">מציג ${CAP} מתוך ${rows.length}. חדד בחיפוש או בסינון כדי לראות עוד.</div>` : "")
+      || `<div class="empty">אין בניינים בסינון הזה.</div>`;
   }
   $("bl-search").addEventListener("input", renderBuildings);
   $("bl-filter").addEventListener("change", renderBuildings);
