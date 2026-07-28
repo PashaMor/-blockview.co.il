@@ -40,3 +40,23 @@ BlockView היא דרך חדשה לגלות נדל״ן בישראל — במקו
 - **App icon** — 1024×1024 (Apple pulls it from the build's asset catalog; already generated).
 - **App Privacy** questionnaire (data collection) + Age rating.
 - **Category:** Lifestyle (or Utilities).
+
+---
+
+## App Privacy — Data Collection (GA4 analytics; NO tracking, no ad SDKs)
+Privacy Policy URL (Hebrew, required): https://blockview.co.il/legal/privacy.html
+For every data type: "Used for tracking?" = NO.
+
+| Data type | Collect | Linked to identity | Purpose | Source |
+|---|---|---|---|---|
+| Email Address | Yes | Yes | App Functionality | sign-up |
+| Name | Yes | Yes | App Functionality | account / listings |
+| Phone Number* | Yes* | Yes | App Functionality | publish/lead forms |
+| User ID | Yes | Yes | App Functionality | account id |
+| User Content (photos, text) | Yes | Yes | App Functionality | listings, leads, notes |
+| Product Interaction | Yes | No | Analytics | GA4 |
+| Device ID | Yes | No | Analytics | GA4 client id |
+
+Answer NO / skip: Location, Purchases/Financial (add Purchase History when Pro/RevenueCat goes live),
+Diagnostics/Crash, Health, Contacts, Browsing/Search History, Sensitive Info.
+* Phone Number: include only if a publish/lead form actually collects a phone number.
