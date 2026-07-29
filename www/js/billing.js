@@ -12,6 +12,12 @@
  */
 (function () {
   function cfg() { return (window.BLOCKVIEW_CONFIG && window.BLOCKVIEW_CONFIG.REVENUECAT) || {}; }
+  // The RevenueCat SDK key differs per store; pick by the native platform.
+  function apiKey() {
+    var c = cfg();
+    var plat = (window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform()) || "";
+    return (plat === "ios" ? c.IOS_KEY : c.ANDROID_KEY) || "";
+  }
   function native() { return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Purchases; }
   function uid() { return (window.BVAuth && window.BVAuth.userId && window.BVAuth.userId()) || ""; }
   function toast(m) { if (window.bvToast) window.bvToast(m); }
@@ -19,7 +25,7 @@
   var configured = false;
   function ensureNative(P) {
     if (configured) return Promise.resolve();
-    return P.configure({ apiKey: cfg().ANDROID_KEY }).then(function () {
+    return P.configure({ apiKey: apiKey() }).then(function () {
       var id = uid();
       configured = true;
       if (id) return P.logIn({ appUserID: id })["catch"](function () {});

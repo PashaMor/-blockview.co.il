@@ -44,16 +44,18 @@ window.BLOCKVIEW_CONFIG = {
    * Purchases sync to profiles.plan via /api/revenuecat-webhook. Fill these from
    * the RevenueCat dashboard (see supabase/43_revenuecat.sql header + setup notes):
    *   ENTITLEMENT   the entitlement id that unlocks Pro (must match the webhook).
-   *   ANDROID_KEY   RevenueCat public SDK key for Google Play ("goog_…"), used by
-   *                 the @revenuecat/purchases-capacitor plugin in the app.
+   *   ANDROID_KEY   RevenueCat public SDK key for Google Play ("goog_…").
+   *   IOS_KEY       RevenueCat public SDK key for the App Store ("appl_…").
+   *                 billing.js picks the right one per platform (Capacitor plugin).
    *   WEB_CHECKOUT  RevenueCat Web Billing purchase link. A string, or
    *                 { month, year } for a per-period link. We append
    *                 ?app_user_id=<supabase uid> so the webhook maps the buyer.
-   *   PRODUCTS      RevenueCat package/product identifiers per period (Android). */
+   *   PRODUCTS      Store product identifiers per period (match both stores). */
   REVENUECAT: {
     ENTITLEMENT: "pro",
-    ANDROID_KEY: "",
+    ANDROID_KEY: "goog_OYiWxhTrpPUzYRBigvzMTzOasXC",
+    IOS_KEY: "appl_HEVDuSlVXFCsQeSpIpxVmqrHVvg",
     WEB_CHECKOUT: "",
-    PRODUCTS: { month: "", year: "" },
+    PRODUCTS: { month: "pro_monthly", year: "pro_yearly" },
   },
 };
