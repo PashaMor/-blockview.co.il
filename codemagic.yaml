@@ -12,6 +12,8 @@ workflows:
     integrations:
       app_store_connect: BlockView ASC        # must match the integration name you create
     environment:
+      groups:
+        - ios_signing        # Codemagic variable group holding CERTIFICATE_PRIVATE_KEY (secure)
       vars:
         BUNDLE_ID: "com.blockview.app"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
@@ -32,27 +34,23 @@ workflows:
         script: |
           cd ios/App
           agvtool new-version -all $(($BUILD_NUMBER + 1))
-      - name: Set up code signing (create cert + profile if missing)
+      - name: Set up code signing (reuse persisted distribution cert)
         script: |
           set -ex
           keychain initialize
-          # Generate a private key locally — a new distribution certificate is
-          # created FROM this key, so its identity is usable on this machine
-          # (existing Expo/RevenueCat certs can't be reused; their keys live elsewhere).
-          openssl genrsa -out /tmp/blockview_cert_key.pem 2048
-          # Create + download the distribution cert (from our key) AND the App Store
-          # provisioning profile for the bundle id, in one go.
+          # Reuse the SAME distribution certificate on every build via a private key
+          # persisted in Codemagic (secure env CERTIFICATE_PRIVATE_KEY). fetch-signing-files
+          # finds the existing cert that matches this key instead of minting a new one,
+          # so we never hit Apple's distribution-certificate cap. First run with a free
+          # cert slot creates the one cert; every run after reuses it.
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --certificate-key=@file:/tmp/blockview_cert_key.pem \
+            --certificate-key="@env:CERTIFICATE_PRIVATE_KEY" \
             --create \
             --platform IOS \
             --verbose
-          # Load cert + key into the build keychain, then apply the profile to Xcode.
           keychain add-certificates
           xcode-project use-profiles --verbose
-          echo "--- Provisioning profiles present: ---"
-          ls -la "$HOME/Library/MobileDevice/Provisioning Profiles/" || true
       - name: Build .ipa
         script: |
           xcode-project build-ipa \
