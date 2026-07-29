@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>BlockView — ניהול מערכת</title>
-  <link rel="stylesheet" href="admin.css?v=37" />
+  <link rel="stylesheet" href="admin.css?v=38" />
 </head>
 <body>
 
@@ -288,6 +288,14 @@
       <form id="edit-form" class="edit-body">
         <input type="hidden" id="e-id" />
         <label class="ef"><span>כותרת</span><input id="e-title" class="input" maxlength="120" required /></label>
+        <div class="ef addr-edit">
+          <span>כתובת</span>
+          <div id="e-addr-current" class="e-addr-current"></div>
+          <input id="e-addr-search" class="input" placeholder="להעברת הנכס לכתובת אחרת — הקלד רחוב ומספר…" autocomplete="off" />
+          <div id="e-addr-results" class="addr-results" hidden></div>
+          <div id="e-addr-picked" class="e-addr-picked" hidden></div>
+          <div id="e-addr-warn" class="e-addr-warn" hidden></div>
+        </div>
         <div class="edit-grid">
           <label class="ef"><span>סוג עסקה</span>
             <select id="e-deal" class="input"><option value="sale">מכירה</option><option value="rent">השכרה</option></select>
@@ -348,6 +356,7 @@
   <script src="../js/config.js?v=18"></script>
   <script src="../js/analytics.js?v=2"></script>
   <script src="../js/oauth.js?v=18"></script>
-  <script src="admin.js?v=41"></script>
+  <script src="../js/geo.js?v=105"></script>
+  <script src="admin.js?v=42"></script>
 </body>
 </html>

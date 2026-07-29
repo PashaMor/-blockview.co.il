@@ -34,3 +34,6 @@ Thumbs.db
 
 # Importer handoff guide (contains a password — never commit)
 IMPORTER-GUIDE.md
+
+# Importer inbox — agent posts + photos, never deploy/commit
+imports/

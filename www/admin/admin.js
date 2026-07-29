@@ -604,6 +604,46 @@
   /* photos on the edited listing. A separate copy so edits are live but the row
      in state.listings only refreshes on the next loadAll(). */
   let editPhotos = [];
+  let editAddr = null;   // set when an admin picks a NEW address to move the listing to
+
+  /* ---- address search in the edit form: verify a new address, then move the
+   * listing to a building for it (ensure_building dedupes-or-creates). The old
+   * building is left as-is; if it ends up with no listings it just drops off the
+   * map. Because the address lives on the building, moving is cleaner than
+   * editing it in place (which would change every unit in that building). */
+  let addrTimer;
+  function wireAddrSearch() {
+    const search = $("e-addr-search"), box = $("e-addr-results");
+    if (!search || !box) return;
+    search.addEventListener("input", () => {
+      clearTimeout(addrTimer);
+      const q = search.value.trim();
+      if (q.length < 3 || !window.BVGeo) { box.hidden = true; return; }
+      addrTimer = setTimeout(async () => {
+        const items = await BVGeo.searchAddress(q);
+        box._items = items || [];
+        box.innerHTML = (items && items.length)
+          ? items.map((it, i) => `<div class="ar-item" data-i="${i}">${esc(it.short)}${it.city ? " · " + esc(it.city) : ""}${it.hasNumber ? "" : " · (רחוב)"}</div>`).join("")
+          : `<div class="ar-item muted">לא נמצאו תוצאות</div>`;
+        box.hidden = false;
+      }, 500);
+    });
+    box.addEventListener("click", async (e) => {
+      const row = e.target.closest(".ar-item"); if (!row || !box._items) return;
+      const it = box._items[+row.dataset.i]; if (!it) return;
+      box.hidden = true;
+      search.value = it.short + (it.city ? ", " + it.city : "");
+      const picked = $("e-addr-picked"); picked.hidden = false; picked.textContent = "מאמת מתאר בניין…";
+      const fp = await BVGeo.fetchFootprint(it.lat, it.lng);
+      editAddr = {
+        short: it.short, label: it.label || (it.short + (it.city ? ", " + it.city : "")),
+        city: it.city || null, lat: it.lat, lng: it.lng, osmId: it.osmId || null, fp: fp,
+      };
+      picked.textContent = "📍 יועבר אל: " + search.value +
+        (fp ? " — נמצא מתאר בניין אמיתי" : " — ללא מתאר מדויק, ימוקם לפי הכתובת");
+    });
+  }
+  wireAddrSearch();
   function renderEditPhotos() {
     const box = $("e-photos");
     if (!editPhotos.length) { box.innerHTML = `<div class="e-nophoto">אין תמונות</div>`; return; }
@@ -716,6 +756,17 @@
     $("e-tour").value = l.tour_url || "";
     $("e-website").value = l.website_url || "";
     $("e-desc").value = l.description || "";
+    // address: show current, reset any pending move, warn if the building is shared
+    editAddr = null;
+    if ($("e-addr-search")) { $("e-addr-search").value = ""; $("e-addr-results").hidden = true; $("e-addr-picked").hidden = true; }
+    const cur = $("e-addr-current");
+    if (cur) cur.textContent = "נוכחי: " + ((l.buildings && l.buildings.address) || "—");
+    const warn = $("e-addr-warn");
+    if (warn) {
+      const shared = state.listings.filter((x) => x.building_id === l.building_id).length;
+      warn.hidden = shared <= 1;
+      warn.textContent = shared > 1 ? "⚠️ שינוי הכתובת יעביר רק את הנכס הזה לבניין החדש (" + shared + " נכסים בבניין הנוכחי)." : "";
+    }
     syncEditDeal();
     syncEditSizes();
     $("edit-modal").hidden = false;
@@ -762,10 +813,31 @@
       description: $("e-desc").value.trim(),
     };
     const btn = $("e-save"); btn.disabled = true;
+    // moving the listing to a new address? resolve/create its building first
+    if (editAddr) {
+      const fp = editAddr.fp;
+      const { data: bid, error: bErr } = await supa.rpc("ensure_building", {
+        p_name: editAddr.short,
+        p_address: editAddr.label,
+        p_city: editAddr.city || null,
+        p_lat: fp && fp.center ? fp.center[1] : editAddr.lat,
+        p_lng: fp && fp.center ? fp.center[0] : editAddr.lng,
+        p_osm_id: (fp && fp.osmId) || editAddr.osmId || null,
+        p_footprint: fp ? fp.polygon : null,
+        p_height: fp ? fp.height : null,
+      });
+      if (bErr || !bid) {
+        btn.disabled = false;
+        $("e-err").textContent = /TOO_MANY_BUILDINGS/.test(bErr && bErr.message || "") ? "נוצרו יותר מדי בניינים, נסה שוב בעוד שעה" : (bErr && bErr.message) || "יצירת הבניין נכשלה";
+        $("e-err").hidden = false; return;
+      }
+      await supa.from("buildings").update({ verified: true }).eq("id", bid);  // admin action = trusted
+      row.building_id = bid;
+    }
     const { error } = await supa.from("listings").update(row).eq("id", $("e-id").value);
     btn.disabled = false;
     if (error) { $("e-err").textContent = error.message; $("e-err").hidden = false; return; }
-    closeEdit(); toast("הנכס עודכן"); loadAll();
+    closeEdit(); toast(editAddr ? "הנכס עודכן והועבר לכתובת החדשה" : "הנכס עודכן"); loadAll();
   });
 
   /* ---------------------------------------------------- listing actions */
