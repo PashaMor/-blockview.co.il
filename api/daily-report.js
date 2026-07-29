@@ -320,7 +320,12 @@ async function dbStats(day) {
   }
 
   const window_ = "&created_at=gte." + from + "&created_at=lt." + to;
-  const [listings, approved, leads, signups, pending, agentsNew, agentsPending, reportsNew, reportsOpen] = await Promise.all([
+  // yesterday's PRODUCTION subscription events (47_subscription_events.sql).
+  const evWin = "&event_at=gte." + from + "&event_at=lt." + to + "&environment=eq.PRODUCTION";
+  const nul = function () { return null; };   // tolerate a table that isn't there yet
+
+  const [listings, approved, leads, signups, pending, agentsNew, agentsPending, reportsNew, reportsOpen,
+         proTotal, freeTotal, trials, newPaid, conversions] = await Promise.all([
     count("listings", window_),
     count("listings", window_ + "&status=eq.approved"),
     count("leads", window_),
@@ -330,10 +335,18 @@ async function dbStats(day) {
     count("agent_applications", "&status=eq.pending"),
     // reports filed in the window, and total still awaiting review (44_listing_reports.sql).
     // tolerate the table not existing yet — the rest of the digest must not fail.
-    count("listing_reports", window_).catch(function () { return null; }),
-    count("listing_reports", "&status=eq.new").catch(function () { return null; }),
+    count("listing_reports", window_).catch(nul),
+    count("listing_reports", "&status=eq.new").catch(nul),
+    // subscriptions: current split (from profiles, always available) …
+    count("profiles", "&plan=eq.pro"),
+    count("profiles", "&plan=eq.free"),
+    // … and yesterday's deltas (from the event log; null until migration 47 is run).
+    count("subscription_events", evWin + "&type=eq.INITIAL_PURCHASE&period_type=eq.TRIAL").catch(nul),
+    count("subscription_events", evWin + "&type=eq.INITIAL_PURCHASE&period_type=neq.TRIAL").catch(nul),
+    count("subscription_events", evWin + "&is_trial_conversion=is.true").catch(nul),
   ]);
-  return { listings, approved, leads, signups, pending, agentsNew, agentsPending, reportsNew, reportsOpen };
+  return { listings, approved, leads, signups, pending, agentsNew, agentsPending, reportsNew, reportsOpen,
+           proTotal, freeTotal, trials, newPaid, conversions };
 }
 
 function nextDay(day) {
@@ -386,6 +399,15 @@ function buildMessage(x) {
     L.push("🙋 נרשמים חדשים: " + x.db.signups);
     L.push("🧑‍💼 מתווכים שנרשמו: <b>" + x.db.agentsNew + "</b>");
     if (x.db.reportsNew != null) L.push("🚩 דיווחים חדשים: <b>" + x.db.reportsNew + "</b>");
+
+    // subscriptions: the Pro/Free split always shows; the trial/conversion
+    // deltas appear once the event log exists (migration 47).
+    L.push("");
+    L.push("<b>מנויים</b>");
+    L.push("💎 Pro: <b>" + x.db.proTotal + "</b>  ·  🆓 Free: " + x.db.freeTotal);
+    if (x.db.newPaid != null)     L.push("🆕 מנויי Pro חדשים אתמול: <b>" + x.db.newPaid + "</b>");
+    if (x.db.trials != null)      L.push("🎁 ניסיונות שהתחילו: " + x.db.trials);
+    if (x.db.conversions != null) L.push("💎 המרות ניסיון→תשלום: " + x.db.conversions);
 
     // the queues an admin has to act on — call them out together
     const queue = x.db.pending + x.db.agentsPending + (x.db.reportsOpen || 0);

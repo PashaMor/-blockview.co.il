@@ -38,6 +38,11 @@ module.exports = async function handler(req, res) {
     var uid = String(ev.app_user_id || "");
     if (!UUID.test(uid)) return res.status(200).json({ ok: true, skip: "non-user id" });
 
+    // Append the raw event to our own log (migration 44) so the daily report can
+    // count trials and conversions. Best-effort: it must never break plan sync,
+    // and it is a no-op until the table exists.
+    await logEvent(ev, uid);
+
     var ent = (process.env.REVENUECAT_ENTITLEMENT || "pro");
     var ids = Array.isArray(ev.entitlement_ids) ? ev.entitlement_ids
             : (ev.entitlement_id ? [ev.entitlement_id] : []);
@@ -70,3 +75,33 @@ module.exports = async function handler(req, res) {
 };
 
 function env(name) { var v = process.env[name]; if (!v) throw new Error("missing env " + name); return v; }
+
+// Append one event row. Idempotent on event_id (RevenueCat retries), and wrapped
+// so a missing table or any error can never fail the webhook's real job.
+async function logEvent(ev, uid) {
+  try {
+    var base = env("SUPABASE_URL").replace(/\/+$/, "") + "/rest/v1/";
+    var key = env("SUPABASE_SECRET_KEY");
+    var price = (ev.price_in_purchased_currency != null) ? ev.price_in_purchased_currency
+              : (ev.price != null ? ev.price : null);
+    var row = {
+      event_id: ev.id != null ? String(ev.id) : null,
+      type: String(ev.type || ""),
+      app_user_id: uid,
+      store: ev.store || null,
+      environment: ev.environment || null,
+      period_type: ev.period_type || null,
+      is_trial_conversion: ev.is_trial_conversion === true,
+      price: price,
+      currency: ev.currency || null,
+      event_at: ev.event_timestamp_ms ? new Date(ev.event_timestamp_ms).toISOString() : null,
+    };
+    await fetch(base + "subscription_events?on_conflict=event_id", {
+      method: "POST",
+      headers: { apikey: key, Authorization: "Bearer " + key,
+                 "Content-Type": "application/json",
+                 Prefer: "return=minimal,resolution=ignore-duplicates" },
+      body: JSON.stringify(row),
+    });
+  } catch (e) { /* logging is never allowed to break plan sync */ }
+}
