@@ -3,7 +3,7 @@
   "appName": "BlockView",
   "webDir": "www",
   "server": {
-    "url": "https://blockview-co-il.vercel.app"
+    "url": "https://www.blockview.co.il"
   },
   "android": {
     "allowMixedContent": false
