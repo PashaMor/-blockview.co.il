@@ -68,6 +68,14 @@
       "destination": "/api/$1"
     },
     {
+      "source": "/property/(.*)",
+      "destination": "/api/property?p=$1"
+    },
+    {
+      "source": "/sitemap-listings.xml",
+      "destination": "/api/sitemap"
+    },
+    {
       "source": "/",
       "has": [
         {

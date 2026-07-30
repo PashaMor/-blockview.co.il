@@ -9,3 +9,4 @@ Disallow: /admin/
 Disallow: /reset
 
 Sitemap: https://blockview.co.il/sitemap.xml
+Sitemap: https://blockview.co.il/sitemap-listings.xml

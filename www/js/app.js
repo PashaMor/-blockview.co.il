@@ -1798,9 +1798,17 @@ function toast(msg) {
   t.textContent = msg; t.hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2200);
 }
+// slug for the indexable property URL — keep Hebrew, digits, latin; the rest -> "-"
+function seoSlug(s) {
+  return String(s || "").trim().toLowerCase()
+    .replace(/[^֐-׿0-9a-z]+/gi, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "listing";
+}
 async function shareListing(id) {
   const l = LISTING_INDEX[id]; if (!l) return;
-  const url = location.origin + location.pathname + "?listing=" + encodeURIComponent(id);
+  // share the server-rendered /property page: it carries the OG preview + is what
+  // Google indexes, and it has a one-tap "open in the 3D map" button
+  const url = location.origin + "/property/" + encodeURIComponent(id) + "/" +
+    seoSlug((l.building && l.building.address) || l.title);
   const data = { title: "BlockView", text: `${l.title} — ${l.building.address}`, url };
   if (navigator.share) { try { await navigator.share(data); } catch (e) {} return; }
   try { await navigator.clipboard.writeText(url); toast("הקישור הועתק ✓"); } catch (e) { toast(url); }
@@ -2017,7 +2025,8 @@ function waNumber(raw) {
   return d;
 }
 function waMessage(l) {
-  const url = location.origin + "/?listing=" + encodeURIComponent(l.id);
+  const url = location.origin + "/property/" + encodeURIComponent(l.id) + "/" +
+    seoSlug((l.building && l.building.address) || l.title);
   const tpl = t("wa_msg");
   return tpl
     .replace("{title}", l.title)
