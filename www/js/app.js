@@ -33,6 +33,7 @@ async function toggleFav(id) {
   if (favs.has(id)) { favs.delete(id); syncFavUI(); await BVAuth.removeFav(id); return; }
   if (!BVAuth.canAdd("favorites", favs.size)) { BVAuth.showUpgrade("favorites"); return; }
   favs.add(id); syncFavUI();
+  if (window.BVTrack) BVTrack.favorite(id);       // a save is a genuine intent signal
   const err = await BVAuth.addFav(id);
   if (err) { favs.delete(id); syncFavUI(); err === "limit" ? BVAuth.showUpgrade("favorites") : toast("שגיאה, נסה שוב"); }
 }
@@ -1174,11 +1175,14 @@ function openDetail(lid) {
   renderContacts(l.id);
   const reveal = el.querySelector("#reveal-contact");
   if (reveal) reveal.onclick = (ev) => { ev.stopPropagation(); if (window.BVAuth) BVAuth.openAuth(); };
-  // A visitor tapping the real phone / email is a genuine contact. Delegated,
-  // because the contact rows are rendered asynchronously by renderContacts().
+  // A visitor tapping the real phone / email / WhatsApp is a genuine contact.
+  // Track each channel separately (the CRM breaks them out) plus a generic
+  // "contact" for the funnel. Delegated — the contact rows render async.
   el.addEventListener("click", (ev) => {
-    if (ev.target.closest('a[href^="tel:"], a[href^="mailto:"], .btn-wa') && window.BVTrack)
-      BVTrack.contact(l.id);
+    if (!window.BVTrack) return;
+    if (ev.target.closest(".btn-wa")) { BVTrack.whatsapp(l.id); BVTrack.contact(l.id); }
+    else if (ev.target.closest('a[href^="tel:"]')) { BVTrack.phone(l.id); BVTrack.contact(l.id); }
+    else if (ev.target.closest('a[href^="mailto:"]')) { BVTrack.contact(l.id); }
   }, true);
   el.querySelectorAll("[data-fav]").forEach((b) => (b.onclick = (ev) => {
     ev.stopPropagation(); toggleFav(b.dataset.fav); b.classList.toggle("on", isFav(b.dataset.fav));

@@ -1615,6 +1615,13 @@
             <div class="an-bar"><span style="width:${webPct}%"></span></div>
             <span class="an-legend">אתר ${l.web || 0} · אפליקציה ${l.app || 0}</span>
           </div>
+          <div class="an-clicks">
+            <span>💬 וואטסאפ <b>${l.whatsapp || 0}</b></span>
+            <span>📞 טלפון <b>${l.phone || 0}</b></span>
+            <span>📩 הודעות <b>${l.messages || 0}</b></span>
+            <span>♥ שמירות <b>${l.saves || 0}</b></span>
+            <span>🔗 שיתופים <b>${l.shares || 0}</b></span>
+          </div>
         </div>
         <div class="an-nums">
           <div><b>${l.views || 0}</b><span>צפיות</span></div>

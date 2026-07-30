@@ -82,6 +82,8 @@
     impression: (id) => track("impression", id),
     detail:     (id) => track("detail", id),
     contact:    (id) => track("contact", id),
+    whatsapp:   (id) => track("whatsapp", id),
+    phone:      (id) => track("phone", id),
     lead:       (id) => track("lead", id),
     share:      (id) => track("share", id),
     favorite:   (id) => track("favorite", id),
