@@ -764,7 +764,7 @@
     d.innerHTML =
       '<input class="input c-name" maxlength="80" placeholder="שם איש קשר" autocomplete="name" />' +
       '<div class="grid2">' +
-        '<input class="input c-phone" type="tel" inputmode="numeric" maxlength="10" placeholder="טלפון (10 ספרות)" autocomplete="tel" />' +
+        '<input class="input c-phone" type="tel" inputmode="numeric" maxlength="10" placeholder="טלפון (8-10 ספרות)" autocomplete="tel" />' +
         '<input class="input c-email" type="email" maxlength="120" placeholder="אימייל (לא חובה)" />' +
       '</div>' +
       '<label class="wa-check"><input type="checkbox" class="c-wa" /> 💬 המספר זמין בוואטסאפ</label>' +
@@ -813,7 +813,7 @@
       const email = r.querySelector(".c-email").value.trim();
       if (!name && !phone && !email) return;
       if (name.length < 2) throw new Error("נא למלא שם איש קשר");
-      if (phone.replace(/\D/g, "").length !== 10) throw new Error("מספר טלפון חייב להכיל 10 ספרות");
+      if (phone.replace(/\D/g, "").length < 8 || phone.replace(/\D/g, "").length > 10) throw new Error("מספר טלפון חייב להכיל 8-10 ספרות");
       out.push({ name: name, phone: phone, email: email || null, whatsapp: !!r.querySelector(".c-wa").checked });
     });
     return out;
