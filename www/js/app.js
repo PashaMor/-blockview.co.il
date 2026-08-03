@@ -180,6 +180,23 @@ function footprint(b) {
   const x = b.lng, y = b.lat, w = b.w / 2 * 1.05, h = b.h / 2 * 1.05;
   return [[[x - w, y - h], [x + w, y - h], [x + w, y + h], [x - w, y + h], [x - w, y - h]]];
 }
+// Where to sample the base map for a building's real height. The stored lng/lat
+// is a geocoded point that often sits at the street entrance, not over a tall
+// tower — so for a real footprint we sample its centroid (the true building
+// centre), which lands on the tallest OSM polygon. Falls back to the point.
+function heightQueryPoint(b) {
+  const f = b.footprint;
+  if (f && f.coordinates && f.coordinates[0] && f.coordinates[0].length) {
+    const outer = f.coordinates[0];
+    const closed = outer.length > 1 &&
+      outer[0][0] === outer[outer.length - 1][0] && outer[0][1] === outer[outer.length - 1][1];
+    const n = closed ? outer.length - 1 : outer.length;
+    let cx = 0, cy = 0;
+    for (let i = 0; i < n; i++) { cx += outer[i][0]; cy += outer[i][1]; }
+    if (n) return [cx / n, cy / n];
+  }
+  return [b.lng, b.lat];
+}
 // derived attributes (single source of truth for filters + detail)
 function attrs(l) {
   // real records carry these columns; sample data falls back to derived values
@@ -616,12 +633,12 @@ function matchBuildingHeights() {
     // budget cap below (12/pass, batched setData, matched once each, then
     // persisted via /api/footprint) is what makes matching them safe now.
     var pt;
-    try { pt = map.project([b.lng, b.lat]); } catch (e) { continue; }
+    try { pt = map.project(heightQueryPoint(b)); } catch (e) { continue; }
     if (pt.x < 0 || pt.y < 0 || pt.x > cw || pt.y > ch) continue;   // off screen — skip (cheap)
     if (budget <= 0) { moreOnScreen = true; break; }                // hit the per-pass cap
     budget--;
     var feats = map.queryRenderedFeatures(
-      [[pt.x - 3, pt.y - 3], [pt.x + 3, pt.y + 3]], { layers: ["city-3d"] });
+      [[pt.x - 5, pt.y - 5], [pt.x + 5, pt.y + 5]], { layers: ["city-3d"] });
     if (!feats.length) { b.heightMatched = true; continue; }        // no base building here (e.g. empty lot)
     var h = 0;
     feats.forEach((f) => { var rh = +(f.properties && f.properties.render_height); if (isFinite(rh) && rh > h) h = rh; });
