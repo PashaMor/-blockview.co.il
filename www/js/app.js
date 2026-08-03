@@ -1877,7 +1877,11 @@ const drawTool = (function drawToSearch() {
     openAreaResults();
   }
 
-  btn.addEventListener("click", () => { if (active) { exitDraw(); } else { clearArea(); enterDraw(); } });
+  // tapping the pencil again while drawing = cancel: wipe the in-progress shape
+  btn.addEventListener("click", () => {
+    if (active) { pendingRing = null; clearLasso(); exitDraw(); return; }
+    clearArea(); enterDraw();
+  });
   document.getElementById("draw-erase").addEventListener("click", eraseStroke);
   document.getElementById("draw-done").addEventListener("click", done);
   clearBtn.addEventListener("click", clearArea);
