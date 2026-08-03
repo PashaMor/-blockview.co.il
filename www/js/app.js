@@ -421,6 +421,7 @@ async function loadLiveData() {
         furnished: !!r.furnished, pets: !!r.pets, parking: !!r.parking, elevator: !!r.elevator,
         balcony: !!r.balcony, balcony_size: r.balcony_size != null ? +r.balcony_size : null,
         yard: !!r.yard, yard_size: r.yard_size != null ? +r.yard_size : null,
+        availableFrom: r.available_from || null, availableTo: r.available_to || null,
         accessible: !!r.accessible, ac: !!r.ac, bars: !!r.bars, storage: !!r.storage,
         solar: !!r.solar, renovated: !!r.renovated, safe_room: !!r.safe_room,
         floors_total: r.floors_total != null ? +r.floors_total : null,
@@ -1163,6 +1164,9 @@ function featuresSection(l) {
   return `<h3 class="d-sec">${t("in_property")}</h3><div class="feat-grid">${cells}</div>`;
 }
 
+function fmtDate(d) {
+  try { return new Date(d + "T00:00:00").toLocaleDateString("he-IL"); } catch (e) { return d; }
+}
 function specRows(l) {
   const a = attrs(l);
   const rows = [
@@ -1175,6 +1179,8 @@ function specRows(l) {
   if (l.deal !== "sale") {
     rows.push(["ריהוט", a.furnished ? "מרוהט" : "לא מרוהט"]);
     rows.push(["חיות מחמד", a.pets ? "מותר" : "לא"]);
+    if (l.availableFrom) rows.push(["זמין מ־", fmtDate(l.availableFrom)]);
+    if (l.availableTo) rows.push(["עד", fmtDate(l.availableTo)]);
   }
   if (l.balcony) rows.push(["מרפסת", l.balcony_size ? l.balcony_size + ' מ"ר' : "יש"]);
   if (l.yard) rows.push(["חצר", l.yard_size ? l.yard_size + ' מ"ר' : "יש"]);

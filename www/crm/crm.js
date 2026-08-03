@@ -697,8 +697,15 @@
       if (lbl) lbl.hidden = sale;
       if (cb && sale) cb.checked = false;
     });
+    // availability dates: shown for a rental; the end date only for short-term
+    const rent = $("f-deal").value === "rent";
+    const short = rent && $("f-term").value === "short";
+    if ($("f-from-wrap")) $("f-from-wrap").hidden = !rent;
+    if ($("f-to-wrap")) { $("f-to-wrap").hidden = !short; if (!short) $("f-date-to").value = ""; }
+    if (!rent) { $("f-date-from").value = ""; $("f-date-to").value = ""; }
   }
   $("f-deal").addEventListener("change", syncTermField);
+  $("f-term").addEventListener("change", syncTermField);
   function syncSizeFields() {
     const bw = $("f-balcony-size-wrap"), yw = $("f-yard-size-wrap");
     if (bw) { bw.hidden = !$("f-balcony").checked; if (!$("f-balcony").checked) $("f-balcony-size").value = ""; }
@@ -720,6 +727,8 @@
     resetAddress(l ? (l.buildings || {}) : null);
     $("f-deal").value = l ? l.deal : "sale";
     $("f-term").value = (l && l.rent_term) || "long";
+    $("f-date-from").value = (l && l.available_from) || "";
+    $("f-date-to").value = (l && l.available_to) || "";
     syncTermField();
     $("f-title").value = l ? l.title : "";
     $("f-price").value = l && l.price ? groupDigits(l.price) : "";
@@ -1030,6 +1039,8 @@
         agent_id: state.user.id,
         deal: $("f-deal").value,
         rent_term: $("f-deal").value === "rent" ? $("f-term").value : null,
+        available_from: $("f-deal").value === "rent" ? ($("f-date-from").value || null) : null,
+        available_to: ($("f-deal").value === "rent" && $("f-term").value === "short") ? ($("f-date-to").value || null) : null,
         title: $("f-title").value.trim(),
         price: checkedPrice($("f-price").value),
         rooms: +$("f-rooms").value,
