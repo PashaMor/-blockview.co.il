@@ -360,6 +360,17 @@ function nextDay(day) {
 function buildMessage(x) {
   const L = [];
   L.push("📊 <b>BlockView — " + x.day + "</b>");
+
+  // Supabase key health, inferred from the DB section (which runs on that key):
+  // a loud line when it's rejected — the same key also drives the RevenueCat
+  // webhook, so a dead key means Pro purchases aren't syncing — a quiet tick
+  // otherwise. A separate cron (api/key-health.js) catches it an hour earlier.
+  const dbErr = x.db && x.db.error ? String(x.db.error) : "";
+  if (/rejected|SUPABASE_SECRET_KEY|\b401\b|\b403\b/.test(dbErr)) {
+    L.push("🔴 <b>מפתח Supabase נדחה</b> — הדוח והוובהוק (RevenueCat) מושבתים עד עדכון <code>SUPABASE_SECRET_KEY</code> ב‑Vercel");
+  } else if (x.db && !x.db.error) {
+    L.push("🩺 מפתח Supabase: תקין ✅");
+  }
   L.push("");
 
   if (x.ga && !x.ga.error) {

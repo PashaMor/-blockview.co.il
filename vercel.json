@@ -38,6 +38,10 @@
       "schedule": "0 5 * * *"
     },
     {
+      "path": "/api/key-health",
+      "schedule": "0 4 * * *"
+    },
+    {
       "path": "/api/nearby-sweep",
       "schedule": "30 3 * * *"
     }

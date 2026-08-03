@@ -211,6 +211,8 @@
     document.querySelectorAll("#p-deal-seg .seg-btn").forEach((b) =>
       b.classList.toggle("active", b.dataset.pdeal === l.deal));
     state.term = l.rent_term || "long";
+    if ($("p-date-from")) $("p-date-from").value = l.available_from || "";
+    if ($("p-date-to")) $("p-date-to").value = l.available_to || "";
     document.querySelectorAll("#p-term-seg .seg-btn").forEach((b) =>
       b.classList.toggle("active", b.dataset.pterm === state.term));
     syncTermGroup();
@@ -502,9 +504,18 @@
 
   /* rental term — a sale has none, so the group is hidden and the value goes
    * to null (the DB rejects a rent_term on a sale, 28_rent_term.sql) */
+  function syncDateFields() {
+    const rent = state.deal === "rent";
+    const wrap = $("p-dates"), toWrap = $("p-date-to-wrap");
+    if (wrap) wrap.hidden = !rent;
+    // short-term / sublet gets an end date too; long-term is open-ended
+    if (toWrap) { const short = (state.term || "long") === "short"; toWrap.hidden = !short; if (!short && $("p-date-to")) $("p-date-to").value = ""; }
+    if (!rent) { if ($("p-date-from")) $("p-date-from").value = ""; if ($("p-date-to")) $("p-date-to").value = ""; }
+  }
   function syncTermGroup() {
     const g = $("p-term-group");
     if (g) g.hidden = state.deal !== "rent";
+    syncDateFields();
     // furniture & pets are a rental concern; a sale has neither, so hide them
     // and drop any value that was set before the deal was switched
     const sale = state.deal === "sale";
@@ -518,7 +529,7 @@
   document.querySelectorAll("#p-term-seg .seg-btn").forEach((b) =>
     b.addEventListener("click", () => {
       document.querySelectorAll("#p-term-seg .seg-btn").forEach((x) => x.classList.remove("active"));
-      b.classList.add("active"); state.term = b.dataset.pterm;
+      b.classList.add("active"); state.term = b.dataset.pterm; syncDateFields();
     }));
   function rentTerm() { return state.deal === "rent" ? (state.term || "long") : null; }
 
@@ -700,6 +711,8 @@
         poster_type: state.posterType === "agent" ? "agent" : "owner",
         deal: state.deal,
         rent_term: rentTerm(),
+        available_from: state.deal === "rent" ? ($("p-date-from").value || null) : null,
+        available_to: (state.deal === "rent" && (state.term || "long") === "short") ? ($("p-date-to").value || null) : null,
         title: $("p-title").value.trim(),
         price: checkedPrice($("p-price").value),
         rooms: +$("p-rooms").value,
