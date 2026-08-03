@@ -1816,14 +1816,15 @@ document.getElementById("reset-view").addEventListener("click", () => {
  * centre falls inside it are the only ones shown/counted. Self-contained, no
  * extra library — screen points are unprojected to lng/lat and closed into a
  * ring. Drawing pins the map (no pan) so the finger draws instead of scrolling. */
-(function drawToSearch() {
+const drawTool = (function drawToSearch() {
   const btn = document.getElementById("draw-toggle");
   const bar = document.getElementById("draw-bar");
   const hint = document.getElementById("draw-hint");
+  const actions = document.getElementById("draw-actions");
   const clearBtn = document.getElementById("draw-clear");
-  if (!btn) return;
+  if (!btn) return {};
   const canvas = map.getCanvas();
-  let drawing = false, active = false, pts = [];
+  let drawing = false, active = false, pts = [], pendingRing = null;
 
   function ensureLayers() {
     if (map.getSource("lasso")) return;
@@ -1832,7 +1833,7 @@ document.getElementById("reset-view").addEventListener("click", () => {
       paint: { "fill-color": "#22D3EE", "fill-opacity": 0.12 } });
     map.addLayer({ id: "lasso-line", type: "line", source: "lasso",
       layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": "#22D3EE", "line-width": 2.5 } });
+      paint: { "line-color": "#22D3EE", "line-width": 3 } });
   }
   function setLasso(ring, closed) {
     ensureLayers();
@@ -1846,44 +1847,46 @@ document.getElementById("reset-view").addEventListener("click", () => {
   function clearLasso() { const s = map.getSource("lasso"); if (s) s.setData({ type: "FeatureCollection", features: [] }); }
 
   function enterDraw() {
-    active = true;
+    active = true; pendingRing = null; pts = [];
     btn.classList.add("on");
-    hint.hidden = false;
+    hint.hidden = false; actions.hidden = false; bar.hidden = true;
+    if (window.closeAllSheets) window.closeAllSheets();
     map.dragPan.disable(); map.dragRotate.disable(); map.doubleClickZoom.disable(); map.touchZoomRotate.disable();
     canvas.style.cursor = "crosshair";
   }
   function exitDraw() {
     active = false;
     btn.classList.remove("on");
-    hint.hidden = true;
+    hint.hidden = true; actions.hidden = true;
     map.dragPan.enable(); map.dragRotate.enable(); map.doubleClickZoom.enable(); map.touchZoomRotate.enable();
     canvas.style.cursor = "";
   }
+  function eraseStroke() { pendingRing = null; pts = []; clearLasso(); hint.hidden = false; }
   function clearArea() {
-    drawnArea = null;
-    clearLasso();
+    drawnArea = null; clearLasso();
     bar.hidden = true;
     refreshBuildings();
   }
-
-  btn.addEventListener("click", () => {
-    if (active) { exitDraw(); return; }
-    clearArea();          // a fresh draw replaces any previous area
-    enterDraw();
-  });
-  clearBtn.addEventListener("click", () => { clearArea(); });
-
-  function onDown(e) {
-    if (!active) return;
-    e.preventDefault();
-    drawing = true; pts = [pointOf(e)];
+  // finish: commit the drawn ring as the area filter and show the results sheet
+  function done() {
+    if (!pendingRing) { exitDraw(); clearArea(); return; }
+    drawnArea = pendingRing;
+    exitDraw();
+    refreshBuildings();
+    bar.hidden = false;
+    openAreaResults();
   }
+
+  btn.addEventListener("click", () => { if (active) { exitDraw(); } else { clearArea(); enterDraw(); } });
+  document.getElementById("draw-erase").addEventListener("click", eraseStroke);
+  document.getElementById("draw-done").addEventListener("click", done);
+  clearBtn.addEventListener("click", clearArea);
+
+  function onDown(e) { if (!active) return; e.preventDefault(); drawing = true; pts = [pointOf(e)]; hint.hidden = true; }
   function onMove(e) {
     if (!active || !drawing) return;
     e.preventDefault();
-    const p = pointOf(e);
-    const last = pts[pts.length - 1];
-    // thin the path a little so the ring isn't thousands of points
+    const p = pointOf(e), last = pts[pts.length - 1];
     if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 4) {
       pts.push(p);
       setLasso(pts.map((q) => map.unproject([q.x, q.y])), false);
@@ -1892,14 +1895,10 @@ document.getElementById("reset-view").addEventListener("click", () => {
   function onUp() {
     if (!active || !drawing) return;
     drawing = false;
-    if (pts.length < 3) { clearArea(); exitDraw(); return; }
-    const ring = pts.map((q) => { const ll = map.unproject([q.x, q.y]); return [ll.lng, ll.lat]; });
-    ring.push(ring[0]);
-    drawnArea = ring;
-    setLasso(pts.map((q) => map.unproject([q.x, q.y])), true);
-    exitDraw();
-    refreshBuildings();
-    bar.hidden = false;
+    if (pts.length < 3) { pendingRing = null; clearLasso(); hint.hidden = false; return; }
+    pendingRing = pts.map((q) => { const ll = map.unproject([q.x, q.y]); return [ll.lng, ll.lat]; });
+    pendingRing.push(pendingRing[0]);
+    setLasso(pts.map((q) => map.unproject([q.x, q.y])), true);   // show it closed, wait for Done
   }
   function pointOf(e) {
     const r = canvas.getBoundingClientRect();
@@ -1909,7 +1908,33 @@ document.getElementById("reset-view").addEventListener("click", () => {
   canvas.addEventListener("pointerdown", onDown);
   canvas.addEventListener("pointermove", onMove);
   window.addEventListener("pointerup", onUp);
+
+  return { redraw: () => { clearArea(); enterDraw(); }, clear: clearArea };
 })();
+
+/* results sheet for the drawn area — every matching listing inside it */
+const areaSheet = document.getElementById("area-sheet");
+function areaListings() {
+  const out = [];
+  BUILDINGS.filter(inDrawnArea).forEach((b) => { buildingMatches(b.id).forEach((l) => out.push(LISTING_INDEX[l.id] || l)); });
+  return out;
+}
+function openAreaResults() {
+  if (!drawnArea) return;
+  const items = areaListings();
+  document.getElementById("area-count").textContent = items.length;
+  const list = document.getElementById("area-list"), empty = document.getElementById("area-empty");
+  if (items.length) { list.innerHTML = items.map(listingCard).join(""); empty.hidden = true; }
+  else { list.innerHTML = ""; empty.hidden = false; }
+  closeSheet(); closeListings(); closeFavs(); closeAlerts(); closeSearch(); closeAuthUI();
+  areaSheet.classList.add("open"); areaSheet.setAttribute("aria-hidden", "false");
+}
+function closeArea() { areaSheet.classList.remove("open"); areaSheet.setAttribute("aria-hidden", "true"); }
+document.getElementById("area-close").addEventListener("click", closeArea);
+document.getElementById("area-list").addEventListener("click", onCardClick);
+document.getElementById("draw-results").addEventListener("click", openAreaResults);
+document.getElementById("area-redraw").addEventListener("click", () => { closeArea(); if (drawTool.redraw) drawTool.redraw(); });
+document.getElementById("area-clear").addEventListener("click", () => { closeArea(); if (drawTool.clear) drawTool.clear(); });
 
 /* ---- filter sheet ---- */
 const sheet = document.getElementById("filter-sheet"), backdrop = document.getElementById("sheet-backdrop");
@@ -1962,7 +1987,7 @@ window.subCount = () => subs.size;
 window.bvToast = (m) => toast(m);
 // closeDetail too: the detail card sits above the sheets, so an auth sheet opened
 // from inside it (contact / note / save) would otherwise appear behind it
-window.closeAllSheets = function () { closeDetail(); closeSheet(); closeListings(); closeFavs(); closeAlerts(); closeSearch(); closeLead(); closeReport(); };
+window.closeAllSheets = function () { closeDetail(); closeSheet(); closeListings(); closeFavs(); closeAlerts(); closeSearch(); closeLead(); closeReport(); if (typeof closeArea === "function") closeArea(); };
 window.reRender = function () {
   updateTotal();
   if (typeof updatePriceUI === "function") updatePriceUI();

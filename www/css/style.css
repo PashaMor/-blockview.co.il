@@ -879,3 +879,13 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 #draw-clear { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 0; cursor: pointer;
   background: var(--surface-2); color: var(--text-soft); font-size: 14px; line-height: 1; }
 #draw-clear:hover { background: #FBE9E7; color: #C0392B; }
+
+/* draw-mode Erase / Done bar (bottom, like the reference) */
+#draw-actions { position: absolute; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%);
+  z-index: 8; display: flex; gap: 12px; }
+#draw-actions button { font: inherit; font-weight: 800; font-size: 15px; cursor: pointer; padding: 13px 26px;
+  border-radius: 26px; border: 0; box-shadow: var(--shadow-lg); }
+#draw-actions #draw-erase { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+#draw-actions .primary { background: var(--blue); color: #fff; }
+#draw-actions .primary:hover { background: #002C92; }
+#draw-results { border: 0; background: transparent; font: inherit; font-weight: 700; font-size: 14px; color: var(--ink); cursor: pointer; padding: 0; }
