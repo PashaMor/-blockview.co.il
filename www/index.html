@@ -100,8 +100,16 @@
       <!-- language switcher hidden until listing content is translated too -->
       <button id="lang-btn" title="Language" aria-label="Language" hidden>🌐</button>
       <button id="edu-toggle" title="מה יש בסביבה" aria-label="מה יש בסביבה">🎓</button>
+      <button id="draw-toggle" title="חיפוש באזור מצויר" aria-label="חיפוש באזור מצויר">✏️</button>
     </div>
   </div>
+
+  <!-- draw-to-search: appears while an area is drawn -->
+  <div id="draw-bar" hidden>
+    <span><b id="draw-count">0</b> <span data-i18n="properties">נכסים</span> <span data-i18n="in_area">באזור</span></span>
+    <button id="draw-clear" aria-label="נקה אזור">✕</button>
+  </div>
+  <div id="draw-hint" hidden data-i18n="draw_hint">ציירו אזור על המפה כדי לסנן נכסים</div>
 
   <!-- Bottom action bar -->
   <nav id="bottombar">
@@ -716,7 +724,7 @@
   <script src="js/confirm.js?v=111"></script>
   <script src="js/data.js?v=111"></script>
   <script src="js/track.js?v=111"></script>
-  <script src="js/app.js?v=111"></script>
+  <script src="js/app.js?v=112"></script>
   <script src="js/auth.js?v=111"></script>
   <script src="js/billing.js?v=111"></script>
   <script src="js/home-loc.js?v=111"></script>

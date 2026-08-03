@@ -223,13 +223,26 @@ function passes(l) {
 }
 function buildingMatches(id) { return (LISTINGS[id] || []).filter(passes); }
 
+/* draw-to-search: when the user lassoes an area, only buildings whose centre
+   falls inside the drawn ring are shown/counted. null = no area drawn. */
+let drawnArea = null;   // ring of [lng, lat], closed
+function pointInRing(lng, lat, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+    if (((yi > lat) !== (yj > lat)) && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+function inDrawnArea(b) { return !drawnArea || pointInRing(b.lng, b.lat, drawnArea); }
+
 function buildingsGeoJSON() {
   return {
     type: "FeatureCollection",
-    features: BUILDINGS.map((b, i) => {
+    features: BUILDINGS.filter(inDrawnArea).map((b) => {
       const n = buildingMatches(b.id).length;   // once, not twice (this runs for every building on every setData)
       return {
-        type: "Feature", id: i,
+        type: "Feature", id: idToIndex[b.id],
         properties: { bid: b.id, name: b.name, height: b.height, match: n, label: b.name + " · " + n },
         geometry: { type: "Polygon", coordinates: footprint(b) },
       };
@@ -241,12 +254,13 @@ function buildingsGeoJSON() {
 // hides inside the (opaque) building and only the beam above it shows.
 function beamGeoJSON(b) {
   if (!b || !isFinite(b.lat) || !isFinite(b.lng)) return { type: "FeatureCollection", features: [] };
-  const s = 0.000035, x = b.lng, y = b.lat;   // ~3.5 m half-width
-  const ring = [[x - s, y - s], [x + s, y - s], [x + s, y + s], [x - s, y + s], [x - s, y - s]];
+  const roof = (+b.height || 24) + 0.5;         // sit exactly on the building's roof
   return { type: "FeatureCollection", features: [{
     type: "Feature",
-    properties: { base: 0, top: (+b.height || 24) + 160 },
-    geometry: { type: "Polygon", coordinates: [ring] },
+    // the building's own footprint, extruded upward from its roof — a column in
+    // the shape of the building rather than a thin needle
+    properties: { base: roof, top: roof + 160 },
+    geometry: { type: "Polygon", coordinates: footprint(b) },
   }] };
 }
 function updateBeam(b) {
@@ -595,11 +609,12 @@ function matchBuildingHeights() {
   for (let i = 0; i < BUILDINGS.length; i++) {
     const b = BUILDINGS[i];
     if (b.heightMatched || !isFinite(b.lat) || !isFinite(b.lng)) continue;
-    // A building with a real footprint already sits on the right spot with a
-    // sensible height; height-matching it means a queryRenderedFeatures + a full
-    // setData re-tile per building as you pan — the thing that made dragging lag.
-    // Only the fallback boxes (no footprint) actually need it.
-    if (b.footprint) { b.heightMatched = true; continue; }
+    // Match EVERY building — real footprint or fallback box — to the base-map
+    // height once, so the blue reaches the real roof and the grey OSM twin can't
+    // poke out above it. Real footprints used to be skipped here (a
+    // queryRenderedFeatures + setData per building while panning lagged); the
+    // budget cap below (12/pass, batched setData, matched once each, then
+    // persisted via /api/footprint) is what makes matching them safe now.
     var pt;
     try { pt = map.project([b.lng, b.lat]); } catch (e) { continue; }
     if (pt.x < 0 || pt.y < 0 || pt.x > cw || pt.y > ch) continue;   // off screen — skip (cheap)
@@ -707,10 +722,10 @@ function addCustomLayers() {
   // rises as a glowing beam. Its geometry is set on select (updateBeam).
   if (!map.getSource("beam")) map.addSource("beam", { type: "geojson", data: beamGeoJSON(null) });
   map.addLayer({ id: "bv-beam", type: "fill-extrusion", source: "beam", paint: {
-    "fill-extrusion-color": mode === "dark" ? "#A9D2FF" : "#3E74FF",
+    "fill-extrusion-color": "#FFFFFF",
     "fill-extrusion-base": ["get", "base"],
     "fill-extrusion-height": ["get", "top"],
-    "fill-extrusion-opacity": 0.32,
+    "fill-extrusion-opacity": 0.4,
     "fill-extrusion-vertical-gradient": false,
   } });
   // Overhead, map-anchored light. Pointing straight down (polar 0) means the roof
@@ -1568,9 +1583,11 @@ function refreshBuildings() {
   if (selectedId) renderListings(BUILDINGS.find((x) => x.id === selectedId));
 }
 function updateTotal() {
-  let n = 0; for (const id in LISTINGS) n += buildingMatches(id).length;
+  let n = 0;
+  BUILDINGS.filter(inDrawnArea).forEach((b) => { n += buildingMatches(b.id).length; });
   var fc = document.getElementById("fcount"); if (fc) fc.textContent = n;
   document.getElementById("apply-count").textContent = n;
+  var db = document.getElementById("draw-count"); if (db) db.textContent = n;
 }
 document.querySelectorAll("#deal-seg .seg-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -1776,6 +1793,106 @@ document.getElementById("reset-view").addEventListener("click", () => {
     : TLV;
   map.easeTo({ ...to, duration: 900 });
 });
+
+/* ---------------------------------------------- draw-to-search (lasso) ----
+ * A pencil tool: drag a freehand shape on the map, and the buildings whose
+ * centre falls inside it are the only ones shown/counted. Self-contained, no
+ * extra library — screen points are unprojected to lng/lat and closed into a
+ * ring. Drawing pins the map (no pan) so the finger draws instead of scrolling. */
+(function drawToSearch() {
+  const btn = document.getElementById("draw-toggle");
+  const bar = document.getElementById("draw-bar");
+  const hint = document.getElementById("draw-hint");
+  const clearBtn = document.getElementById("draw-clear");
+  if (!btn) return;
+  const canvas = map.getCanvas();
+  let drawing = false, active = false, pts = [];
+
+  function ensureLayers() {
+    if (map.getSource("lasso")) return;
+    map.addSource("lasso", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    map.addLayer({ id: "lasso-fill", type: "fill", source: "lasso",
+      paint: { "fill-color": "#22D3EE", "fill-opacity": 0.12 } });
+    map.addLayer({ id: "lasso-line", type: "line", source: "lasso",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#22D3EE", "line-width": 2.5 } });
+  }
+  function setLasso(ring, closed) {
+    ensureLayers();
+    const coords = ring.map((p) => [p.lng, p.lat]);
+    const geom = closed && coords.length > 2
+      ? { type: "Polygon", coordinates: [coords.concat([coords[0]])] }
+      : { type: "LineString", coordinates: coords };
+    const src = map.getSource("lasso");
+    if (src) src.setData({ type: "Feature", geometry: geom, properties: {} });
+  }
+  function clearLasso() { const s = map.getSource("lasso"); if (s) s.setData({ type: "FeatureCollection", features: [] }); }
+
+  function enterDraw() {
+    active = true;
+    btn.classList.add("on");
+    hint.hidden = false;
+    map.dragPan.disable(); map.dragRotate.disable(); map.doubleClickZoom.disable(); map.touchZoomRotate.disable();
+    canvas.style.cursor = "crosshair";
+  }
+  function exitDraw() {
+    active = false;
+    btn.classList.remove("on");
+    hint.hidden = true;
+    map.dragPan.enable(); map.dragRotate.enable(); map.doubleClickZoom.enable(); map.touchZoomRotate.enable();
+    canvas.style.cursor = "";
+  }
+  function clearArea() {
+    drawnArea = null;
+    clearLasso();
+    bar.hidden = true;
+    refreshBuildings();
+  }
+
+  btn.addEventListener("click", () => {
+    if (active) { exitDraw(); return; }
+    clearArea();          // a fresh draw replaces any previous area
+    enterDraw();
+  });
+  clearBtn.addEventListener("click", () => { clearArea(); });
+
+  function onDown(e) {
+    if (!active) return;
+    e.preventDefault();
+    drawing = true; pts = [pointOf(e)];
+  }
+  function onMove(e) {
+    if (!active || !drawing) return;
+    e.preventDefault();
+    const p = pointOf(e);
+    const last = pts[pts.length - 1];
+    // thin the path a little so the ring isn't thousands of points
+    if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 4) {
+      pts.push(p);
+      setLasso(pts.map((q) => map.unproject([q.x, q.y])), false);
+    }
+  }
+  function onUp() {
+    if (!active || !drawing) return;
+    drawing = false;
+    if (pts.length < 3) { clearArea(); exitDraw(); return; }
+    const ring = pts.map((q) => { const ll = map.unproject([q.x, q.y]); return [ll.lng, ll.lat]; });
+    ring.push(ring[0]);
+    drawnArea = ring;
+    setLasso(pts.map((q) => map.unproject([q.x, q.y])), true);
+    exitDraw();
+    refreshBuildings();
+    bar.hidden = false;
+  }
+  function pointOf(e) {
+    const r = canvas.getBoundingClientRect();
+    const t = e.touches && e.touches[0] ? e.touches[0] : e;
+    return { x: t.clientX - r.left, y: t.clientY - r.top };
+  }
+  canvas.addEventListener("pointerdown", onDown);
+  canvas.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
+})();
 
 /* ---- filter sheet ---- */
 const sheet = document.getElementById("filter-sheet"), backdrop = document.getElementById("sheet-backdrop");
