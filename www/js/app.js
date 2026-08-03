@@ -689,6 +689,31 @@ const map = new maplibregl.Map({
   maxPitch: 72, attributionControl: false,
 });
 
+// Diagnostic: a fatal map failure (no WebGL context, a style that never loads)
+// fires 'error' but never throws — so it slips past the window-error overlay and
+// just leaves a blank map, which is what "white screen on iPhone" is. Surface
+// such a pre-load, non-tile error on screen so a blank device is diagnosable. A
+// single failed tile also fires 'error' (carries e.tile/e.sourceId) but does NOT
+// blank the map, and post-load errors are transient — ignore both so working
+// devices never see this.
+let mapReady = false;
+map.on("error", (e) => {
+  const err = (e && e.error) || {};
+  const msg = err.message || (e && e.message) || String(err) || "unknown map error";
+  if (window.console) console.warn("[BlockView] map error:", msg, e);
+  if (mapReady || (e && (e.tile || e.sourceId || e.source))) return;
+  try {
+    let d = document.getElementById("bv-err");
+    if (!d) {
+      d = document.createElement("div"); d.id = "bv-err";
+      d.style.cssText = "position:fixed;inset:0;z-index:99999;background:#fff;color:#b00;font:12px/1.5 monospace;padding:16px;overflow:auto;white-space:pre-wrap;direction:ltr;text-align:left";
+      (document.body || document.documentElement).appendChild(d);
+      d.textContent = "BlockView error log:\n";
+    }
+    d.textContent += "\n[MAP] " + msg;
+  } catch (_e) {}
+});
+
 function firstSymbolId() {
   for (const l of map.getStyle().layers) if (l.type === "symbol") return l.id;
   return undefined;
@@ -787,6 +812,7 @@ function labelPaint() {
 }
 
 map.on("load", () => {
+  mapReady = true;
   addCustomLayers();
   updateTotal();
   applyTheme(mode, false); // sync the toggle icon to the loaded theme
