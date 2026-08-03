@@ -697,11 +697,19 @@ const map = new maplibregl.Map({
 // blank the map, and post-load errors are transient — ignore both so working
 // devices never see this.
 let mapReady = false;
+const mapDiag = [];
 map.on("error", (e) => {
   const err = (e && e.error) || {};
   const msg = err.message || (e && e.message) || String(err) || "unknown map error";
+  const where = (e && (e.sourceId || (e.tile ? "tile" : ""))) || "";
   if (window.console) console.warn("[BlockView] map error:", msg, e);
-  if (mapReady || (e && (e.tile || e.sourceId || e.source))) return;
+  if (mapDiag.length < 8) mapDiag.push((where ? "[" + where + "] " : "") + msg);
+});
+// Only show anything if the map FAILS to finish loading. Working devices set
+// mapReady quickly and never see this; a blank device gets the captured errors
+// + the style URL on screen to screenshot.
+setTimeout(() => {
+  if (mapReady) return;
   try {
     let d = document.getElementById("bv-err");
     if (!d) {
@@ -710,9 +718,12 @@ map.on("error", (e) => {
       (document.body || document.documentElement).appendChild(d);
       d.textContent = "BlockView error log:\n";
     }
-    d.textContent += "\n[MAP] " + msg;
+    d.textContent += "\n[MAP] did not finish loading in 8s" +
+      "\n[MAP] style: " + STYLES[mode] +
+      "\n[MAP] webgl: " + (window.WebGLRenderingContext ? "supported" : "MISSING") +
+      "\n" + (mapDiag.length ? mapDiag.join("\n") : "(no map error events captured)");
   } catch (_e) {}
-});
+}, 8000);
 
 function firstSymbolId() {
   for (const l of map.getStyle().layers) if (l.type === "symbol") return l.id;
