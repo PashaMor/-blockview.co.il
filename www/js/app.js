@@ -1760,7 +1760,7 @@ function applyFilter(obj) {
 function filterSummary(f) {
   const p = [];
   if (f.deal === "sale") p.push("מכירה"); else if (f.deal === "rent") p.push("השכרה");
-  if (f.term === "short") p.push("טווח קצר"); else if (f.term === "long") p.push("טווח ארוך");
+  if (f.term === "short") p.push("טווח קצר \\ סאבלט"); else if (f.term === "long") p.push("טווח ארוך");
   if (f.category === "residential") p.push("מגורים"); else if (f.category === "commercial") p.push("מסחרי");
   if (f.type && f.type !== "all") {
     const all = FILTER_TYPES.residential.concat(FILTER_TYPES.commercial);
