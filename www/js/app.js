@@ -1,5 +1,17 @@
 /* BlockView prototype — map + interaction */
 
+// TEMP boot probe: a whole JS file compiles as a unit, so if app.js contains any
+// syntax this device's Safari can't parse, NOTHING below runs and this badge never
+// appears (a parse error is silent — it does not fire window.onerror). Badge shows
+// => app.js parsed & started, so a blank screen is a runtime/map issue, not syntax.
+try {
+  var _bvBoot = document.createElement("div");
+  _bvBoot.textContent = "app.js v122 started ✓";
+  _bvBoot.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:100000;background:#0a7d00;color:#fff;font:12px/1.6 monospace;padding:3px 8px;text-align:center";
+  (document.body || document.documentElement).appendChild(_bvBoot);
+  window.addEventListener("load", function () { try { _bvBoot.textContent = "app.js reached end ✓ (WebGL " + (window.WebGLRenderingContext ? "ok" : "MISSING") + ")"; } catch (e) {} });
+} catch (e) {}
+
 const STYLES = {
   light: "https://tiles.openfreemap.org/styles/liberty",
   dark:  "https://tiles.openfreemap.org/styles/dark",
