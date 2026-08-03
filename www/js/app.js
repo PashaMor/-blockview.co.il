@@ -236,6 +236,22 @@ function buildingsGeoJSON() {
     }),
   };
 }
+// the "light pillar" geometry: a small square at the building's centre, extruded
+// from the ground to well above its roof. Kept narrow so the part below the roof
+// hides inside the (opaque) building and only the beam above it shows.
+function beamGeoJSON(b) {
+  if (!b || !isFinite(b.lat) || !isFinite(b.lng)) return { type: "FeatureCollection", features: [] };
+  const s = 0.000035, x = b.lng, y = b.lat;   // ~3.5 m half-width
+  const ring = [[x - s, y - s], [x + s, y - s], [x + s, y + s], [x - s, y + s], [x - s, y - s]];
+  return { type: "FeatureCollection", features: [{
+    type: "Feature",
+    properties: { base: 0, top: (+b.height || 24) + 160 },
+    geometry: { type: "Polygon", coordinates: [ring] },
+  }] };
+}
+function updateBeam(b) {
+  if (map.getSource && map.getSource("beam")) map.getSource("beam").setData(beamGeoJSON(b));
+}
 let idToIndex = {};
 let LISTING_INDEX = {};
 function indexData() {
@@ -438,6 +454,15 @@ window.addEventListener("load", flyToParam);
 let sharedDone = false;
 function openSharedListing() {
   if (sharedDone) return;
+  // a shared building link (?building=) just opens the building on the map
+  let bid = "";
+  try { bid = new URLSearchParams(location.search).get("building") || ""; } catch (e) {}
+  if (bid) {
+    if (!BUILDINGS.find((x) => x.id === bid)) return;   // not loaded yet — retried later
+    sharedDone = true;
+    selectBuilding(bid);
+    return;
+  }
   let lid = "";
   try { lid = new URLSearchParams(location.search).get("listing") || ""; } catch (e) {}
   if (!lid) { sharedDone = true; return; }
@@ -677,6 +702,17 @@ function addCustomLayers() {
         ["boolean", ["feature-state", "selected"], false], BLUE_HI,
         [">", ["get", "match"], 0], BLUE, CITY],
     } });
+  // Light pillar over the selected building. A thin translucent column: below the
+  // roof it sits INSIDE the opaque building (hidden, so no z-fighting), above it
+  // rises as a glowing beam. Its geometry is set on select (updateBeam).
+  if (!map.getSource("beam")) map.addSource("beam", { type: "geojson", data: beamGeoJSON(null) });
+  map.addLayer({ id: "bv-beam", type: "fill-extrusion", source: "beam", paint: {
+    "fill-extrusion-color": mode === "dark" ? "#A9D2FF" : "#3E74FF",
+    "fill-extrusion-base": ["get", "base"],
+    "fill-extrusion-height": ["get", "top"],
+    "fill-extrusion-opacity": 0.32,
+    "fill-extrusion-vertical-gradient": false,
+  } });
   // Overhead, map-anchored light. Pointing straight down (polar 0) means the roof
   // gets full colour and every vertical wall is shaded by the SAME amount no
   // matter which way it faces or how the camera turns — so buildings get real
@@ -692,7 +728,7 @@ function addCustomLayers() {
 
   addEducationLayer();
   localizeMap();
-  if (selectedId) setSelectedState(selectedId, true);
+  if (selectedId) { setSelectedState(selectedId, true); updateBeam(BUILDINGS.find((x) => x.id === selectedId)); }
   matchBuildingHeights();
 }
 
@@ -811,6 +847,7 @@ function selectBuilding(id) {
   selectedId = id;
   setSelectedState(id, true);
   const b = BUILDINGS.find((x) => x.id === id);
+  updateBeam(b);                 // raise the light pillar over it
   closeSheet();
   map.easeTo({ center: [b.lng, b.lat], zoom: Math.max(map.getZoom(), 16.2), duration: 700, padding: { bottom: 320 } });
   renderListings(b);
@@ -819,6 +856,7 @@ function selectBuilding(id) {
 function deselect() {
   if (selectedId) setSelectedState(selectedId, false);
   selectedId = null;
+  updateBeam(null);              // drop the light pillar
   closeListings();
 }
 
@@ -934,6 +972,16 @@ document.getElementById("alerts-list").addEventListener("click", (e) => {
   if (op) { closeAlerts(); selectBuilding(op.dataset.open); }
 });
 document.getElementById("sub-btn").addEventListener("click", () => { if (selectedId) toggleSub(selectedId); });
+
+/* share a building — a ?building= link that reopens it on the map */
+async function shareBuilding(id) {
+  const b = BUILDINGS.find((x) => x.id === id); if (!b) return;
+  const url = location.origin + "/?building=" + encodeURIComponent(id);
+  const data = { title: "BlockView", text: (b.name || "") + " — " + (b.address || ""), url };
+  if (navigator.share) { try { await navigator.share(data); } catch (e) {} return; }
+  try { await navigator.clipboard.writeText(url); toast("הקישור הועתק ✓"); } catch (e) { toast(url); }
+}
+document.getElementById("b-share").addEventListener("click", (e) => { e.stopPropagation(); if (selectedId) shareBuilding(selectedId); });
 
 /* ---- search (address / building / transit) ---- */
 const searchSheet = document.getElementById("search-sheet");
