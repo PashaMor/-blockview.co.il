@@ -6,10 +6,10 @@
 // => app.js parsed & started, so a blank screen is a runtime/map issue, not syntax.
 try {
   var _bvBoot = document.createElement("div");
-  _bvBoot.textContent = "app.js v122 started ✓";
-  _bvBoot.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:100000;background:#0a7d00;color:#fff;font:12px/1.6 monospace;padding:3px 8px;text-align:center";
+  _bvBoot.id = "bv-boot";
+  _bvBoot.textContent = "app.js started ✓ …";
+  _bvBoot.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:100000;background:#0a7d00;color:#fff;font:11px/1.5 monospace;padding:3px 8px;text-align:center;word-break:break-all";
   (document.body || document.documentElement).appendChild(_bvBoot);
-  window.addEventListener("load", function () { try { _bvBoot.textContent = "app.js reached end ✓ (WebGL " + (window.WebGLRenderingContext ? "ok" : "MISSING") + ")"; } catch (e) {} });
 } catch (e) {}
 
 const STYLES = {
@@ -721,6 +721,14 @@ map.on("error", (e) => {
 // mapReady quickly and never see this; a blank device gets the captured errors
 // + the style URL on screen to screenshot.
 setTimeout(() => {
+  let canvas = "?";
+  try { const c = map.getCanvas(); canvas = c.width + "x" + c.height + " (css " + c.clientWidth + "x" + c.clientHeight + ")"; } catch (e) {}
+  try {
+    const badge = document.getElementById("bv-boot");
+    if (badge) badge.textContent = "mapLoaded=" + mapReady + " | canvas=" + canvas +
+      " | webgl=" + (window.WebGLRenderingContext ? "ok" : "MISS") + " | mapErrs=" + mapDiag.length +
+      (mapDiag[0] ? " » " + String(mapDiag[0]).slice(0, 90) : "");
+  } catch (e) {}
   if (mapReady) return;
   try {
     let d = document.getElementById("bv-err");
