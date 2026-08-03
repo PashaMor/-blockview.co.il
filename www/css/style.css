@@ -30,7 +30,7 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .brand-logo { display: block; height: 56px; width: auto; }
 
 /* ---------- Mode toggle ---------- */
-#mode-toggle, #view-toggle, #account-btn, #lang-btn, #edu-toggle, #tools-toggle {
+#mode-toggle, #view-toggle, #account-btn, #lang-btn, #edu-toggle, #tools-toggle, #draw-toggle {
   width: 50px; height: 50px; border-radius: 50%; flex: none;
   border: 1px solid transparent; background: var(--blue); color: #fff;
   cursor: pointer; box-shadow: 0 4px 14px rgba(0,56,184,.30);
@@ -866,3 +866,16 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 .feat-ic { font-size: 16px; line-height: 1; flex: none; }
 .feat.on .feat-ic { filter: none; }
 .feat:not(.on) .feat-ic { filter: grayscale(1); }
+
+/* ---- draw-to-search (lasso) ---- */
+#draw-toggle.on { background: #22D3EE; color: #06323a; box-shadow: 0 4px 14px rgba(34,211,238,.5); }
+#draw-hint { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 7;
+  background: rgba(20,30,45,.86); color: #fff; font-size: 13px; font-weight: 600; padding: 9px 16px;
+  border-radius: 22px; box-shadow: var(--shadow-sm); white-space: nowrap; }
+#draw-bar { position: absolute; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%);
+  z-index: 7; display: flex; align-items: center; gap: 12px; background: var(--surface); color: var(--ink);
+  font-size: 14px; font-weight: 700; padding: 9px 10px 9px 16px; border-radius: 24px; box-shadow: var(--shadow-lg); border: 1px solid var(--line); }
+#draw-bar b { color: var(--blue); }
+#draw-clear { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 0; cursor: pointer;
+  background: var(--surface-2); color: var(--text-soft); font-size: 14px; line-height: 1; }
+#draw-clear:hover { background: #FBE9E7; color: #C0392B; }
