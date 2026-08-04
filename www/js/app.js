@@ -1,17 +1,5 @@
 /* BlockView prototype — map + interaction */
 
-// TEMP boot probe: a whole JS file compiles as a unit, so if app.js contains any
-// syntax this device's Safari can't parse, NOTHING below runs and this badge never
-// appears (a parse error is silent — it does not fire window.onerror). Badge shows
-// => app.js parsed & started, so a blank screen is a runtime/map issue, not syntax.
-try {
-  var _bvBoot = document.createElement("div");
-  _bvBoot.id = "bv-boot";
-  _bvBoot.textContent = "app.js started ✓ …";
-  _bvBoot.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:100000;background:#0a7d00;color:#fff;font:11px/1.5 monospace;padding:3px 8px;text-align:center;word-break:break-all";
-  (document.body || document.documentElement).appendChild(_bvBoot);
-} catch (e) {}
-
 const STYLES = {
   light: "https://tiles.openfreemap.org/styles/liberty",
   dark:  "https://tiles.openfreemap.org/styles/dark",
@@ -701,55 +689,11 @@ const map = new maplibregl.Map({
   maxPitch: 72, attributionControl: false,
 });
 
-// Diagnostic: a fatal map failure (no WebGL context, a style that never loads)
-// fires 'error' but never throws — so it slips past the window-error overlay and
-// just leaves a blank map, which is what "white screen on iPhone" is. Surface
-// such a pre-load, non-tile error on screen so a blank device is diagnosable. A
-// single failed tile also fires 'error' (carries e.tile/e.sourceId) but does NOT
-// blank the map, and post-load errors are transient — ignore both so working
-// devices never see this.
-let mapReady = false;
-const mapDiag = [];
+// Surface map errors to the console (no UI) — the map keeps working through a
+// transient tile hiccup, but a real style/WebGL failure is worth a log line.
 map.on("error", (e) => {
-  const err = (e && e.error) || {};
-  const msg = err.message || (e && e.message) || String(err) || "unknown map error";
-  const where = (e && (e.sourceId || (e.tile ? "tile" : ""))) || "";
-  if (window.console) console.warn("[BlockView] map error:", msg, e);
-  if (mapDiag.length < 8) mapDiag.push((where ? "[" + where + "] " : "") + msg);
+  if (window.console) console.warn("[BlockView] map error:", (e && e.error && e.error.message) || e);
 });
-// Only show anything if the map FAILS to finish loading. Working devices set
-// mapReady quickly and never see this; a blank device gets the captured errors
-// + the style URL on screen to screenshot.
-setTimeout(() => {
-  let layers = "?", tiles = "?", top = "?";
-  try { layers = map.getStyle().layers.length; } catch (e) {}
-  try { tiles = map.areTilesLoaded(); } catch (e) {}
-  try {
-    const el = document.elementFromPoint(Math.round(window.innerWidth / 2), Math.round(window.innerHeight / 2));
-    if (el) top = el.tagName + (el.id ? "#" + el.id : "") + (typeof el.className === "string" && el.className ? "." + el.className.split(" ")[0] : "");
-  } catch (e) {}
-  let mapRect = "?";
-  try { const m = document.getElementById("map").getBoundingClientRect(); mapRect = Math.round(m.left) + "," + Math.round(m.top) + " " + Math.round(m.width) + "x" + Math.round(m.height); } catch (e) {}
-  try {
-    const badge = document.getElementById("bv-boot");
-    if (badge) badge.textContent = "innerH=" + window.innerHeight + " docEl.H=" + document.documentElement.clientHeight +
-      " body.H=" + document.body.clientHeight + " | #map@" + mapRect + " | top@ctr=" + top;
-  } catch (e) {}
-  if (mapReady) return;
-  try {
-    let d = document.getElementById("bv-err");
-    if (!d) {
-      d = document.createElement("div"); d.id = "bv-err";
-      d.style.cssText = "position:fixed;top:0;right:0;bottom:0;left:0;z-index:99999;background:#fff;color:#b00;font:12px/1.5 monospace;padding:16px;overflow:auto;white-space:pre-wrap;direction:ltr;text-align:left";
-      (document.body || document.documentElement).appendChild(d);
-      d.textContent = "BlockView error log:\n";
-    }
-    d.textContent += "\n[MAP] did not finish loading in 8s" +
-      "\n[MAP] style: " + STYLES[mode] +
-      "\n[MAP] webgl: " + (window.WebGLRenderingContext ? "supported" : "MISSING") +
-      "\n" + (mapDiag.length ? mapDiag.join("\n") : "(no map error events captured)");
-  } catch (_e) {}
-}, 8000);
 
 function firstSymbolId() {
   for (const l of map.getStyle().layers) if (l.type === "symbol") return l.id;
@@ -849,7 +793,6 @@ function labelPaint() {
 }
 
 map.on("load", () => {
-  mapReady = true;
   addCustomLayers();
   updateTotal();
   applyTheme(mode, false); // sync the toggle icon to the loaded theme
