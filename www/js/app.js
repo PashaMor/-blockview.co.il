@@ -728,11 +728,12 @@ setTimeout(() => {
     const el = document.elementFromPoint(Math.round(window.innerWidth / 2), Math.round(window.innerHeight / 2));
     if (el) top = el.tagName + (el.id ? "#" + el.id : "") + (typeof el.className === "string" && el.className ? "." + el.className.split(" ")[0] : "");
   } catch (e) {}
+  let mapRect = "?";
+  try { const m = document.getElementById("map").getBoundingClientRect(); mapRect = Math.round(m.left) + "," + Math.round(m.top) + " " + Math.round(m.width) + "x" + Math.round(m.height); } catch (e) {}
   try {
     const badge = document.getElementById("bv-boot");
-    if (badge) badge.textContent = "loaded=" + mapReady + " layers=" + layers + " tiles=" + tiles +
-      " | top@center=" + top + " | mapErrs=" + mapDiag.length +
-      (mapDiag[0] ? " » " + String(mapDiag[0]).slice(0, 70) : "");
+    if (badge) badge.textContent = "innerH=" + window.innerHeight + " docEl.H=" + document.documentElement.clientHeight +
+      " body.H=" + document.body.clientHeight + " | #map@" + mapRect + " | top@ctr=" + top;
   } catch (e) {}
   if (mapReady) return;
   try {
