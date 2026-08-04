@@ -706,9 +706,9 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 /* ---------- inside the app: a finger is not a mouse pointer ----------
    Everything grows by ~15%, and the bottom bar gets a little more room. */
 .bv-app #view-toggle { font-size: 16px; }
-.bv-app .bb-btn { height: 56px; font-size: 15px; padding: 0 18px; }
-.bv-app .bb-btn:not(.primary) { width: 56px; font-size: 22px; }
-.bv-app #open-favs, .bv-app #open-alerts { width: auto; padding: 0 14px; font-size: 15px; }
+.bv-app .bb-btn { height: 52px; font-size: 14px; padding: 0 14px; }
+.bv-app .bb-btn:not(.primary) { width: 52px; font-size: 21px; }
+.bv-app #open-favs, .bv-app #open-alerts { width: auto; padding: 0 10px; font-size: 14px; }
 /* ---------- app: logo and publish share the top-left row ----------
    display:contents leaves the website untouched (both children keep the
    absolute positions they already had); in the app the wrapper becomes the
@@ -722,10 +722,10 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
    than with the top edge: the row is as tall as the logo card, not the button */
 .bv-app #tools { top: max(43px, calc(15px + env(safe-area-inset-top, 0px))); }
 .bv-app #brand { position: static; padding: 6px 10px; flex: 0 1 auto; min-width: 0; order: 2; }
-.bv-app .brand-logo { height: 34px; }
+.bv-app .brand-logo { height: auto; max-height: 32px; max-width: 40vw; }
 .bv-app #publish-btn {
   position: static; transform: none; top: auto; bottom: auto; left: auto;
-  height: 44px; padding: 0 14px; font-size: 13.5px; flex: none; white-space: nowrap;
+  height: 42px; padding: 0 12px; font-size: 13px; flex: none; white-space: nowrap;
   order: 1;                      /* publish leads the row, logo follows */
 }
 .bv-app #publish-btn:hover { transform: none; }
