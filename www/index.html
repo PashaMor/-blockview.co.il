@@ -17,7 +17,7 @@
         var d = document.getElementById("bv-err");
         if (!d) {
           d = document.createElement("div"); d.id = "bv-err";
-          d.style.cssText = "position:fixed;inset:0;z-index:99999;background:#fff;color:#b00;font:12px/1.5 monospace;padding:16px;overflow:auto;white-space:pre-wrap;direction:ltr;text-align:left";
+          d.style.cssText = "position:fixed;top:0;right:0;bottom:0;left:0;z-index:99999;background:#fff;color:#b00;font:12px/1.5 monospace;padding:16px;overflow:auto;white-space:pre-wrap;direction:ltr;text-align:left";
           (document.body || document.documentElement).appendChild(d);
           d.textContent = "BlockView error log:\n";
         }
@@ -45,7 +45,7 @@
     })();
   </script>
   <link rel="stylesheet" href="vendor/maplibre-gl.css?v=120" />
-  <link rel="stylesheet" href="css/style.css?v=120" />
+  <link rel="stylesheet" href="css/style.css?v=127" />
 </head>
 <body>
   <div id="map"></div>
@@ -750,7 +750,7 @@
   <script src="js/confirm.js?v=120"></script>
   <script src="js/data.js?v=120"></script>
   <script src="js/track.js?v=120"></script>
-  <script src="js/app.js?v=126"></script>
+  <script src="js/app.js?v=127"></script>
   <script src="js/auth.js?v=120"></script>
   <script src="js/billing.js?v=120"></script>
   <script src="js/home-loc.js?v=120"></script>

@@ -740,7 +740,7 @@ setTimeout(() => {
     let d = document.getElementById("bv-err");
     if (!d) {
       d = document.createElement("div"); d.id = "bv-err";
-      d.style.cssText = "position:fixed;inset:0;z-index:99999;background:#fff;color:#b00;font:12px/1.5 monospace;padding:16px;overflow:auto;white-space:pre-wrap;direction:ltr;text-align:left";
+      d.style.cssText = "position:fixed;top:0;right:0;bottom:0;left:0;z-index:99999;background:#fff;color:#b00;font:12px/1.5 monospace;padding:16px;overflow:auto;white-space:pre-wrap;direction:ltr;text-align:left";
       (document.body || document.documentElement).appendChild(d);
       d.textContent = "BlockView error log:\n";
     }
