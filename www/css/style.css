@@ -18,7 +18,7 @@
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body { font-family: var(--font); color: var(--text); overflow: hidden; background: #eef1f4; }
-#map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+#map { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; }
 
 /* ---------- Brand ---------- */
 #brand {
