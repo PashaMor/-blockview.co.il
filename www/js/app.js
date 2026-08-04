@@ -721,13 +721,18 @@ map.on("error", (e) => {
 // mapReady quickly and never see this; a blank device gets the captured errors
 // + the style URL on screen to screenshot.
 setTimeout(() => {
-  let canvas = "?";
-  try { const c = map.getCanvas(); canvas = c.width + "x" + c.height + " (css " + c.clientWidth + "x" + c.clientHeight + ")"; } catch (e) {}
+  let layers = "?", tiles = "?", top = "?";
+  try { layers = map.getStyle().layers.length; } catch (e) {}
+  try { tiles = map.areTilesLoaded(); } catch (e) {}
+  try {
+    const el = document.elementFromPoint(Math.round(window.innerWidth / 2), Math.round(window.innerHeight / 2));
+    if (el) top = el.tagName + (el.id ? "#" + el.id : "") + (typeof el.className === "string" && el.className ? "." + el.className.split(" ")[0] : "");
+  } catch (e) {}
   try {
     const badge = document.getElementById("bv-boot");
-    if (badge) badge.textContent = "mapLoaded=" + mapReady + " | canvas=" + canvas +
-      " | webgl=" + (window.WebGLRenderingContext ? "ok" : "MISS") + " | mapErrs=" + mapDiag.length +
-      (mapDiag[0] ? " » " + String(mapDiag[0]).slice(0, 90) : "");
+    if (badge) badge.textContent = "loaded=" + mapReady + " layers=" + layers + " tiles=" + tiles +
+      " | top@center=" + top + " | mapErrs=" + mapDiag.length +
+      (mapDiag[0] ? " » " + String(mapDiag[0]).slice(0, 70) : "");
   } catch (e) {}
   if (mapReady) return;
   try {
