@@ -655,6 +655,8 @@
             <span>${l.deal === "sale" ? "מכירה" : "השכרה"}</span>
             <span>${esc(l.rooms)} חד'</span><span>${esc(l.size)} מ"ר</span><span>קומה ${esc(l.floor)}</span>
             <span class="badge ${esc(l.status)}">${esc(STATUS_HE[l.status] || l.status)}</span>
+            ${(l.available_to && l.available_to < new Date().toISOString().slice(0,10) && l.status === "approved")
+              ? `<span class="badge rejected" title="עבר תאריך הזמינות — לא מוצג במפה">⏳ פג תוקף</span>` : ""}
           </div>
         </div>
         <div class="lprice">${nis(l.price)}${l.deal === "rent" ? " / לחודש" : ""}</div>

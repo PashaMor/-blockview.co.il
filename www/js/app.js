@@ -15,9 +15,10 @@ try { mode = localStorage.getItem("blockview_theme") || "light"; } catch (e) {}
 let selectedId = null;
 const filter = {
   deal: "all", rooms: 0, floor: 0, type: "all", age: "all", city: "all",
-  category: "all", term: "all",
+  category: "all", term: "all", availFrom: "", availTo: "",
   priceMin: 0, priceMax: 0, pets: false, parking: false, elevator: false, furnished: false,
 };
+function todayISO() { return new Date().toISOString().slice(0, 10); }
 // property types per category — same split the publish forms use
 const FILTER_TYPES = {
   residential: [["flat", "דירה"], ["house", "בית"], ["penthouse", "פנטהאוז"], ["studio", "סטודיו"]],
@@ -236,6 +237,15 @@ function passes(l) {
   if (filter.parking && !a.parking) return false;
   if (filter.elevator && !a.elevator) return false;
   if (filter.furnished && !a.furnished) return false;
+  // availability window: a date search is for rentals available across it. A
+  // listing with no dates is treated as available (unknown ≠ excluded).
+  if (filter.availFrom || filter.availTo) {
+    if (l.deal !== "rent") return false;
+    const reqFrom = filter.availFrom || filter.availTo;
+    const reqTo = filter.availTo || filter.availFrom;
+    if (l.availableFrom && l.availableFrom > reqFrom) return false;   // not available yet by then
+    if (l.availableTo && l.availableTo < reqTo) return false;         // ends before you need it
+  }
   return true;
 }
 function buildingMatches(id) { return (LISTINGS[id] || []).filter(passes); }
@@ -386,7 +396,8 @@ async function loadLiveData() {
   try {
     const [Bdata, Ldata] = await Promise.all([
       fetchAllRows("buildings_visible", "*").catch(() => fetchAllRows("buildings", "*")),
-      fetchAllRows("listings", "*, listing_photos(path,sort), offices(id,name,status,logo_path,phone)", (q) => q.eq("status", "approved")),
+      fetchAllRows("listings", "*, listing_photos(path,sort), offices(id,name,status,logo_path,phone)",
+        (q) => q.eq("status", "approved").or("available_to.is.null,available_to.gte." + todayISO())),
     ]);
     const B = { data: Bdata }, L = { data: Ldata };
     if (!(B.data || []).length) { console.warn("[BlockView] no buildings in DB — map stays empty"); return; }
@@ -1636,7 +1647,14 @@ function syncTermVisibility() {
   if (!g) return;
   const show = filter.deal !== "sale";
   g.hidden = !show;
-  if (!show && filter.term !== "all") { filter.term = "all"; setSeg("term-seg", "term", "all"); }
+  const dg = document.getElementById("avail-group");
+  if (dg) dg.hidden = !show;
+  if (!show) {
+    if (filter.term !== "all") { filter.term = "all"; setSeg("term-seg", "term", "all"); }
+    if (filter.availFrom || filter.availTo) { filter.availFrom = ""; filter.availTo = "";
+      var af = document.getElementById("avail-from"), at = document.getElementById("avail-to");
+      if (af) af.value = ""; if (at) at.value = ""; }
+  }
 }
 document.querySelectorAll("#term-seg .seg-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -1671,6 +1689,14 @@ document.querySelectorAll("#rooms-chips .chip").forEach((chip) => {
   chip.addEventListener("click", () => {
     document.querySelectorAll("#rooms-chips .chip").forEach((c) => c.classList.remove("on"));
     chip.classList.add("on"); filter.rooms = parseInt(chip.dataset.r, 10); refreshBuildings();
+  });
+});
+["avail-from", "avail-to"].forEach((id) => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener("change", () => {
+    filter.availFrom = document.getElementById("avail-from").value || "";
+    filter.availTo = document.getElementById("avail-to").value || "";
+    refreshBuildings();
   });
 });
 document.getElementById("floor-min").addEventListener("input", (e) => {
@@ -1756,6 +1782,9 @@ function applyFilter(obj) {
   setSeg("age-seg", "age", filter.age);
   setChip("rooms-chips", "r", String(filter.rooms || 0));
   document.getElementById("floor-min").value = filter.floor || "";
+  var afEl = document.getElementById("avail-from"), atEl = document.getElementById("avail-to");
+  if (afEl) afEl.value = filter.availFrom || "";
+  if (atEl) atEl.value = filter.availTo || "";
   const psMinEl = document.getElementById("price-min"), psMaxEl = document.getElementById("price-max");
   const mx = filter.deal === "rent" ? 20000 : 8000000, st = filter.deal === "rent" ? 500 : 50000;
   [psMinEl, psMaxEl].forEach((i) => { i.max = mx; i.step = st; });
@@ -1783,6 +1812,10 @@ function filterSummary(f) {
   if (f.floor) p.push("קומה " + f.floor + "+");
   if (f.priceMin) p.push("מ־" + fmtPrice(f.priceMin));
   if (f.priceMax) p.push("עד " + fmtPrice(f.priceMax));
+  if (f.availFrom || f.availTo) {
+    if (f.availFrom && f.availTo) p.push("זמין " + fmtDate(f.availFrom) + "–" + fmtDate(f.availTo));
+    else p.push("זמין מ־" + fmtDate(f.availFrom || f.availTo));
+  }
   if (f.age === "new") p.push("חדש"); else if (f.age === "old") p.push("ישן");
   if (f.city && f.city !== "all") p.push(f.city);
   if (f.furnished) p.push("מרוהט");

@@ -889,3 +889,7 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 #draw-actions .primary { background: var(--blue); color: #fff; }
 #draw-actions .primary:hover { background: #002C92; }
 #draw-results { border: 0; background: transparent; font: inherit; font-weight: 700; font-size: 14px; color: var(--ink); cursor: pointer; padding: 0; }
+
+/* filter sheet: availability date range */
+#filter-sheet .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sub-lbl { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
