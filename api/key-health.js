@@ -45,7 +45,9 @@ module.exports = async function handler(req, res) {
         "⚠️ <b>BlockView: Supabase secret key REJECTED</b> (HTTP " + result.status + ").\n" +
         "The RevenueCat webhook and the daily report are DOWN until " +
         "<code>SUPABASE_SECRET_KEY</code> is re-set in Vercel and redeployed.\n" +
-        "Vercel → Settings → Environment Variables, then redeploy."
+        "Vercel → Settings → Environment Variables, then redeploy.\n" +
+        "\n🔑 key Vercel is using — " + result.fp +
+        "\n(good key = sha256 f08c29d478d2, len 41. Same fp here ⇒ it's an IP/network block, not the key. Different fp ⇒ Vercel's value drifted.)"
       );
     } else {
       // unreachable / unexpected — worth knowing, but distinct from a dead key
@@ -72,18 +74,24 @@ async function probe() {
     base = required("SUPABASE_URL").replace(/\/+$/, "") + "/rest/v1/";
     key = required("SUPABASE_SECRET_KEY");
   } catch (e) {
-    return { state: "error", status: 0, detail: String(e && e.message ? e.message : e) };
+    return { state: "error", status: 0, fp: "none", detail: String(e && e.message ? e.message : e) };
   }
+  // Safe fingerprint of the key Vercel actually holds: a truncated SHA-256 plus
+  // its length. It reveals none of the key, but lets us compare — same fp as the
+  // known-good key means Vercel has the right value (so a 401 is an IP/network
+  // block); a different fp means the stored value drifted.
+  const fp = "sha256 " + require("crypto").createHash("sha256").update(key).digest("hex").slice(0, 12) +
+             ", len " + key.length;
   try {
     const r = await fetch(base + "profiles?select=id&limit=1", {
       method: "HEAD",
       headers: { apikey: key, authorization: "Bearer " + key, prefer: "count=exact", range: "0-0" },
     });
-    if (r.status === 200 || r.status === 206) return { state: "ok", status: r.status };
-    if (r.status === 401 || r.status === 403) return { state: "rejected", status: r.status };
-    return { state: "error", status: r.status };
+    if (r.status === 200 || r.status === 206) return { state: "ok", status: r.status, fp: fp };
+    if (r.status === 401 || r.status === 403) return { state: "rejected", status: r.status, fp: fp };
+    return { state: "error", status: r.status, fp: fp };
   } catch (e) {
-    return { state: "error", status: 0, detail: String(e && e.message ? e.message : e) };
+    return { state: "error", status: 0, fp: fp, detail: String(e && e.message ? e.message : e) };
   }
 }
 
