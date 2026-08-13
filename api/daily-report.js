@@ -58,7 +58,7 @@ module.exports = async function handler(req, res) {
       safe(() => dbStats(day)),
     ]);
 
-    const text = buildMessage({ day, gscDay, ga, gaPrev, gsc, db });
+    const text = buildMessage({ day, gscDay, ga, gaPrev, gsc, db, keyFp: keyFingerprint() });
     await telegram(text);
     res.status(200).json({ ok: true, day });
   } catch (e) {
@@ -173,6 +173,17 @@ function normalizeKey(raw_) {
 
 function b64url(x) {
   return Buffer.from(x).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+// Safe fingerprint of the key Vercel is actually holding — a truncated SHA-256
+// plus length, revealing none of the key. Lets us see, from the report alone,
+// whether Vercel's stored value matches the known-good key.
+function keyFingerprint() {
+  try {
+    const k = process.env.SUPABASE_SECRET_KEY || "";
+    if (!k) return "SUPABASE_SECRET_KEY is unset";
+    return "sha256 " + crypto.createHash("sha256").update(k).digest("hex").slice(0, 12) + ", len " + k.length;
+  } catch (e) { return "?"; }
 }
 
 function required(name) {
@@ -368,6 +379,7 @@ function buildMessage(x) {
   const dbErr = x.db && x.db.error ? String(x.db.error) : "";
   if (/rejected|SUPABASE_SECRET_KEY|\b401\b|\b403\b/.test(dbErr)) {
     L.push("🔴 <b>מפתח Supabase נדחה</b> — הדוח והוובהוק (RevenueCat) מושבתים עד עדכון <code>SUPABASE_SECRET_KEY</code> ב‑Vercel");
+    if (x.keyFp) L.push("🔑 " + x.keyFp + "  (מפתח תקין = sha256 f08c29d478d2, len 41)");
   } else if (x.db && !x.db.error) {
     L.push("🩺 מפתח Supabase: תקין ✅");
   }
