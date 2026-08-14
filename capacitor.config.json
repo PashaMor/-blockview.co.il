@@ -6,6 +6,17 @@
     "url": "https://www.blockview.co.il"
   },
   "android": {
-    "allowMixedContent": false
+    "allowMixedContent": false,
+    "includePlugins": [
+      "@capacitor/app",
+      "@capacitor/browser"
+    ]
+  },
+  "ios": {
+    "includePlugins": [
+      "@capacitor/app",
+      "@capacitor/browser",
+      "@revenuecat/purchases-capacitor"
+    ]
   }
 }

@@ -17,7 +17,8 @@
     "@capacitor/browser": "^6.0.6",
     "@capacitor/cli": "^6.2.1",
     "@capacitor/core": "^6.2.1",
-    "@capacitor/ios": "^6.2.1"
+    "@capacitor/ios": "^6.2.1",
+    "@revenuecat/purchases-capacitor": "^9.2.2"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
