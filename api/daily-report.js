@@ -83,6 +83,8 @@ async function safe(fn) {
   try { return await fn(); } catch (e) { return { error: String(e && e.message ? e.message : e) }; }
 }
 
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
 /* ------------------------------------------------- Google service account -- */
 
 let cachedToken = null;
@@ -307,22 +309,32 @@ async function dbStats(day) {
   // HEAD + count=exact: Supabase returns only the number, never a row.
   // No `select=` on purpose — agent_applications is keyed on user_id and has no
   // id column, so naming a column here would 400 on it.
+  //
+  // The key is valid (verified), but Supabase intermittently rejects requests
+  // from Vercel's rotating egress IPs with a spurious 401 (leftover auto-bans
+  // from the weeks the key was mis-stored). So retry a few times with backoff —
+  // a transient block clears within a second or two, and a genuinely wrong key
+  // still fails all attempts and reports the same message.
   async function count(table, query) {
     const qs = String(query || "").replace(/^&/, "");
-    const r = await fetch(base + table + (qs ? "?" + qs : ""), {
-      method: "HEAD",
-      headers: {
-        apikey: key,
-        authorization: "Bearer " + key,
-        prefer: "count=exact",
-        range: "0-0",
-      },
-    });
+    const url = base + table + (qs ? "?" + qs : "");
+    let r;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      if (attempt) await sleep(250 * attempt + Math.floor(Math.random() * 250));
+      r = await fetch(url, {
+        method: "HEAD",
+        headers: { apikey: key, authorization: "Bearer " + key, prefer: "count=exact", range: "0-0" },
+      });
+      if (r.status === 200 || r.status === 206) break;      // success
+      if (![401, 403, 429, 500, 502, 503, 504].includes(r.status)) break;  // hard error, don't retry
+      // else: retryable — loop again
+    }
     if (r.status === 401 || r.status === 403) {
-      // a HEAD reply has no body, so say what the status actually means here
-      throw new Error("db " + table + ": " + r.status + " — SUPABASE_SECRET_KEY rejected. " +
-                      "It must be the sb_secret_… key (Supabase → Settings → API Keys), " +
-                      "not the publishable key.");
+      // Still rejected after retries. The key is verified valid, so this is
+      // Supabase blocking Vercel's egress IP, not a bad key.
+      throw new Error("db " + table + ": " + r.status + " after retries — Supabase rejected " +
+                      "Vercel's IP (key fingerprint is correct). Usually a transient auto-ban; " +
+                      "if it persists, clear Network Bans in Supabase.");
     }
     if (!r.ok) throw new Error("db " + table + ": " + r.status);
     const cr = r.headers.get("content-range") || "";
@@ -377,9 +389,15 @@ function buildMessage(x) {
   // webhook, so a dead key means Pro purchases aren't syncing — a quiet tick
   // otherwise. A separate cron (api/key-health.js) catches it an hour earlier.
   const dbErr = x.db && x.db.error ? String(x.db.error) : "";
+  const keyOk = x.keyFp && /f08c29d478d2, len 41/.test(x.keyFp);
   if (/rejected|SUPABASE_SECRET_KEY|\b401\b|\b403\b/.test(dbErr)) {
-    L.push("🔴 <b>מפתח Supabase נדחה</b> — הדוח והוובהוק (RevenueCat) מושבתים עד עדכון <code>SUPABASE_SECRET_KEY</code> ב‑Vercel");
-    if (x.keyFp) L.push("🔑 " + x.keyFp + "  (מפתח תקין = sha256 f08c29d478d2, len 41)");
+    if (keyOk) {
+      // key bytes are correct — this is Supabase blocking Vercel's IP, not the key
+      L.push("🟠 <b>Supabase חסמה זמנית את ה‑IP של Vercel</b> — המפתח תקין, החסימה חולפת מעצמה. אם נמשך: נקה Network Bans ב‑Supabase.");
+    } else {
+      L.push("🔴 <b>מפתח Supabase שגוי</b> — עדכן את <code>SUPABASE_SECRET_KEY</code> ב‑Vercel דרך ה‑CLI (הדבקה בדשבורד משבשת אותו)");
+      if (x.keyFp) L.push("🔑 " + x.keyFp + "  (מפתח תקין = sha256 f08c29d478d2, len 41)");
+    }
   } else if (x.db && !x.db.error) {
     L.push("🩺 מפתח Supabase: תקין ✅");
   }

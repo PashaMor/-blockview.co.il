@@ -82,18 +82,30 @@ async function probe() {
   // block); a different fp means the stored value drifted.
   const fp = "sha256 " + require("crypto").createHash("sha256").update(key).digest("hex").slice(0, 12) +
              ", len " + key.length;
-  try {
-    const r = await fetch(base + "profiles?select=id&limit=1", {
-      method: "HEAD",
-      headers: { apikey: key, authorization: "Bearer " + key, prefer: "count=exact", range: "0-0" },
-    });
+  // Retry before crying wolf: Supabase intermittently 401s Vercel's egress IP
+  // even with a valid key. Only alert if it stays rejected across several tries
+  // with backoff — otherwise a single transient blip would page a false alarm.
+  let r;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    if (attempt) await sleep(400 * attempt + Math.floor(Math.random() * 300));
+    try {
+      r = await fetch(base + "profiles?select=id&limit=1", {
+        method: "HEAD",
+        headers: { apikey: key, authorization: "Bearer " + key, prefer: "count=exact", range: "0-0" },
+      });
+    } catch (e) {
+      if (attempt === 3) return { state: "error", status: 0, fp: fp, detail: String(e && e.message ? e.message : e) };
+      continue;
+    }
     if (r.status === 200 || r.status === 206) return { state: "ok", status: r.status, fp: fp };
-    if (r.status === 401 || r.status === 403) return { state: "rejected", status: r.status, fp: fp };
-    return { state: "error", status: r.status, fp: fp };
-  } catch (e) {
-    return { state: "error", status: 0, fp: fp, detail: String(e && e.message ? e.message : e) };
+    if (![401, 403, 429, 500, 502, 503, 504].includes(r.status)) return { state: "error", status: r.status, fp: fp };
+    // retryable — loop again
   }
+  if (r && (r.status === 401 || r.status === 403)) return { state: "rejected", status: r.status, fp: fp };
+  return { state: "error", status: r ? r.status : 0, fp: fp };
 }
+
+function sleep(ms) { return new Promise(function (res) { setTimeout(res, ms); }); }
 
 /* --------------------------------------------------------------- helpers -- */
 

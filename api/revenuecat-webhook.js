@@ -61,13 +61,24 @@ module.exports = async function handler(req, res) {
 
     var base = env("SUPABASE_URL").replace(/\/+$/, "") + "/rest/v1/";
     var key = env("SUPABASE_SECRET_KEY");
-    var r = await fetch(base + "profiles?id=eq." + encodeURIComponent(uid), {
-      method: "PATCH",
-      headers: { apikey: key, Authorization: "Bearer " + key,
-                 "Content-Type": "application/json", Prefer: "return=minimal" },
-      body: JSON.stringify(patch),
-    });
-    if (!r.ok) return res.status(500).json({ error: "supabase " + r.status + " " + (await r.text()).slice(0, 160) });
+    // Retry with backoff: Supabase intermittently rejects Vercel's egress IP
+    // with a spurious 401 (the key is valid). Losing this write would silently
+    // strand a paying user on the free plan, so ride the transient block out.
+    var r;
+    for (var attempt = 0; attempt < 4; attempt++) {
+      if (attempt) await sleep(300 * attempt + Math.floor(Math.random() * 300));
+      r = await fetch(base + "profiles?id=eq." + encodeURIComponent(uid), {
+        method: "PATCH",
+        headers: { apikey: key, Authorization: "Bearer " + key,
+                   "Content-Type": "application/json", Prefer: "return=minimal" },
+        body: JSON.stringify(patch),
+      });
+      if (r.ok) break;
+      if ([401, 403, 429, 500, 502, 503, 504].indexOf(r.status) === -1) break;  // hard error
+    }
+    // 5xx tells RevenueCat to redeliver later; a persistent failure must not be
+    // swallowed as success, or the plan change is lost for good.
+    if (!r.ok) return res.status(502).json({ error: "supabase " + r.status + " after retries" });
     return res.status(200).json({ ok: true, type: type, plan: patch.plan });
   } catch (e) {
     return res.status(500).json({ error: String((e && e.message) || e) });
@@ -75,6 +86,8 @@ module.exports = async function handler(req, res) {
 };
 
 function env(name) { var v = process.env[name]; if (!v) throw new Error("missing env " + name); return v; }
+
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
 // Append one event row. Idempotent on event_id (RevenueCat retries), and wrapped
 // so a missing table or any error can never fail the webhook's real job.
