@@ -8,6 +8,11 @@
 --   function supabase_functions.http_request(...) does not exist
 -- then webhooks aren't enabled yet — enable them and re-run.
 --
+-- BEFORE RUNNING: replace the two occurrences of REPLACE_WITH_APPROVAL_WEBHOOK_AUTH
+-- below with the real APPROVAL_WEBHOOK_AUTH value (kept in Vercel and never in
+-- this repo). The secret is deliberately NOT committed — paste it only here in
+-- your private Supabase SQL editor.
+--
 -- WHAT IT DOES: when a listing or an agent application is written with
 -- status = 'pending', Supabase POSTs the row to /api/notify-approval, which
 -- posts a short message into the approvals Telegram topic (611). The endpoint
@@ -35,7 +40,7 @@ when (new.status = 'pending')
 execute function supabase_functions.http_request(
   'https://blockview.co.il/api/notify-approval',
   'POST',
-  '{"Content-Type":"application/json","Authorization":"Bearer bva_3c567624f8e8b871bd8ff3052e3262fd606249a2fd7702aa"}',
+  '{"Content-Type":"application/json","Authorization":"Bearer REPLACE_WITH_APPROVAL_WEBHOOK_AUTH"}',
   '{}',
   '5000'
 );
@@ -48,7 +53,7 @@ when (new.status = 'pending')
 execute function supabase_functions.http_request(
   'https://blockview.co.il/api/notify-approval',
   'POST',
-  '{"Content-Type":"application/json","Authorization":"Bearer bva_3c567624f8e8b871bd8ff3052e3262fd606249a2fd7702aa"}',
+  '{"Content-Type":"application/json","Authorization":"Bearer REPLACE_WITH_APPROVAL_WEBHOOK_AUTH"}',
   '{}',
   '5000'
 );
