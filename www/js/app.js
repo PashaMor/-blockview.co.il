@@ -5,7 +5,7 @@ const STYLES = {
   dark:  "https://tiles.openfreemap.org/styles/dark",
 };
 const TLV = { center: [34.7715, 32.0632], zoom: 15.4, pitch: 58, bearing: -18 };
-const BLUE = "#0038B8", BLUE_HI = "#2E5BD6", WHITE = "#FBFBFD";
+const BLUE = "#0038B8", BLUE_HI = "#2E5BD6", WHITE = "#FBFBFD", GREEN = "#2E9E5B";
 // neighbour / no-listing buildings — near white; the directional light shades
 // their walls for depth so they don't blow out.
 const CITY = "#F7F8FA";
@@ -267,10 +267,13 @@ function buildingsGeoJSON() {
   return {
     type: "FeatureCollection",
     features: BUILDINGS.filter(inDrawnArea).map((b) => {
-      const n = buildingMatches(b.id).length;   // once, not twice (this runs for every building on every setData)
+      const matches = buildingMatches(b.id);
+      const n = matches.length;   // once, not twice (this runs for every building on every setData)
+      // a farm/land parcel renders as a flat green patch, not a blue tower
+      const agri = matches.some((l) => (l.category || "residential") === "agricultural");
       return {
         type: "Feature", id: idToIndex[b.id],
-        properties: { bid: b.id, name: b.name, height: b.height, match: n, label: b.name + " · " + n },
+        properties: { bid: b.id, name: b.name, height: b.height, match: n, agri: agri, label: b.name + " · " + n },
         geometry: { type: "Polygon", coordinates: footprint(b) },
       };
     }),
@@ -742,7 +745,7 @@ function addCustomLayers() {
       // render half a metre above the stored (real) height so our roof clears
       // the real building's roof — coplanar caps otherwise z-fight (the striped
       // flicker). Imperceptible at building scale, but it stops the tearing.
-      "fill-extrusion-height": ["+", ["coalesce", ["get", "height"], 24], 0.5], "fill-extrusion-base": 0,
+      "fill-extrusion-height": ["case", ["boolean", ["get", "agri"], false], 2.5, ["+", ["coalesce", ["get", "height"], 24], 0.5]], "fill-extrusion-base": 0,
       // fully opaque: at 0.95 the white city building underneath bled through the
       // walls and washed the sides out (the roof looked fine only because it is
       // raised above the white roof). vertical-gradient off so the walls stay the
@@ -750,6 +753,7 @@ function addCustomLayers() {
       "fill-extrusion-opacity": 1, "fill-extrusion-vertical-gradient": false,
       "fill-extrusion-color": ["case",
         ["boolean", ["feature-state", "selected"], false], BLUE_HI,
+        ["all", [">", ["get", "match"], 0], ["boolean", ["get", "agri"], false]], GREEN,
         [">", ["get", "match"], 0], BLUE, CITY],
     } });
   // Light pillar over the selected building. A thin translucent column: below the
