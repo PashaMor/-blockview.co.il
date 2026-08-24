@@ -281,10 +281,12 @@
   const P_TYPES = {
     residential: [["flat", "flat"], ["house", "house"], ["penthouse", "penthouse"], ["studio", "studio"]],
     commercial: [["office", "office"], ["shop", "shop"], ["warehouse", "warehouse"], ["other", "other_type"]],
+    agricultural: [["farm", "farm"], ["orchard", "orchard"], ["vineyard", "vineyard"], ["field", "field"]],
   };
   const TYPE_FALLBACK = {
     flat: "דירה", house: "בית", penthouse: "פנטהאוז", studio: "סטודיו",
     office: "משרד", shop: "חנות", warehouse: "מחסן / לוגיסטיקה", other_type: "אחר",
+    farm: "משק חקלאי", orchard: "מטע", vineyard: "כרם", field: "שדה / קרקע חקלאית",
   };
   function fillTypes() {
     const cat = $("p-category").value;
