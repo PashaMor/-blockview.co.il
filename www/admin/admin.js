@@ -1534,109 +1534,360 @@
    * keeps it 'pending' unless the admin explicitly approves it later. The
    * building is inserted with a fresh id (not ensure_building) so two vague
    * same-city addresses do NOT merge onto one building. */
-  function fillFromJson() {
-    let d;
-    try { d = JSON.parse($("nl-json").value); } catch (e) { return nlErr("JSON לא תקין: " + e.message); }
-    const set = (id, v) => { if (v !== undefined && v !== null) $(id).value = v; };
-    set("nl-title", d.title); set("nl-deal", d.deal); set("nl-price", d.price);
-    set("nl-rooms", d.rooms); set("nl-size", d.size); set("nl-floor", d.floor);
-    set("nl-type", d.type); set("nl-age", d.age); set("nl-city", d.city);
-    set("nl-address", d.address); set("nl-lat", d.lat); set("nl-lng", d.lng);
-    set("nl-desc", d.description);
-    if (d.contact) { set("nl-cname", d.contact.name); set("nl-cphone", d.contact.phone); $("nl-wa").checked = !!d.contact.whatsapp; }
-    $("nl-err").hidden = true;
-    // stash the amenities/extras that have no visible field
-    $("nl-json").dataset.extra = JSON.stringify({
-      category: d.category, parking: d.parking, elevator: d.elevator,
-      furnished: d.furnished, pets: d.pets, floors_total: d.floors_total,
-      rent_term: d.rent_term, contact_role: d.contact && d.contact.role,
-    });
-  }
-  $("nl-json").addEventListener("input", () => { if ($("nl-json").value.trim()) fillFromJson(); });
-  function nlErr(m) { const e = $("nl-err"); e.textContent = m; e.hidden = false; }
+  /* -------------------------------------------------------------------------
+   * New-listing builder — the same flow as the website's owner form and the
+   * agent CRM: type a real address, we look up the OSM building outline and
+   * ensure_building() dedupes-or-creates it server-side; the listing lands
+   * 'pending' (enforce_listing_status) until an admin approves it here.
+   * Ported from www/js/publish.js / www/crm/crm.js; reuses admin's state/supa.
+   * ------------------------------------------------------------------------- */
+  (function newListingBuilder() {
+    const form = $("nl-form");
+    if (!form) return;
+    const BUILDER_TYPES = {
+      residential: [["flat", "דירה"], ["house", "בית"], ["penthouse", "פנטהאוז"], ["studio", "סטודיו"]],
+      commercial: [["office", "משרד"], ["shop", "חנות"], ["warehouse", "מחסן / לוגיסטיקה"], ["other", "אחר"]],
+      agricultural: [["farm", "משק חקלאי"], ["orchard", "מטע"], ["vineyard", "כרם"], ["field", "שדה / קרקע חקלאית"]],
+    };
+    const nb = { pending: [], picked: null, footprint: null };
+    let addrTimer = null;
+    function nlErr(m) { const e = $("f-err"); e.textContent = m; e.hidden = false; }
 
-  const geoBtn = $("nl-geocode");
-  if (geoBtn) geoBtn.addEventListener("click", async () => {
-    const q = [$("nl-address").value.trim(), $("nl-city").value.trim()].filter(Boolean).join(", ");
-    if (!q) return nlErr("מלא כתובת ועיר קודם");
-    $("nl-err").hidden = true;
-    geoBtn.disabled = true;
-    const orig = geoBtn.textContent;
-    geoBtn.textContent = "מחפש…";
-    try {
-      const rows = await window.BVGeo.searchAddress(q);
-      if (!rows || !rows.length) { nlErr("לא נמצאו קואורדינטות לכתובת"); return; }
-      const r = rows[0];
-      $("nl-lat").value = r.lat.toFixed(6);
-      $("nl-lng").value = r.lng.toFixed(6);
-      toast("קואורדינטות אותרו ✓");
-    } catch (e) {
-      nlErr("שגיאת איתור: " + (e.message || e));
-    } finally {
-      geoBtn.disabled = false;
-      geoBtn.textContent = orig;
+    /* ---- price grouping (37500000 -> 37,500,000), display only ---- */
+    function groupDigits(s) {
+      const digits = String(s == null ? "" : s).replace(/\D/g, "");
+      return digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "";
     }
-  });
-
-  $("nl-create").addEventListener("click", async () => {
-    $("nl-err").hidden = true;
-    const num = (id) => Number($(id).value);
-    const title = $("nl-title").value.trim();
-    const rooms = num("nl-rooms"), size = num("nl-size");
-    const lat = num("nl-lat"), lng = num("nl-lng");
-    const address = $("nl-address").value.trim(), city = $("nl-city").value.trim();
-    if (!title) return nlErr("חסרה כותרת");
-    if (!(rooms > 0)) return nlErr("חדרים חייב להיות גדול מ-0");
-    if (!(size > 0)) return nlErr('שטח (מ"ר) חייב להיות גדול מ-0');
-    if (!address || !city) return nlErr("חסרה כתובת או עיר");
-    if (!isFinite(lat) || !isFinite(lng)) return nlErr("חסרות קואורדינטות (lat/lng)");
-    let extra = {};
-    try { extra = JSON.parse($("nl-json").dataset.extra || "{}"); } catch (e) {}
-
-    $("nl-create").disabled = true;
-    try {
-      const bid = "bv-" + (window.crypto && crypto.randomUUID
-        ? crypto.randomUUID().replace(/-/g, "")
-        : Date.now().toString(36) + Math.random().toString(36).slice(2));
-      const bIns = await supa.from("buildings").insert({
-        id: bid, name: title, address: address, city: city,
-        lat: lat, lng: lng, verified: false, source: "manual",
-      });
-      if (bIns.error) throw bIns.error;
-
-      const deal = $("nl-deal").value;
-      const row = {
-        building_id: bid, agent_id: state.user.id, deal: deal,
-        price: num("nl-price") || 0, rooms: rooms, size: size, floor: num("nl-floor") || 0,
-        floors_total: extra.floors_total || null,
-        title: title, description: $("nl-desc").value.trim(),
-        type: $("nl-type").value, category: extra.category || "residential",
-        age: $("nl-age").value, parking: !!extra.parking, elevator: !!extra.elevator,
-        furnished: !!extra.furnished, pets: !!extra.pets,
-        rent_term: deal === "rent" ? (extra.rent_term || "long") : null,
-        poster_type: "agent", status: "pending",
-      };
-      const lIns = await supa.from("listings").insert(row).select("id").single();
-      if (lIns.error) throw lIns.error;
-
-      const cname = $("nl-cname").value.trim();
-      if (cname) {
-        await supa.from("listing_contacts").insert({
-          listing_id: lIns.data.id, name: cname, phone: $("nl-cphone").value.trim() || null,
-          email: null, role: extra.contact_role || "מתווך נדל״ן", whatsapp: $("nl-wa").checked, sort: 0,
-        });
+    $("f-price").addEventListener("input", function () {
+      const el = this, before = el.value, caret = el.selectionStart || 0;
+      const digitsLeft = before.slice(0, caret).replace(/\D/g, "").length;
+      const formatted = groupDigits(before);
+      el.value = formatted;
+      let pos = 0, seen = 0;
+      while (pos < formatted.length && seen < digitsLeft) {
+        if (/\d/.test(formatted.charAt(pos))) seen++;
+        pos++;
       }
-      toast("הנכס נוצר כממתין לאישור ✓");
-      ["nl-json", "nl-title", "nl-price", "nl-rooms", "nl-size", "nl-city", "nl-address",
-       "nl-lat", "nl-lng", "nl-desc", "nl-cname", "nl-cphone"].forEach((id) => ($(id).value = ""));
-      $("nl-wa").checked = false;
-      loadAll();
-    } catch (e) {
-      nlErr("שגיאה: " + (e.message || e));
-    } finally {
-      $("nl-create").disabled = false;
+      try { el.setSelectionRange(pos, pos); } catch (e) {}
+    });
+    const MAX_PRICE = 99000000;
+    function checkedPrice(v) {
+      const n = +String(v == null ? "" : v).replace(/[^\d.]/g, "");
+      if (!isFinite(n) || n <= 0) throw new Error("נא למלא מחיר תקין");
+      if (n > MAX_PRICE) throw new Error("המחיר המרבי הוא ₪99,000,000");
+      return n;
     }
-  });
+
+    /* ---- category -> property types ---- */
+    function fillTypes(category, selected) {
+      const list = BUILDER_TYPES[category] || BUILDER_TYPES.residential;
+      $("f-type").innerHTML = list
+        .map(([v, label]) => `<option value="${esc(v)}"${v === selected ? " selected" : ""}>${esc(label)}</option>`).join("");
+      if (!list.some(([v]) => v === selected)) $("f-type").value = list[0][0];
+    }
+    $("f-category").addEventListener("change", () => fillTypes($("f-category").value, $("f-type").value));
+
+    /* ---- deal / rental term / availability dates ---- */
+    function syncTermField() {
+      const rent = $("f-deal").value === "rent";
+      $("f-term-wrap").hidden = !rent;
+      const sale = !rent;
+      ["f-furnished", "f-pets"].forEach((id) => {
+        const cb = $(id), lbl = cb && cb.closest("label");
+        if (lbl) lbl.hidden = sale;
+        if (cb && sale) cb.checked = false;
+      });
+      const short = rent && $("f-term").value === "short";
+      $("f-from-wrap").hidden = !rent;
+      $("f-to-wrap").hidden = !short;
+      if (!short) $("f-date-to").value = "";
+      if (!rent) { $("f-date-from").value = ""; $("f-date-to").value = ""; }
+    }
+    $("f-deal").addEventListener("change", syncTermField);
+    $("f-term").addEventListener("change", syncTermField);
+    function syncSizeFields() {
+      $("f-balcony-size-wrap").hidden = !$("f-balcony").checked;
+      if (!$("f-balcony").checked) $("f-balcony-size").value = "";
+      $("f-yard-size-wrap").hidden = !$("f-yard").checked;
+      if (!$("f-yard").checked) $("f-yard-size").value = "";
+    }
+    $("f-balcony").addEventListener("change", syncSizeFields);
+    $("f-yard").addEventListener("change", syncSizeFields);
+
+    /* ---- contacts (up to 5, DB-enforced) ---- */
+    const MAX_CONTACTS = 5;
+    function contactRow(c, first) {
+      const d = document.createElement("div");
+      d.className = "contact-row";
+      d.innerHTML =
+        '<input class="input c-name" maxlength="80" placeholder="שם איש קשר" autocomplete="name" />' +
+        '<div class="grid2">' +
+          '<input class="input c-phone" type="tel" inputmode="numeric" maxlength="10" placeholder="טלפון (8-10 ספרות)" autocomplete="tel" />' +
+          '<input class="input c-email" type="email" maxlength="120" placeholder="אימייל (לא חובה)" />' +
+        '</div>' +
+        '<label class="wa-check"><input type="checkbox" class="c-wa" /> 💬 המספר זמין בוואטסאפ</label>' +
+        (first ? "" : '<button type="button" class="c-remove" aria-label="הסר איש קשר">✕</button>');
+      if (c) {
+        d.querySelector(".c-name").value = c.name || "";
+        d.querySelector(".c-phone").value = c.phone || "";
+        d.querySelector(".c-email").value = c.email || "";
+        d.querySelector(".c-wa").checked = !!c.whatsapp;
+      }
+      return d;
+    }
+    function addContactRow(c) {
+      const box = $("f-contacts");
+      if (box.children.length >= MAX_CONTACTS) return;
+      box.appendChild(contactRow(c, box.children.length === 0));
+      $("f-add-contact").hidden = box.children.length >= MAX_CONTACTS;
+    }
+    function resetContacts() {
+      $("f-contacts").innerHTML = "";
+      $("f-add-contact").hidden = false;
+      addContactRow(null);
+    }
+    $("f-add-contact").addEventListener("click", () => addContactRow(null));
+    $("f-contacts").addEventListener("click", (e) => {
+      const b = e.target.closest(".c-remove");
+      if (!b) return;
+      b.parentNode.remove();
+      $("f-add-contact").hidden = $("f-contacts").children.length >= MAX_CONTACTS;
+    });
+    function readContacts() {
+      const out = [];
+      Array.prototype.forEach.call($("f-contacts").querySelectorAll(".contact-row"), (r) => {
+        const name = r.querySelector(".c-name").value.trim();
+        const phone = r.querySelector(".c-phone").value.trim();
+        const email = r.querySelector(".c-email").value.trim();
+        if (!name && !phone && !email) return;
+        if (name.length < 2) throw new Error("נא למלא שם איש קשר");
+        if (phone.replace(/\D/g, "").length < 8 || phone.replace(/\D/g, "").length > 10) throw new Error("מספר טלפון חייב להכיל 8-10 ספרות");
+        out.push({ name: name, phone: phone, email: email || null, whatsapp: !!r.querySelector(".c-wa").checked });
+      });
+      return out;
+    }
+
+    /* ---- photos: compress in-browser, first is the cover ---- */
+    function photoUrl(path) { try { return supa.storage.from(BUCKET).getPublicUrl(path).data.publicUrl; } catch (e) { return ""; } }
+    function compress(file) {
+      return new Promise((resolve) => {
+        const rd = new FileReader();
+        rd.onload = (ev) => {
+          const im = new Image();
+          im.onload = () => {
+            const max = 1400, sc = Math.min(1, max / Math.max(im.width, im.height));
+            const c = document.createElement("canvas");
+            c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+            c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+            c.toBlob((blob) => resolve({ blob, preview: c.toDataURL("image/jpeg", 0.6) }), "image/jpeg", 0.82);
+          };
+          im.src = ev.target.result;
+        };
+        rd.readAsDataURL(file);
+      });
+    }
+    function renderStrip() {
+      let idx = 0;
+      $("photo-strip").innerHTML = nb.pending.map((p, i) => {
+        const first = idx++ === 0;
+        return `<div class="ph${first ? " is-cover" : ""}"><img src="${p.preview}" alt="" />` +
+          `<button type="button" class="ph-x" data-rm="${i}">✕</button>` +
+          (first ? "" : `<button type="button" class="ph-star" data-cover="${i}" title="הפוך לתמונה ראשית">★</button>`) +
+          (first ? `<span class="ph-cover">תמונה ראשית</span>` : "") + `</div>`;
+      }).join("");
+    }
+    $("f-photos").addEventListener("change", async (e) => {
+      const files = Array.from(e.target.files || []).filter((f) => /^image\//.test(f.type));
+      e.target.value = "";
+      for (const f of files) nb.pending.push(await compress(f));
+      renderStrip();
+    });
+    $("photo-strip").addEventListener("click", (e) => {
+      const c = e.target.closest("[data-cover]");
+      if (c) { const i = +c.dataset.cover; nb.pending.unshift(nb.pending.splice(i, 1)[0]); renderStrip(); return; }
+      const b = e.target.closest("[data-rm]");
+      if (b) { nb.pending.splice(+b.dataset.rm, 1); renderStrip(); }
+    });
+
+    /* ---- address search -> ensure_building (same as website/CRM) ---- */
+    function resetAddress() {
+      nb.picked = null; nb.footprint = null;
+      $("f-addr-results").hidden = true; $("f-addr-results").innerHTML = "";
+      $("f-addr-picked").hidden = true; $("f-addr-picked").textContent = "";
+      $("f-addr-match").hidden = true; $("f-addr-match").textContent = ""; $("f-addr-match").className = "addr-match";
+    }
+    $("f-address").addEventListener("input", (e) => {
+      const q = e.target.value;
+      clearTimeout(addrTimer);
+      nb.picked = null;
+      if (q.trim().length < 3) { $("f-addr-results").hidden = true; return; }
+      addrTimer = setTimeout(async () => {
+        if (!window.BVGeo) return;
+        showAddrResults(await BVGeo.searchAddress(q));
+      }, 600);
+    });
+    function showAddrResults(items) {
+      const box = $("f-addr-results");
+      box._items = items || [];
+      if (!items || !items.length) { box.hidden = true; box.innerHTML = ""; return; }
+      box.innerHTML = items.map((it, i) =>
+        '<button type="button" class="ar-item" data-i="' + i + '">' + esc(it.label) + "</button>").join("");
+      box.hidden = false;
+    }
+    $("f-addr-results").addEventListener("click", async (e) => {
+      const b = e.target.closest(".ar-item");
+      if (!b) return;
+      const it = $("f-addr-results")._items[+b.dataset.i];
+      $("f-addr-results").hidden = true;
+      $("f-address").value = it.short + (it.city ? ", " + it.city : "");
+      nb.picked = it;
+      const picked = $("f-addr-picked");
+      picked.textContent = "מאתר את מתאר הבניין…";
+      picked.hidden = false;
+      const fp = await BVGeo.fetchFootprint(it.lat, it.lng);
+      nb.footprint = fp;
+      picked.textContent = "📍 " + it.short +
+        (fp ? " — נמצא מתאר בניין אמיתי"
+            : it.hasNumber ? " — ללא מתאר מדויק, ימוקם לפי הכתובת"
+                           : " — ⚠️ התוצאה היא הרחוב בלבד, ללא מספר בית.");
+      showAddrMatch(it, fp);
+    });
+    async function showAddrMatch(a, fp) {
+      const box = $("f-addr-match");
+      box.hidden = true; box.className = "addr-match";
+      try {
+        const { data, error } = await supa.rpc("preview_building_match", {
+          p_address: a.label,
+          p_lat: fp && fp.center ? fp.center[1] : a.lat,
+          p_lng: fp && fp.center ? fp.center[0] : a.lng,
+          p_osm_id: (fp && fp.osmId) || a.osmId || null,
+        });
+        if (error || !data || !data.length) return;
+        const m = data[0];
+        if (m.reason === "new") box.textContent = "🏠 ייווצר בניין חדש בכתובת הזו.";
+        else if (m.reason === "existing_hidden") box.textContent = "🏢 הנכס יצורף לבניין קיים בכתובת הזו.";
+        else {
+          box.className = "addr-match warn";
+          box.textContent = '⚠️ הנכס יצורף לבניין הקיים "' + (m.name || "") + '" — ' + (m.address || "") +
+            (m.reason === "nearby" ? ". הכתובת שבחרת נמצאת במרחק של כמה מטרים ממנו." : ". זו אותה כתובת.");
+        }
+        box.hidden = false;
+      } catch (err) { /* preview is a courtesy — never block saving */ }
+    }
+    async function resolveBuilding() {
+      if (!nb.picked) throw new Error("נא לבחור את כתובת הנכס");
+      const a = nb.picked, fp = nb.footprint;
+      const { data, error } = await supa.rpc("ensure_building", {
+        p_name: a.short,
+        p_address: a.label,
+        p_city: a.city || null,
+        p_lat: fp && fp.center ? fp.center[1] : a.lat,
+        p_lng: fp && fp.center ? fp.center[0] : a.lng,
+        p_osm_id: (fp && fp.osmId) || a.osmId || null,
+        p_footprint: fp ? fp.polygon : null,
+        p_height: fp ? fp.height : null,
+      });
+      if (error) throw new Error(/TOO_MANY_BUILDINGS/.test(error.message) ? "נוספו יותר מדי בניינים בשעה האחרונה" : "לא הצלחנו לאתר את הבניין לכתובת הזו");
+      return data;
+    }
+
+    /* ---- reset the whole form ---- */
+    function resetForm() {
+      form.reset();
+      nb.pending = [];
+      resetAddress();
+      $("f-err").hidden = true;
+      $("f-floor").value = 0;
+      $("f-category").value = "residential";
+      fillTypes("residential", "flat");
+      $("f-deal").value = "sale";
+      $("f-term").value = "long";
+      syncTermField();
+      syncSizeFields();
+      renderStrip();
+      resetContacts();
+    }
+    $("f-reset").addEventListener("click", resetForm);
+
+    /* ---- submit ---- */
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      $("f-err").hidden = true;
+      const save = $("f-save");
+      save.disabled = true;
+      try {
+        const contacts = readContacts();
+        if (!contacts.length) throw new Error("נא למלא לפחות איש קשר אחד");
+        const buildingId = await resolveBuilding();
+        const rent = $("f-deal").value === "rent";
+        const short = rent && $("f-term").value === "short";
+        const row = {
+          building_id: buildingId,
+          agent_id: state.user.id,
+          poster_type: "agent",
+          deal: $("f-deal").value,
+          rent_term: rent ? $("f-term").value : null,
+          available_from: rent ? ($("f-date-from").value || null) : null,
+          available_to: short ? ($("f-date-to").value || null) : null,
+          title: $("f-title").value.trim(),
+          price: checkedPrice($("f-price").value),
+          rooms: +$("f-rooms").value,
+          size: +$("f-size").value,
+          floor: +$("f-floor").value || 0,
+          floors_total: +$("f-floors-total").value || null,
+          category: $("f-category").value,
+          type: $("f-type").value,
+          age: $("f-age").value,
+          description: $("f-desc").value.trim(),
+          furnished: $("f-furnished").checked,
+          pets: $("f-pets").checked,
+          parking: $("f-parking").checked,
+          elevator: $("f-elevator").checked,
+          balcony: $("f-balcony").checked,
+          balcony_size: $("f-balcony").checked ? (+$("f-balcony-size").value || null) : null,
+          yard: $("f-yard").checked,
+          yard_size: $("f-yard").checked ? (+$("f-yard-size").value || null) : null,
+          safe_room: $("f-safe_room").checked,
+          ac: $("f-ac").checked,
+          storage: $("f-storage").checked,
+          accessible: $("f-accessible").checked,
+          bars: $("f-bars").checked,
+          solar: $("f-solar").checked,
+          renovated: $("f-renovated").checked,
+          status: "pending",
+        };
+        const ins = await supa.from("listings").insert(row).select("id").single();
+        if (ins.error) throw ins.error;
+        const listingId = ins.data.id;
+
+        for (let i = 0; i < nb.pending.length; i++) {
+          const path = `${state.user.id}/${listingId}/${Date.now()}_${i}.jpg`;
+          const up = await supa.storage.from(BUCKET).upload(path, nb.pending[i].blob, { contentType: "image/jpeg" });
+          if (up.error) throw up.error;
+          const pins = await supa.from("listing_photos").insert({ listing_id: listingId, path, sort: i });
+          if (pins.error) throw pins.error;
+        }
+        const cins = await supa.from("listing_contacts").insert(
+          contacts.map((c, i) => ({ listing_id: listingId, name: c.name, phone: c.phone, email: c.email, whatsapp: c.whatsapp, sort: i })));
+        if (cins.error) throw cins.error;
+
+        toast("הנכס נוצר וממתין לאישור ✓");
+        resetForm();
+        await loadAll();
+        const qtab = document.querySelector('.tab[data-tab="queue"]');
+        if (qtab) qtab.click();
+      } catch (err) {
+        nlErr(err.message || "שגיאה ביצירת הנכס");
+      } finally {
+        save.disabled = false;
+      }
+    });
+
+    // initial state
+    fillTypes("residential", "flat");
+    syncTermField();
+    resetContacts();
+  })();
 })();
 
 /* ---- password reset (shared /reset page) ---- */
