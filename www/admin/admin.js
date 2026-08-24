@@ -1555,6 +1555,29 @@
   $("nl-json").addEventListener("input", () => { if ($("nl-json").value.trim()) fillFromJson(); });
   function nlErr(m) { const e = $("nl-err"); e.textContent = m; e.hidden = false; }
 
+  const geoBtn = $("nl-geocode");
+  if (geoBtn) geoBtn.addEventListener("click", async () => {
+    const q = [$("nl-address").value.trim(), $("nl-city").value.trim()].filter(Boolean).join(", ");
+    if (!q) return nlErr("מלא כתובת ועיר קודם");
+    $("nl-err").hidden = true;
+    geoBtn.disabled = true;
+    const orig = geoBtn.textContent;
+    geoBtn.textContent = "מחפש…";
+    try {
+      const rows = await window.BVGeo.searchAddress(q);
+      if (!rows || !rows.length) { nlErr("לא נמצאו קואורדינטות לכתובת"); return; }
+      const r = rows[0];
+      $("nl-lat").value = r.lat.toFixed(6);
+      $("nl-lng").value = r.lng.toFixed(6);
+      toast("קואורדינטות אותרו ✓");
+    } catch (e) {
+      nlErr("שגיאת איתור: " + (e.message || e));
+    } finally {
+      geoBtn.disabled = false;
+      geoBtn.textContent = orig;
+    }
+  });
+
   $("nl-create").addEventListener("click", async () => {
     $("nl-err").hidden = true;
     const num = (id) => Number($(id).value);

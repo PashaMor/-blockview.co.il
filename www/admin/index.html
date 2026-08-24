@@ -91,7 +91,7 @@
       <button class="tab" data-tab="offices">משרדים <b class="tab-count" id="offices-count"></b></button>
       <button class="tab" data-tab="buildings">בניינים <b class="tab-count" id="buildings-count"></b></button>
       <button class="tab" data-tab="reports">דיווחים <b id="reports-badge"></b></button>
-      <button class="tab" data-tab="new" hidden>➕ נכס חדש</button>
+      <button class="tab" data-tab="new">➕ נכס חדש</button>
     </nav>
 
     <!-- overview -->
@@ -261,6 +261,7 @@
         <select id="nl-age" class="input"><option value="new">חדש</option><option value="old">ישן</option></select>
         <input id="nl-city" class="input" placeholder="עיר *" />
         <input id="nl-address" class="input" placeholder="כתובת *" />
+        <button type="button" id="nl-geocode" class="btn-ghost" style="white-space:nowrap">📍 אתר קואורדינטות מהכתובת</button>
         <input id="nl-lat" class="input" type="number" step="0.00001" placeholder="lat *" />
         <input id="nl-lng" class="input" type="number" step="0.00001" placeholder="lng *" />
         <input id="nl-cname" class="input" placeholder="שם איש קשר" />
@@ -357,6 +358,6 @@
   <script src="../js/analytics.js?v=2"></script>
   <script src="../js/oauth.js?v=18"></script>
   <script src="../js/geo.js?v=105"></script>
-  <script src="admin.js?v=42"></script>
+  <script src="admin.js?v=43"></script>
 </body>
 </html>
