@@ -24,8 +24,10 @@ module.exports = async function handler(req, res) {
   try {
     if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
 
+    // Accept the secret with or without a "Bearer " prefix (the Supabase webhook
+    // sends "Bearer <secret>"; a bare secret is fine too).
     var want = process.env.APPROVAL_WEBHOOK_AUTH || "";
-    var got = String((req.headers && req.headers.authorization) || "");
+    var got = String((req.headers && req.headers.authorization) || "").replace(/^Bearer\s+/i, "");
     if (!want || got !== want) return res.status(401).json({ error: "unauthorized" });
 
     // Supabase webhook payload: { type, table, schema, record, old_record }
