@@ -531,7 +531,9 @@
     // in that mode, so there is no new address to resolve
     if (state.editId && state.buildingId) return state.buildingId;
     const a = state.address;
-    if (!a) throw new Error(T("address_required", "נא לבחור את כתובת הנכס"));
+    if (!a) throw new Error($("p-category").value === "agricultural"
+      ? T("pin_required", "יש לסמן את מיקום המשק על המפה לפני שליחה לאישור")
+      : T("address_required", "נא לבחור את כתובת הנכס"));
     if (!a.hasNumber && $("p-category").value !== "agricultural") throw new Error(T("address_need_number", "חובה לבחור כתובת עם מספר בית — לא ניתן לפרסם נכס ללא מספר בית"));
     const fp = state.footprint;
     const { data, error } = await supa().rpc("ensure_building", {
