@@ -773,7 +773,7 @@ function addCustomLayers() {
       // render half a metre above the stored (real) height so our roof clears
       // the real building's roof — coplanar caps otherwise z-fight (the striped
       // flicker). Imperceptible at building scale, but it stops the tearing.
-      "fill-extrusion-height": ["case", ["boolean", ["get", "agri"], false], 2.5, ["+", ["coalesce", ["get", "height"], 24], 0.5]], "fill-extrusion-base": 0,
+      "fill-extrusion-height": ["case", ["boolean", ["get", "agri"], false], 0.3, ["+", ["coalesce", ["get", "height"], 24], 0.5]], "fill-extrusion-base": 0,
       // fully opaque: at 0.95 the white city building underneath bled through the
       // walls and washed the sides out (the roof looked fine only because it is
       // raised above the white roof). vertical-gradient off so the walls stay the
@@ -920,7 +920,11 @@ function setView(threeD) {
 viewBtn.addEventListener("click", () => setView(!is3D));
 // let other scripts force the flat top-down view (the farm publish flow uses it
 // so the owner drops the pin on a map, not a tilted 3D scene)
-window.BVSet2D = function () { if (is3D) setView(false); };
+window.BVSet2D = function () {
+  if (is3D) setView(false);
+  // true top-down north-up so the farm's axis-aligned patch reads straight
+  try { map.easeTo({ pitch: 0, bearing: 0, duration: 500 }); } catch (e) {}
+};
 
 /* ---------------------------------------------------------- selection ---- */
 function setSelectedState(id, on) {
