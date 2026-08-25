@@ -969,9 +969,9 @@
     addr.footprint = fp;
     // a match with no house number is the street, not the building — say so
     picked.textContent = "📍 " + it.short +
-      (fp ? " — נמצא מתאר בניין אמיתי"
-          : it.hasNumber ? " — ללא מתאר מדויק, ימוקם לפי הכתובת"
-                         : " — ⚠️ התוצאה היא הרחוב בלבד, ללא מספר בית. הנכס ימוקם באמצע הרחוב.");
+      (!it.hasNumber ? " — ⛔ חובה לבחור כתובת עם מספר בית. בחר תוצאה עם מספר בית."
+          : fp ? " — נמצא מתאר בניין אמיתי"
+               : " — ללא מתאר מדויק, ימוקם לפי הכתובת");
     showAddrMatch(it, fp);
   });
 
@@ -1014,6 +1014,7 @@
       if ($("f-id").value && $("f-building").value) return $("f-building").value; // editing, address untouched
       throw new Error("נא לבחור את כתובת הנכס");
     }
+    if (!addr.picked.hasNumber) throw new Error("חובה לבחור כתובת עם מספר בית — לא ניתן לפרסם נכס ללא מספר בית");
     const a = addr.picked, fp = addr.footprint;
     const { data, error } = await supa.rpc("ensure_building", {
       p_name: a.short,

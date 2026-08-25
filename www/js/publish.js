@@ -421,9 +421,9 @@
     state.footprint = fp;
     // a match with no house number is the street, not the building — say so
     picked.textContent = "📍 " + it.short + " — " +
-      (fp ? T("address_ok", "נמצא מתאר בניין אמיתי")
-          : it.hasNumber ? T("address_nofp", "ללא מתאר מדויק, ימוקם לפי הכתובת")
-                         : T("address_street_only", "⚠️ התוצאה היא הרחוב בלבד, ללא מספר בית"));
+      (!it.hasNumber ? T("address_need_number", "⛔ חובה לבחור כתובת עם מספר בית — בחר תוצאה עם מספר בית")
+          : fp ? T("address_ok", "נמצא מתאר בניין אמיתי")
+               : T("address_nofp", "ללא מתאר מדויק, ימוקם לפי הכתובת"));
     showBuildingMatch(it, fp);
   });
 
@@ -479,6 +479,7 @@
     if (state.editId && state.buildingId) return state.buildingId;
     const a = state.address;
     if (!a) throw new Error(T("address_required", "נא לבחור את כתובת הנכס"));
+    if (!a.hasNumber) throw new Error(T("address_need_number", "חובה לבחור כתובת עם מספר בית — לא ניתן לפרסם נכס ללא מספר בית"));
     const fp = state.footprint;
     const { data, error } = await supa().rpc("ensure_building", {
       p_name: a.short,

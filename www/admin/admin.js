@@ -1747,9 +1747,9 @@
       const fp = await BVGeo.fetchFootprint(it.lat, it.lng);
       nb.footprint = fp;
       picked.textContent = "📍 " + it.short +
-        (fp ? " — נמצא מתאר בניין אמיתי"
-            : it.hasNumber ? " — ללא מתאר מדויק, ימוקם לפי הכתובת"
-                           : " — ⚠️ התוצאה היא הרחוב בלבד, ללא מספר בית.");
+        (!it.hasNumber ? " — ⛔ חובה לבחור כתובת עם מספר בית. בחר תוצאה עם מספר בית."
+            : fp ? " — נמצא מתאר בניין אמיתי"
+                 : " — ללא מתאר מדויק, ימוקם לפי הכתובת");
       showAddrMatch(it, fp);
     });
     async function showAddrMatch(a, fp) {
@@ -1776,6 +1776,7 @@
     }
     async function resolveBuilding() {
       if (!nb.picked) throw new Error("נא לבחור את כתובת הנכס");
+      if (!nb.picked.hasNumber) throw new Error("חובה לבחור כתובת עם מספר בית — לא ניתן לפרסם נכס ללא מספר בית");
       const a = nb.picked, fp = nb.footprint;
       const { data, error } = await supa.rpc("ensure_building", {
         p_name: a.short,
