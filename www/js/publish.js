@@ -348,9 +348,12 @@
   const genBtn = $("p-desc-gen");
   if (genBtn) genBtn.addEventListener("click", async () => {
     if (!window.BVDescribe) return;
+    const agri = $("p-category").value === "agricultural";
     const rooms = $("p-rooms").value, size = $("p-size").value;
-    if (!rooms || !size) {
-      if (window.bvToast) window.bvToast(T("write_need_fields", "מלא חדרים ושטח כדי לנסח תיאור"));
+    if ((!agri && !rooms) || !size) {   // a farm has no rooms, only land area
+      if (window.bvToast) window.bvToast(agri
+        ? T("write_need_size", "מלא שטח כדי לנסח תיאור")
+        : T("write_need_fields", "מלא חדרים ושטח כדי לנסח תיאור"));
       return;
     }
     const b = (state.buildings || []).find((x) => x.id === $("p-building").value) || {};
