@@ -1444,7 +1444,7 @@
       agency: val(".a-agency"), license_no: val(".a-license"),
       phone: val(".a-phone") || null,
     };
-    if (!row.first_name || !row.agency || !row.license_no) return toast("שם, משרד ומספר רישיון הם שדות חובה");
+    if (!row.first_name || !row.last_name || !row.agency || !row.license_no) return toast("שם פרטי, שם משפחה, משרד ומספר רישיון הם שדות חובה");
     const res = await supa.from("agent_profiles").upsert(row, { onConflict: "user_id" });
     if (res.error) return toast("שגיאה: " + res.error.message);
     toast("פרטי הסוכן נשמרו"); loadAll();
