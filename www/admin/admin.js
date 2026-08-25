@@ -1094,15 +1094,23 @@
 
   function renderUsers() {
     const q = $("u-search").value.trim().toLowerCase();
+    const qDigits = q.replace(/\D/g, "");        // for phone matching
     const role = $("u-role").value, plan = $("u-plan").value;
     const rows = state.profiles.filter((p) => {
       if (role !== "all" && p.role !== role) return false;
       if (plan !== "all" && (p.plan === "pro" ? "pro" : "free") !== plan) return false;
       if (!q) return true;
-      // search the firm and licence too, not just the email
+      // search the firm, licence and name too, not just the email
       const a = state.apmap[p.id] || {};
-      return (String(p.email || "") + " " + (a.agency || "") + " " + (a.license_no || "") +
-              " " + (a.first_name || "") + " " + (a.last_name || "")).toLowerCase().includes(q);
+      const text = (String(p.email || "") + " " + (a.agency || "") + " " + (a.license_no || "") +
+              " " + (a.first_name || "") + " " + (a.last_name || "")).toLowerCase();
+      if (text.includes(q)) return true;
+      // phone: compare digits only, so "050-123" matches "0501234567" / "+97250…"
+      if (qDigits.length >= 3) {
+        const phoneDigits = String(a.phone || "").replace(/\D/g, "");
+        if (phoneDigits.indexOf(qDigits) !== -1) return true;
+      }
+      return false;
     });
     $("u-count").textContent = rows.length;
     $("users-list").innerHTML = rows.map((p) => `
