@@ -1585,7 +1585,14 @@
         .map(([v, label]) => `<option value="${esc(v)}"${v === selected ? " selected" : ""}>${esc(label)}</option>`).join("");
       if (!list.some(([v]) => v === selected)) $("f-type").value = list[0][0];
     }
-    $("f-category").addEventListener("change", () => fillTypes($("f-category").value, $("f-type").value));
+    // agricultural land is placed by settlement/area — no house number required
+    const isAgri = () => $("f-category").value === "agricultural";
+    function syncAgri() {
+      $("f-address").placeholder = isAgri()
+        ? "יישוב / עיר (לא נדרש מספר בית)"
+        : "לדוגמה: אלנבי 20, תל אביב";
+    }
+    $("f-category").addEventListener("change", () => { fillTypes($("f-category").value, $("f-type").value); syncAgri(); });
 
     /* ---- deal / rental term / availability dates ---- */
     function syncTermField() {
@@ -1747,9 +1754,10 @@
       const fp = await BVGeo.fetchFootprint(it.lat, it.lng);
       nb.footprint = fp;
       picked.textContent = "📍 " + it.short +
-        (!it.hasNumber ? " — ⛔ חובה לבחור כתובת עם מספר בית. הכנסת מספר הבניין מאפשר למערכת להראות כל מה שמסביב לבניין במדויק."
-            : fp ? " — נמצא מתאר בניין אמיתי"
-                 : " — ללא מתאר מדויק, ימוקם לפי הכתובת");
+        (isAgri() ? " — יישוב / אזור נבחר"
+            : !it.hasNumber ? " — ⛔ חובה לבחור כתובת עם מספר בית. הכנסת מספר הבניין מאפשר למערכת להראות כל מה שמסביב לבניין במדויק."
+                : fp ? " — נמצא מתאר בניין אמיתי"
+                     : " — ללא מתאר מדויק, ימוקם לפי הכתובת");
       showAddrMatch(it, fp);
     });
     async function showAddrMatch(a, fp) {
@@ -1776,7 +1784,7 @@
     }
     async function resolveBuilding() {
       if (!nb.picked) throw new Error("נא לבחור את כתובת הנכס");
-      if (!nb.picked.hasNumber) throw new Error("חובה לבחור כתובת עם מספר בית — לא ניתן לפרסם נכס ללא מספר בית");
+      if (!nb.picked.hasNumber && !isAgri()) throw new Error("חובה לבחור כתובת עם מספר בית — לא ניתן לפרסם נכס ללא מספר בית");
       const a = nb.picked, fp = nb.footprint;
       const { data, error } = await supa.rpc("ensure_building", {
         p_name: a.short,
@@ -1801,6 +1809,7 @@
       $("f-floor").value = 0;
       $("f-category").value = "residential";
       fillTypes("residential", "flat");
+      syncAgri();
       $("f-deal").value = "sale";
       $("f-term").value = "long";
       syncTermField();
@@ -1886,6 +1895,7 @@
 
     // initial state
     fillTypes("residential", "flat");
+    syncAgri();
     syncTermField();
     resetContacts();
   })();
