@@ -618,6 +618,16 @@
       <div class="b-address" data-i18n="publish_sub">הנכס יישלח לאישור ויופיע במפה לאחר אישור.</div>
     </div>
     <form id="pub-form" class="sheet-body">
+      <div class="fgroup grid-2">
+        <div><label data-i18n="category_lbl">ייעוד</label>
+          <select id="p-category" class="selectbox">
+            <option value="residential" data-i18n="residential">מגורים</option>
+            <option value="commercial" data-i18n="commercial">מסחרי</option>
+            <option value="agricultural" data-i18n="agricultural">חקלאי</option>
+          </select></div>
+        <div><label data-i18n="prop_type">סוג נכס</label>
+          <select id="p-type" class="selectbox"></select></div>
+      </div>
       <div class="fgroup">
         <label data-i18n="address_lbl">כתובת הנכס</label>
         <input id="p-address" class="selectbox" autocomplete="off" placeholder="רחוב ומספר, עיר" data-i18n-ph="address_ph" />
@@ -665,16 +675,6 @@
           <input id="p-floors-total" class="selectbox" type="number" min="1" max="200" placeholder="—" /></div>
         <div><label data-i18n="building_age">גיל</label>
           <select id="p-age" class="selectbox"><option value="old" data-i18n="old">ישן</option><option value="new" data-i18n="new">חדש</option></select></div>
-      </div>
-      <div class="fgroup grid-2">
-        <div><label data-i18n="category_lbl">ייעוד</label>
-          <select id="p-category" class="selectbox">
-            <option value="residential" data-i18n="residential">מגורים</option>
-            <option value="commercial" data-i18n="commercial">מסחרי</option>
-            <option value="agricultural" data-i18n="agricultural">חקלאי</option>
-          </select></div>
-        <div><label data-i18n="prop_type">סוג נכס</label>
-          <select id="p-type" class="selectbox"></select></div>
       </div>
       <div class="fgroup">
         <label class="label-row">

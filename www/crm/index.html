@@ -204,6 +204,21 @@
       <form id="listing-form" class="form">
         <input type="hidden" id="f-id" />
 
+        <div class="grid4">
+          <label class="field"><span>ייעוד</span>
+            <select id="f-category" class="input">
+              <option value="residential">מגורים</option>
+              <option value="commercial">מסחרי</option>
+            </select>
+          </label>
+          <label class="field"><span>סוג נכס</span>
+            <select id="f-type" class="input"></select>
+          </label>
+          <label class="field"><span>גיל הבניין</span>
+            <select id="f-age" class="input"><option value="old">ישן</option><option value="new">חדש</option></select>
+          </label>
+        </div>
+
         <!-- Address first: the agent types the real address and we create the
              building from OpenStreetMap. The old dropdown of existing buildings
              stays as a fallback for when the lookup is down. -->
@@ -258,19 +273,7 @@
           </label>
         </div>
 
-        <div class="grid4">
-          <label class="field"><span>ייעוד</span>
-            <select id="f-category" class="input">
-              <option value="residential">מגורים</option>
-              <option value="commercial">מסחרי</option>
-            </select>
-          </label>
-          <label class="field"><span>סוג נכס</span>
-            <select id="f-type" class="input"></select>
-          </label>
-          <label class="field"><span>גיל הבניין</span>
-            <select id="f-age" class="input"><option value="old">ישן</option><option value="new">חדש</option></select>
-          </label>
+        <div class="grid2">
           <label class="field" id="f-status-field"><span>סטטוס</span>
             <select id="f-status" class="input">
               <option value="pending">ממתין לאישור</option>
