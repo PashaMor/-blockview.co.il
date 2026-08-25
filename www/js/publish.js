@@ -304,6 +304,7 @@
   function syncAgriUI() {
     const agri = $("p-category").value === "agricultural";
     if ($("p-pin-btn")) $("p-pin-btn").hidden = !agri;
+    if ($("p-parcel")) $("p-parcel").hidden = !agri;
     if ($("p-address")) $("p-address").placeholder = agri
       ? T("address_ph_farm", "יישוב / עיר")
       : T("address_ph", "רחוב ומספר, עיר");
@@ -463,11 +464,12 @@
       const pt = await window.BVPickLocation({ lng: it.lng, lat: it.lat, zoom: 14 });
       sh.classList.add("open");
       if (!pt) return;
-      const label = it.short + (it.city ? ", " + it.city : "");
-      state.address = { short: label, label: label, city: it.city || null, lat: pt.lat, lng: pt.lng, hasNumber: true };
+      const settle = it.short;             // clean settlement name (e.g. "תלמי יחיאל")
+      state.address = { short: settle, label: settle, city: it.city || null, lat: pt.lat, lng: pt.lng, hasNumber: true };
       state.footprint = null;
+      if ($("p-address")) $("p-address").value = settle;
       const pk = $("p-addr-picked");
-      if (pk) { pk.textContent = "📍 " + label + " — " + T("pin_set", "מיקום נבחר על המפה"); pk.hidden = false; }
+      if (pk) { pk.textContent = "📍 " + settle + (it.city ? ", " + it.city : "") + " — " + T("pin_set", "מיקום נבחר על המפה"); pk.hidden = false; }
       return;
     }
     state.address = it;
@@ -544,9 +546,13 @@
       : T("address_required", "נא לבחור את כתובת הנכס"));
     if (!a.hasNumber && $("p-category").value !== "agricultural") throw new Error(T("address_need_number", "חובה לבחור כתובת עם מספר בית — לא ניתן לפרסם נכס ללא מספר בית"));
     const fp = state.footprint;
+    // a farm's "address" is its גוש/חלקה (owner-typed), not a street; fall back to
+    // the settlement name if they left it blank
+    const parcel = ($("p-category").value === "agricultural" && $("p-parcel"))
+      ? ($("p-parcel").value || "").trim() : "";
     const { data, error } = await supa().rpc("ensure_building", {
       p_name: a.short,
-      p_address: a.label,
+      p_address: parcel || a.label,
       p_city: a.city || null,
       p_lat: fp && fp.center ? fp.center[1] : a.lat,
       p_lng: fp && fp.center ? fp.center[0] : a.lng,
