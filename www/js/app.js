@@ -992,7 +992,7 @@ function listingCard(l) {
         // the cover photo (listing_photos.sort = 0) when the listing has one
         (l.photos && l.photos.length)
           ? `<img class="card-photo" src="${l.photos[0]}" alt="" loading="lazy" />`
-          : "🏠"}
+          : (isAgriListing(l) ? "🌳" : "🏠")}
         <button class="fav-btn ${isFav(l.id) ? "on" : ""}" data-fav="${l.id}" aria-label="שמור למועדפים">♥</button>
         <div class="card-badges">${note}${tour}${dealBadge(l.deal, l.rentTerm)}</div>
       </div>
@@ -1009,6 +1009,13 @@ function renderListings(b) {
   document.getElementById("b-name").textContent = b.name;
   document.getElementById("b-address").textContent = b.address;
   const m = buildingMatches(b.id);
+  // an agricultural parcel is land, not a building — label it as such
+  const eyebrow = document.getElementById("b-eyebrow");
+  if (eyebrow) {
+    const agriMatch = m.find(isAgriListing);
+    if (agriMatch) { eyebrow.textContent = typeLabelOf(agriMatch); eyebrow.removeAttribute("data-i18n"); }
+    else { eyebrow.setAttribute("data-i18n", "building"); eyebrow.textContent = t("building"); }
+  }
   const sale = m.filter((l) => l.deal === "sale").length, rent = m.filter((l) => l.deal === "rent").length;
   document.getElementById("b-stats").innerHTML =
     `<span class="stat-chip"><b>${m.length}</b> ${t("properties")}</span>` +
