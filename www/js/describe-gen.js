@@ -22,16 +22,20 @@
   var KIND_HE = {
     flat: "דירה", house: "בית", penthouse: "פנטהאוז", studio: "סטודיו",
     office: "משרד", shop: "חנות", warehouse: "מחסן", other: "נכס מסחרי",
+    farm: "משק חקלאי", orchard: "מטע", vineyard: "כרם", field: "קרקע חקלאית",
   };
   var KIND_EN = {
     flat: "apartment", house: "house", penthouse: "penthouse", studio: "studio",
     office: "office", shop: "retail space", warehouse: "warehouse", other: "commercial property",
+    farm: "farm", orchard: "orchard", vineyard: "vineyard", field: "farmland",
   };
 
   function pick(list, i) { return list[i % list.length]; }
   function clean(s) { return String(s == null ? "" : s).trim(); }
   function nOf(v) { var n = Number(v); return isFinite(n) && n > 0 ? n : 0; }
   function isCommercial(f) { return f.category === "commercial"; }
+  // agricultural land has no rooms/floor — treat it like commercial for those
+  function isAgri(f) { return f.category === "agricultural"; }
 
   // "שדרות רוטשילד 22, תל אביב" -> "שדרות רוטשילד 22"; keeps the street for the
   // headline so the city can be stated separately without repeating it
@@ -63,7 +67,7 @@
 
     /* --- headline: the words people actually search --- */
     var head = kind;
-    if (rooms && !isCommercial(f)) head += " " + rooms + " חדרים";
+    if (rooms && !isCommercial(f) && !isAgri(f)) head += " " + rooms + " חדרים";
     head += " " + deal;
     if (street) head += " ב" + street;
     if (city) head += (street ? ", " : " ב") + city;
@@ -73,7 +77,7 @@
     var facts = [];
     if (size) facts.push('שטח ' + size + ' מ"ר');
     if (isFinite(floor) && floor > 0) facts.push(floors ? "קומה " + floor + " מתוך " + floors : "קומה " + floor);
-    else if (floor === 0 && !isCommercial(f)) facts.push("קומת קרקע");
+    else if (floor === 0 && !isCommercial(f) && !isAgri(f)) facts.push("קומת קרקע");
     if (facts.length) {
       out.push(pick([
         "ה" + kind + ": " + facts.join(", ") + ".",
@@ -94,13 +98,13 @@
         "כולל " + listHe(has) + ".",
       ], variant));
     }
-    if (f.pets && !isCommercial(f)) {
+    if (f.pets && !isCommercial(f) && !isAgri(f)) {
       out.push(pick(["מותר להכניס חיות מחמד.", "ידידותי לחיות מחמד.", "בעלי חיים מתקבלים בברכה."], variant));
     }
 
     /* --- the building --- */
-    if (f.age === "new") out.push(pick(["הבניין חדש.", "מדובר בבניין חדש.", "הבניין נבנה בשנים האחרונות."], variant));
-    else if (f.age === "old") out.push(pick(["הבניין ותיק.", "מדובר בבניין ותיק.", "הבניין אינו חדש."], variant));
+    if (!isAgri(f) && f.age === "new") out.push(pick(["הבניין חדש.", "מדובר בבניין חדש.", "הבניין נבנה בשנים האחרונות."], variant));
+    else if (!isAgri(f) && f.age === "old") out.push(pick(["הבניין ותיק.", "מדובר בבניין ותיק.", "הבניין אינו חדש."], variant));
 
     /* --- surroundings: measured walking times, never adjectives --- */
     var near = nearbyLine(f, HE);
@@ -112,6 +116,12 @@
         "מתאים לעסקים המחפשים " + kind + " " + deal + (city ? " ב" + city : "") + ". לפרטים ולתיאום סיור — צרו קשר.",
         "לפרטים נוספים ולתיאום סיור בנכס — צרו קשר.",
         "נשמח להציג את הנכס בתיאום מראש.",
+      ], variant));
+    } else if (isAgri(f)) {
+      out.push(pick([
+        "קרקע חקלאית, מתאימה לחקלאות או להשקעה. לפרטים ולתיאום ביקור בשטח — צרו קשר.",
+        "לפרטים נוספים ולתיאום ביקור בשטח — צרו קשר.",
+        "נשמח להציג את השטח בתיאום מראש.",
       ], variant));
     } else if (f.deal === "rent") {
       out.push(pick([
@@ -146,7 +156,7 @@
     var street = streetOf(f), city = clean(f.city);
     var out = [];
 
-    var head = (rooms && !isCommercial(f) ? rooms + "-room " : "") + kind + " " + deal;
+    var head = (rooms && !isCommercial(f) && !isAgri(f) ? rooms + "-room " : "") + kind + " " + deal;
     if (street) head += " on " + street;
     if (city) head += (street ? ", " : " in ") + city;
     out.push(cap(head) + ".");
@@ -154,7 +164,7 @@
     var facts = [];
     if (size) facts.push(size + " m²");
     if (isFinite(floor) && floor > 0) facts.push(floors ? "floor " + floor + " of " + floors : "floor " + floor);
-    else if (floor === 0 && !isCommercial(f)) facts.push("ground floor");
+    else if (floor === 0 && !isCommercial(f) && !isAgri(f)) facts.push("ground floor");
     if (facts.length) out.push(cap(facts.join(", ")) + ".");
 
     var has = [];
@@ -162,16 +172,18 @@
     if (f.parking) has.push("parking");
     if (f.furnished) has.push("furnishing");
     if (has.length) out.push(pick(["The property includes ", "It comes with ", "Includes "], variant) + listEn(has) + ".");
-    if (f.pets && !isCommercial(f)) out.push("Pets are welcome.");
-    if (f.age === "new") out.push("The building is new.");
-    else if (f.age === "old") out.push("The building is older.");
+    if (f.pets && !isCommercial(f) && !isAgri(f)) out.push("Pets are welcome.");
+    if (!isAgri(f) && f.age === "new") out.push("The building is new.");
+    else if (!isAgri(f) && f.age === "old") out.push("The building is older.");
 
     var near = nearbyLine(f, EN);
     if (near) out.push(near);
 
-    out.push(f.deal === "rent"
-      ? "Get in touch to arrange a viewing."
-      : "Suitable to live in or as an investment. Get in touch for details.");
+    out.push(isAgri(f)
+      ? "Agricultural land, suitable for farming or investment. Get in touch for details."
+      : f.deal === "rent"
+        ? "Get in touch to arrange a viewing."
+        : "Suitable to live in or as an investment. Get in touch for details.");
     return out.join(" ");
   }
 
