@@ -307,6 +307,10 @@
     if ($("p-address")) $("p-address").placeholder = agri
       ? T("address_ph_farm", "שם המשק / היישוב (המיקום נקבע בסימון על המפה)")
       : T("address_ph", "רחוב ומספר, עיר");
+    // rooms / floor / floors-total / age are meaningless for open land — hide them.
+    // Use inline display (not [hidden]) so the .grid-3 rule can't win the cascade.
+    if ($("p-rooms-cell")) $("p-rooms-cell").style.display = agri ? "none" : "";
+    if ($("p-floor-group")) $("p-floor-group").style.display = agri ? "none" : "";
   }
   $("p-category").addEventListener("change", syncAgriUI);
   syncAgriUI();
@@ -751,7 +755,8 @@
         available_to: (state.deal === "rent" && (state.term || "long") === "short") ? ($("p-date-to").value || null) : null,
         title: $("p-title").value.trim(),
         price: checkedPrice($("p-price").value),
-        rooms: +$("p-rooms").value,
+        // farms have no rooms; the DB requires rooms > 0, so send a benign 1
+        rooms: $("p-category").value === "agricultural" ? 1 : +$("p-rooms").value,
         size: +$("p-size").value,
         floor: +$("p-floor").value || 0,
         floors_total: +$("p-floors-total").value || null,
