@@ -297,9 +297,9 @@
 
         <div class="grid4">
           <label class="field"><span>מחיר (₪) *</span><input id="f-price" class="input" type="text" inputmode="numeric" autocomplete="off" required /></label>
-          <label class="field"><span>חדרים *</span><input id="f-rooms" class="input" type="number" min="0.5" step="0.5" required /></label>
+          <label class="field" id="f-rooms-cell"><span>חדרים *</span><input id="f-rooms" class="input" type="number" min="0.5" step="0.5" required /></label>
           <label class="field"><span>שטח (מ"ר) *</span><input id="f-size" class="input" type="number" min="1" required /></label>
-          <label class="field"><span>קומה מתוך</span>
+          <label class="field" id="f-floor-cell"><span>קומה מתוך</span>
             <div class="floor-row">
               <input id="f-floor" class="input" type="number" min="0" value="0" aria-label="קומה" />
               <span class="of">מתוך</span>
@@ -443,6 +443,6 @@
   <script src="../js/analytics.js?v=2"></script>
   <script src="../js/oauth.js?v=18"></script>
   <script src="../js/geo.js?v=105"></script>
-  <script src="admin.js?v=50"></script>
+  <script src="admin.js?v=51"></script>
 </body>
 </html>

@@ -1596,9 +1596,16 @@
     // agricultural land is placed by settlement/area — no house number required
     const isAgri = () => $("f-category").value === "agricultural";
     function syncAgri() {
-      $("f-address").placeholder = isAgri()
+      const agri = isAgri();
+      $("f-address").placeholder = agri
         ? "יישוב / עיר (לא נדרש מספר בית)"
         : "לדוגמה: אלנבי 20, תל אביב";
+      // rooms & floor are meaningless for open land — hide them and drop the
+      // `required` (a hidden required field would block form submit)
+      if ($("f-rooms-cell")) $("f-rooms-cell").style.display = agri ? "none" : "";
+      if ($("f-floor-cell")) $("f-floor-cell").style.display = agri ? "none" : "";
+      $("f-rooms").required = !agri;
+      if (agri && !$("f-rooms").value) $("f-rooms").value = "1";
     }
     $("f-category").addEventListener("change", () => { fillTypes($("f-category").value, $("f-type").value); syncAgri(); });
 
@@ -1849,9 +1856,9 @@
           available_to: short ? ($("f-date-to").value || null) : null,
           title: $("f-title").value.trim(),
           price: checkedPrice($("f-price").value),
-          rooms: +$("f-rooms").value,
+          rooms: isAgri() ? 1 : +$("f-rooms").value,
           size: +$("f-size").value,
-          floor: +$("f-floor").value || 0,
+          floor: isAgri() ? 0 : (+$("f-floor").value || 0),
           floors_total: +$("f-floors-total").value || null,
           category: $("f-category").value,
           type: $("f-type").value,
