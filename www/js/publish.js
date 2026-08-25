@@ -311,6 +311,8 @@
     // Use inline display (not [hidden]) so the .grid-3 rule can't win the cascade.
     if ($("p-rooms-cell")) $("p-rooms-cell").style.display = agri ? "none" : "";
     if ($("p-floor-group")) $("p-floor-group").style.display = agri ? "none" : "";
+    // a farm is placed on land — flatten to the top-down 2D view
+    if (agri && window.BVSet2D) window.BVSet2D();
   }
   $("p-category").addEventListener("change", syncAgriUI);
   syncAgriUI();

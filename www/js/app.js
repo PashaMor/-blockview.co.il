@@ -918,6 +918,9 @@ function setView(threeD) {
   map.easeTo({ pitch: is3D ? TLV.pitch : 0, duration: 500 });
 }
 viewBtn.addEventListener("click", () => setView(!is3D));
+// let other scripts force the flat top-down view (the farm publish flow uses it
+// so the owner drops the pin on a map, not a tilted 3D scene)
+window.BVSet2D = function () { if (is3D) setView(false); };
 
 /* ---------------------------------------------------------- selection ---- */
 function setSelectedState(id, on) {
