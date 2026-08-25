@@ -5,7 +5,7 @@ const STYLES = {
   dark:  "https://tiles.openfreemap.org/styles/dark",
 };
 const TLV = { center: [34.7715, 32.0632], zoom: 15.4, pitch: 58, bearing: -18 };
-const BLUE = "#0038B8", BLUE_HI = "#2E5BD6", WHITE = "#FBFBFD", GREEN = "#2E9E5B", GREEN_HI = "#3FBF74";
+const BLUE = "#0038B8", BLUE_HI = "#2E5BD6", WHITE = "#FBFBFD", GREEN = "#1F8B4D", GREEN_HI = "#5FC98C";
 // neighbour / no-listing buildings — near white; the directional light shades
 // their walls for depth so they don't blow out.
 const CITY = "#F7F8FA";
