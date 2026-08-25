@@ -1747,7 +1747,7 @@
       const fp = await BVGeo.fetchFootprint(it.lat, it.lng);
       nb.footprint = fp;
       picked.textContent = "📍 " + it.short +
-        (!it.hasNumber ? " — ⛔ חובה לבחור כתובת עם מספר בית. בחר תוצאה עם מספר בית."
+        (!it.hasNumber ? " — ⛔ חובה לבחור כתובת עם מספר בית. הכנסת מספר הבניין מאפשר למערכת להראות כל מה שמסביב לבניין במדויק."
             : fp ? " — נמצא מתאר בניין אמיתי"
                  : " — ללא מתאר מדויק, ימוקם לפי הכתובת");
       showAddrMatch(it, fp);

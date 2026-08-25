@@ -421,7 +421,7 @@
     state.footprint = fp;
     // a match with no house number is the street, not the building — say so
     picked.textContent = "📍 " + it.short + " — " +
-      (!it.hasNumber ? T("address_need_number", "⛔ חובה לבחור כתובת עם מספר בית — בחר תוצאה עם מספר בית")
+      (!it.hasNumber ? T("address_need_number", "⛔ חובה לבחור כתובת עם מספר בית. הכנסת מספר הבניין מאפשר למערכת להראות כל מה שמסביב לבניין במדויק.")
           : fp ? T("address_ok", "נמצא מתאר בניין אמיתי")
                : T("address_nofp", "ללא מתאר מדויק, ימוקם לפי הכתובת"));
     showBuildingMatch(it, fp);
