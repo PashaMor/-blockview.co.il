@@ -5,7 +5,7 @@ const STYLES = {
   dark:  "https://tiles.openfreemap.org/styles/dark",
 };
 const TLV = { center: [34.7715, 32.0632], zoom: 15.4, pitch: 58, bearing: -18 };
-const BLUE = "#0038B8", BLUE_HI = "#2E5BD6", WHITE = "#FBFBFD", GREEN = "#2E9E5B";
+const BLUE = "#0038B8", BLUE_HI = "#2E5BD6", WHITE = "#FBFBFD", GREEN = "#2E9E5B", GREEN_HI = "#3FBF74";
 // neighbour / no-listing buildings — near white; the directional light shades
 // their walls for depth so they don't blow out.
 const CITY = "#F7F8FA";
@@ -310,6 +310,9 @@ function buildingsGeoJSON() {
 // hides inside the (opaque) building and only the beam above it shows.
 function beamGeoJSON(b) {
   if (!b || !isFinite(b.lat) || !isFinite(b.lng)) return { type: "FeatureCollection", features: [] };
+  // a farm is flat land, not a building — no light-pillar beam over it
+  if (buildingMatches(b.id).some((l) => (l.category || "residential") === "agricultural"))
+    return { type: "FeatureCollection", features: [] };
   const roof = (+b.height || 24) + 0.5;         // sit exactly on the building's roof
   return { type: "FeatureCollection", features: [{
     type: "Feature",
@@ -806,6 +809,7 @@ function addCustomLayers() {
       // same solid colour as the roof instead of fading towards the base.
       "fill-extrusion-opacity": 1, "fill-extrusion-vertical-gradient": false,
       "fill-extrusion-color": ["case",
+        ["all", ["boolean", ["feature-state", "selected"], false], ["boolean", ["get", "agri"], false]], GREEN_HI,
         ["boolean", ["feature-state", "selected"], false], BLUE_HI,
         ["all", [">", ["get", "match"], 0], ["boolean", ["get", "agri"], false]], GREEN,
         [">", ["get", "match"], 0], BLUE, CITY],
