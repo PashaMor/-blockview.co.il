@@ -718,7 +718,7 @@ function firstSymbolId() {
    the user pans the map until the crosshair sits over the spot, then resolves
    with the map centre {lng,lat}. Used by the agricultural publish flow — farms
    have no street address to geocode. Resolves null on cancel. */
-window.BVPickLocation = function () {
+window.BVPickLocation = function (center) {
   return new Promise(function (resolve) {
     var cross = document.getElementById("pick-crosshair");
     var bar = document.getElementById("pick-bar");
@@ -734,6 +734,10 @@ window.BVPickLocation = function () {
     function onCancel() { cleanup(); resolve(null); }
     ok.addEventListener("click", onOk);
     cancel.addEventListener("click", onCancel);
+    // jump to the chosen settlement first, then let them fine-tune the pin
+    if (center && isFinite(center.lng) && isFinite(center.lat)) {
+      try { map.flyTo({ center: [center.lng, center.lat], zoom: center.zoom || 15, essential: true }); } catch (e) {}
+    }
     cross.hidden = false; bar.hidden = false;
   });
 };

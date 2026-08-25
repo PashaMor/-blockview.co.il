@@ -305,7 +305,7 @@
     const agri = $("p-category").value === "agricultural";
     if ($("p-pin-btn")) $("p-pin-btn").hidden = !agri;
     if ($("p-address")) $("p-address").placeholder = agri
-      ? T("address_ph_farm", "שם המשק / היישוב (המיקום נקבע בסימון על המפה)")
+      ? T("address_ph_farm", "יישוב / עיר")
       : T("address_ph", "רחוב ומספר, עיר");
     // rooms / floor / floors-total / age are meaningless for open land — hide them.
     // Use inline display (not [hidden]) so the .grid-3 rule can't win the cascade.
@@ -449,6 +449,19 @@
     const it = $("p-addr-results")._items[+b.dataset.i];
     $("p-addr-results").hidden = true;
     $("p-address").value = it.short + (it.city ? ", " + it.city : "");
+    if ($("p-category").value === "agricultural") {
+      // a settlement was chosen: fly there, then let them drop the exact farm pin
+      const sh = sheet(); sh.classList.remove("open");
+      const pt = await window.BVPickLocation({ lng: it.lng, lat: it.lat, zoom: 14 });
+      sh.classList.add("open");
+      if (!pt) return;
+      const label = it.short + (it.city ? ", " + it.city : "");
+      state.address = { short: label, label: label, city: it.city || null, lat: pt.lat, lng: pt.lng, hasNumber: true };
+      state.footprint = null;
+      const pk = $("p-addr-picked");
+      if (pk) { pk.textContent = "📍 " + label + " — " + T("pin_set", "מיקום נבחר על המפה"); pk.hidden = false; }
+      return;
+    }
     state.address = it;
     const picked = $("p-addr-picked");
     picked.textContent = T("address_checking", "מאתר את מתאר הבניין…");
@@ -456,11 +469,14 @@
     // a real outline is a bonus, not a requirement — Overpass is flaky by nature
     const fp = await BVGeo.fetchFootprint(it.lat, it.lng);
     state.footprint = fp;
-    // a match with no house number is the street, not the building — say so
+    // a match with no house number is the street, not the building — say so.
+    // agricultural land is placed by settlement/area, so a house number isn't required.
+    const agri = $("p-category").value === "agricultural";
     picked.textContent = "📍 " + it.short + " — " +
-      (!it.hasNumber ? T("address_need_number", "⛔ חובה לבחור כתובת עם מספר בית. הכנסת מספר הבניין מאפשר למערכת להראות כל מה שמסביב לבניין במדויק.")
-          : fp ? T("address_ok", "נמצא מתאר בניין אמיתי")
-               : T("address_nofp", "ללא מתאר מדויק, ימוקם לפי הכתובת"));
+      (agri ? T("address_area_ok", "יישוב / אזור נבחר")
+          : !it.hasNumber ? T("address_need_number", "⛔ חובה לבחור כתובת עם מספר בית. הכנסת מספר הבניין מאפשר למערכת להראות כל מה שמסביב לבניין במדויק.")
+              : fp ? T("address_ok", "נמצא מתאר בניין אמיתי")
+                   : T("address_nofp", "ללא מתאר מדויק, ימוקם לפי הכתובת"));
     showBuildingMatch(it, fp);
   });
 
@@ -516,7 +532,7 @@
     if (state.editId && state.buildingId) return state.buildingId;
     const a = state.address;
     if (!a) throw new Error(T("address_required", "נא לבחור את כתובת הנכס"));
-    if (!a.hasNumber) throw new Error(T("address_need_number", "חובה לבחור כתובת עם מספר בית — לא ניתן לפרסם נכס ללא מספר בית"));
+    if (!a.hasNumber && $("p-category").value !== "agricultural") throw new Error(T("address_need_number", "חובה לבחור כתובת עם מספר בית — לא ניתן לפרסם נכס ללא מספר בית"));
     const fp = state.footprint;
     const { data, error } = await supa().rpc("ensure_building", {
       p_name: a.short,
