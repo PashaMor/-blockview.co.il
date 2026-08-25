@@ -890,6 +890,23 @@ body { font-family: var(--font); color: var(--text); overflow: hidden; backgroun
 #draw-actions .primary:hover { background: #002C92; }
 #draw-results { border: 0; background: transparent; font: inherit; font-weight: 700; font-size: 14px; color: var(--ink); cursor: pointer; padding: 0; }
 
+/* drop-a-pin location picker (agricultural publish) */
+#pick-crosshair { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -100%);
+  z-index: 40; pointer-events: none; font-size: 40px; line-height: 1; color: var(--green, #2E9E5B);
+  text-shadow: 0 1px 3px rgba(0,0,0,.5); font-weight: 700; }
+#pick-bar { position: fixed; z-index: 41; left: 50%; transform: translateX(-50%);
+  bottom: max(24px, calc(20px + env(safe-area-inset-bottom, 0px))); display: flex; align-items: center; gap: 14px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 10px 14px;
+  box-shadow: var(--shadow-lg); max-width: calc(100vw - 24px); }
+#pick-bar #pick-hint { font-size: 13.5px; color: var(--ink); }
+#pick-bar .pick-actions { display: flex; gap: 8px; flex: none; }
+#pick-bar button { font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; padding: 9px 16px; border-radius: 12px; border: 0; }
+#pick-bar #pick-cancel { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); }
+#pick-bar .primary { background: #2E9E5B; color: #fff; }
+.pin-btn { width: 100%; margin-top: 8px; padding: 12px; border-radius: 12px; border: 1px dashed #2E9E5B;
+  background: rgba(46,158,91,.08); color: #1f7a44; font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; }
+.pin-btn:hover { background: rgba(46,158,91,.14); }
+
 /* filter sheet: availability date range */
 #filter-sheet .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .sub-lbl { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }

@@ -714,6 +714,30 @@ function firstSymbolId() {
   return undefined;
 }
 
+/* Drop-a-pin location picker. Shows a fixed centre crosshair + a confirm bar so
+   the user pans the map until the crosshair sits over the spot, then resolves
+   with the map centre {lng,lat}. Used by the agricultural publish flow — farms
+   have no street address to geocode. Resolves null on cancel. */
+window.BVPickLocation = function () {
+  return new Promise(function (resolve) {
+    var cross = document.getElementById("pick-crosshair");
+    var bar = document.getElementById("pick-bar");
+    var ok = document.getElementById("pick-confirm");
+    var cancel = document.getElementById("pick-cancel");
+    if (!cross || !bar || !ok || !cancel) { resolve(null); return; }
+    function cleanup() {
+      cross.hidden = true; bar.hidden = true;
+      ok.removeEventListener("click", onOk);
+      cancel.removeEventListener("click", onCancel);
+    }
+    function onOk() { var c = map.getCenter(); cleanup(); resolve({ lng: c.lng, lat: c.lat }); }
+    function onCancel() { cleanup(); resolve(null); }
+    ok.addEventListener("click", onOk);
+    cancel.addEventListener("click", onCancel);
+    cross.hidden = false; bar.hidden = false;
+  });
+};
+
 function addCustomLayers() {
   const before = firstSymbolId();
 

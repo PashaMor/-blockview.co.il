@@ -136,6 +136,7 @@
     $("p-floors-total").value = "";
     $("p-category").value = "residential";
     fillTypes();
+    if (typeof syncAgriUI === "function") syncAgriUI();
     // first contact row starts prefilled with the account's own address
     let myEmail = "";
     try {
@@ -298,6 +299,38 @@
   }
   $("p-category").addEventListener("change", fillTypes);
   fillTypes();
+
+  /* ---- agricultural land: placed by a map pin, not a street address ---- */
+  function syncAgriUI() {
+    const agri = $("p-category").value === "agricultural";
+    if ($("p-pin-btn")) $("p-pin-btn").hidden = !agri;
+    if ($("p-address")) $("p-address").placeholder = agri
+      ? T("address_ph_farm", "שם המשק / היישוב (המיקום נקבע בסימון על המפה)")
+      : T("address_ph", "רחוב ומספר, עיר");
+  }
+  $("p-category").addEventListener("change", syncAgriUI);
+  syncAgriUI();
+
+  if ($("p-pin-btn")) $("p-pin-btn").addEventListener("click", async () => {
+    if (!window.BVPickLocation) return;
+    const sh = sheet();
+    sh.classList.remove("open");                 // hide the form so the map is pannable
+    const pt = await window.BVPickLocation();
+    sh.classList.add("open");                     // bring the form back
+    if (!pt) return;                              // cancelled
+    const typed = ($("p-address").value || "").trim();
+    const label = typed || T("farm_here", "משק חקלאי (מיקום נבחר)");
+    // a farm is open land: no OSM footprint, placed by the picked point
+    state.address = { short: label, label: label, city: null, lat: pt.lat, lng: pt.lng, hasNumber: true };
+    state.footprint = null;
+    $("p-address").value = label;
+    const picked = $("p-addr-picked");
+    if (picked) {
+      picked.textContent = "📍 " + T("pin_set", "מיקום נבחר על המפה") +
+        " (" + pt.lat.toFixed(5) + ", " + pt.lng.toFixed(5) + ")";
+      picked.hidden = false;
+    }
+  });
 
   /* ---- write the description from the fields (js/describe-gen.js) ----
    * No service call: it composes the text out of what the owner already typed,

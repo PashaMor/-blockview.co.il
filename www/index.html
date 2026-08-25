@@ -45,7 +45,7 @@
     })();
   </script>
   <link rel="stylesheet" href="vendor/maplibre-gl.css?v=130" />
-  <link rel="stylesheet" href="css/style.css?v=130" />
+  <link rel="stylesheet" href="css/style.css?v=132" />
 </head>
 <body>
   <div id="map"></div>
@@ -111,6 +111,16 @@
     <button id="draw-erase" data-i18n="draw_erase">🧽 מחק</button>
     <button id="draw-done" class="primary" data-i18n="draw_done">✓ אישור</button>
   </div>
+  <!-- drop-a-pin location picker (used by the agricultural publish flow) -->
+  <div id="pick-crosshair" hidden aria-hidden="true">＋</div>
+  <div id="pick-bar" hidden>
+    <span id="pick-hint" data-i18n="pick_hint">מקם את הסימון על המשק ואשר</span>
+    <span class="pick-actions">
+      <button id="pick-cancel" data-i18n="cancel">ביטול</button>
+      <button id="pick-confirm" class="primary" data-i18n="confirm">אישור</button>
+    </span>
+  </div>
+
   <!-- after Done, while an area filter is active -->
   <div id="draw-bar" hidden>
     <button id="draw-results" class="linkish"><b id="draw-count">0</b> <span data-i18n="properties">נכסים</span> <span data-i18n="in_area">באזור</span></button>
@@ -633,6 +643,9 @@
         <input id="p-address" class="selectbox" autocomplete="off" placeholder="רחוב ומספר, עיר" data-i18n-ph="address_ph" />
         <div id="p-addr-results" class="addr-results" hidden></div>
         <div id="p-addr-picked" class="addr-picked" hidden></div>
+        <!-- agricultural land has no street address, so it is placed by dropping a
+             pin on the map instead of geocoding. Shown only for the farm category. -->
+        <button type="button" id="p-pin-btn" class="pin-btn" hidden data-i18n="pick_on_map">📍 בחר מיקום על המפה</button>
         <!-- which building this will attach to — shown before submitting, so a
              wrong merge is visible instead of silent -->
         <div id="p-addr-match" class="addr-match" hidden></div>
@@ -760,12 +773,12 @@
   <script src="js/confirm.js?v=130"></script>
   <script src="js/data.js?v=130"></script>
   <script src="js/track.js?v=130"></script>
-  <script src="js/app.js?v=131"></script>
+  <script src="js/app.js?v=132"></script>
   <script src="js/auth.js?v=130"></script>
   <script src="js/billing.js?v=130"></script>
   <script src="js/home-loc.js?v=130"></script>
   <script src="js/describe-gen.js?v=130"></script>
-  <script src="js/publish.js?v=133"></script>
+  <script src="js/publish.js?v=134"></script>
   <script src="js/my-listings.js?v=130"></script>
   <script src="js/agent-apply.js?v=130"></script>
   <script src="js/app-badge.js?v=130"></script>
