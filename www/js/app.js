@@ -24,6 +24,20 @@ const FILTER_TYPES = {
   residential: [["flat", "דירה"], ["house", "בית"], ["penthouse", "פנטהאוז"], ["studio", "סטודיו"]],
   commercial: [["office", "משרד"], ["shop", "חנות"], ["warehouse", 'מחסן / לוגיסטיקה'], ["other", "אחר"]],
 };
+// agricultural land is placed by settlement, not a street address, and has no
+// rooms/floor — it renders as a green patch on the map and as land in the detail
+const AGRI_TYPES = { farm: "משק חקלאי", orchard: "מטע", vineyard: "כרם", field: "שדה / קרקע חקלאית" };
+const TYPE_LABELS = (function () {
+  const m = {};
+  FILTER_TYPES.residential.concat(FILTER_TYPES.commercial).forEach(([v, l]) => (m[v] = l));
+  Object.keys(AGRI_TYPES).forEach((k) => (m[k] = AGRI_TYPES[k]));
+  return m;
+})();
+function isAgriListing(l) { return (l.category || "residential") === "agricultural"; }
+function typeLabelOf(l) {
+  const ty = (l.type !== undefined ? l.type : (l.size >= 140 ? "house" : "flat"));
+  return TYPE_LABELS[ty] || (isAgriListing(l) ? "קרקע חקלאית" : "דירה");
+}
 const DEFAULT_CITY = "תל אביב-יפו";
 
 /* ---- favorites (require sign-in; stored per-user in Supabase) ---- */
@@ -263,18 +277,30 @@ function pointInRing(lng, lat, ring) {
 }
 function inDrawnArea(b) { return !drawnArea || pointInRing(b.lng, b.lat, drawnArea); }
 
+// A flat circular parcel for agricultural land. A farm has no building outline
+// and no meaningful orientation, so a circle can't look "angled" against the
+// local road grid the way an axis-aligned box does.
+function circlePolygon(lng, lat, meters) {
+  const n = 28, dLat = meters / 111320, dLng = meters / (111320 * Math.cos(lat * Math.PI / 180));
+  const ring = [];
+  for (let i = 0; i <= n; i++) {
+    const a = (i / n) * 2 * Math.PI;
+    ring.push([lng + dLng * Math.cos(a), lat + dLat * Math.sin(a)]);
+  }
+  return [ring];
+}
 function buildingsGeoJSON() {
   return {
     type: "FeatureCollection",
     features: BUILDINGS.filter(inDrawnArea).map((b) => {
       const matches = buildingMatches(b.id);
       const n = matches.length;   // once, not twice (this runs for every building on every setData)
-      // a farm/land parcel renders as a flat green patch, not a blue tower
+      // a farm/land parcel renders as a flat green circle, not a blue tower
       const agri = matches.some((l) => (l.category || "residential") === "agricultural");
       return {
         type: "Feature", id: idToIndex[b.id],
         properties: { bid: b.id, name: b.name, height: b.height, match: n, agri: agri, label: b.name + " · " + n },
-        geometry: { type: "Polygon", coordinates: footprint(b) },
+        geometry: { type: "Polygon", coordinates: agri ? circlePolygon(b.lng, b.lat, 20) : footprint(b) },
       };
     }),
   };
@@ -973,7 +999,9 @@ function listingCard(l) {
       <div class="card-body">
         <div class="card-price">${fmtPrice(l.price)}${per}</div>
         <div class="card-title">${escHtml(l.title)}</div>
-        <div class="card-specs"><span><span class="ic">🚪</span>${l.rooms}</span><span><span class="ic">📐</span>${l.size} מ"ר</span><span><span class="ic">🏢</span>ק' ${l.floor}</span></div>
+        <div class="card-specs">${isAgriListing(l)
+          ? `<span><span class="ic">🌳</span>${typeLabelOf(l)}</span><span><span class="ic">📐</span>${l.size} מ"ר</span>`
+          : `<span><span class="ic">🚪</span>${l.rooms}</span><span><span class="ic">📐</span>${l.size} מ"ר</span><span><span class="ic">🏢</span>ק' ${l.floor}</span>`}</div>
       </div>
     </article>`;
 }
@@ -1225,9 +1253,23 @@ function fmtDate(d) {
 }
 function specRows(l) {
   const a = attrs(l);
+  // agricultural land: no rooms/floor/elevator — show it as land, not an apartment
+  if (isAgriListing(l)) {
+    const rows = [
+      ["סוג עסקה", l.deal === "sale" ? "למכירה" : "להשכרה"],
+      ["ייעוד", "קרקע חקלאית"],
+      ["סוג נכס", typeLabelOf(l)],
+      ['שטח (מ"ר)', l.size],
+    ];
+    if (l.deal !== "sale") {
+      if (l.availableFrom) rows.push(["זמין מ־", fmtDate(l.availableFrom)]);
+      if (l.availableTo) rows.push(["עד", fmtDate(l.availableTo)]);
+    }
+    return rows;
+  }
   const rows = [
     ["סוג עסקה", l.deal === "sale" ? "למכירה" : "להשכרה"],
-    ["סוג נכס", a.type === "house" ? "בית" : "דירה"],
+    ["סוג נכס", typeLabelOf(l)],
     ["חדרים", l.rooms], ['שטח (מ"ר)', l.size], ["קומה", l.floor],
     ["מעלית", a.elevator ? "יש" : "אין"], ["חניה", a.parking ? "יש" : "אין"],
   ];
@@ -1246,6 +1288,9 @@ function specRows(l) {
 function descFor(l) {
   if (l.description && String(l.description).trim())
     return String(l.description).split(/\n+/).map((x) => x.trim()).filter(Boolean);
+  if (isAgriListing(l))
+    return [`${typeLabelOf(l)} בשטח ${l.size} מ"ר.`, "קרקע חקלאית פתוחה.",
+      l.tour ? "כולל סיור וירטואלי תלת-מימדי." : "ניתן לתאם ביקור בתיאום מראש."];
   return [`דירת ${l.rooms} חדרים בשטח ${l.size} מ"ר בקומה ${l.floor}.`, "מרווחת, מוארת ומאווררת עם כיווני אוויר טובים.",
     "קרובה לתחבורה ציבורית, בתי קפה ומרכזי קניות.", l.tour ? "כולל סיור וירטואלי תלת-מימדי." : "ניתן לתאם ביקור בתיאום מראש."];
 }
