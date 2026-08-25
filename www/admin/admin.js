@@ -576,12 +576,19 @@
   const TYPE_OPTS = {
     residential: [["flat", "דירה"], ["house", "בית"], ["penthouse", "פנטהאוז"], ["studio", "סטודיו"]],
     commercial: [["office", "משרד"], ["shop", "חנות"], ["warehouse", "מחסן"], ["other", "אחר"]],
+    agricultural: [["farm", "משק חקלאי"], ["orchard", "מטע"], ["vineyard", "כרם"], ["field", "שדה / קרקע חקלאית"]],
   };
   function fillTypeOptions(category, selected) {
-    const opts = TYPE_OPTS[category === "commercial" ? "commercial" : "residential"];
+    const opts = TYPE_OPTS[category] || TYPE_OPTS.residential;
     $("e-type").innerHTML = opts.map(([v, t]) => `<option value="${v}"${v === selected ? " selected" : ""}>${t}</option>`).join("");
   }
-  $("e-category").addEventListener("change", () => fillTypeOptions($("e-category").value, ""));
+  // agricultural land has no rooms/floor — hide them in the editor too
+  function syncEditAgri() {
+    const agri = $("e-category").value === "agricultural";
+    if ($("e-rooms-cell")) $("e-rooms-cell").style.display = agri ? "none" : "";
+    if ($("e-floor-cell")) $("e-floor-cell").style.display = agri ? "none" : "";
+  }
+  $("e-category").addEventListener("change", () => { fillTypeOptions($("e-category").value, ""); syncEditAgri(); });
 
   // furniture & pets are a rental concern — hide them on a sale
   function syncEditDeal() {
@@ -739,6 +746,7 @@
     $("e-price").value = l.price != null ? l.price : "";
     $("e-category").value = l.category || "residential";
     fillTypeOptions(l.category || "residential", l.type || "flat");
+    syncEditAgri();
     $("e-rooms").value = l.rooms != null ? l.rooms : "";
     $("e-size").value = l.size != null ? l.size : "";
     $("e-floor").value = l.floor != null ? l.floor : "";
