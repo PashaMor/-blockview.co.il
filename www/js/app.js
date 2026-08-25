@@ -771,6 +771,19 @@ window.BVPickLocation = function (center) {
   });
 };
 
+// diagonal-stripe tile for agricultural land — the cartographic convention for
+// farmland. Tiles seamlessly at 45°; used as a fill-pattern on the flat farm fill.
+function stripeTile(base, stripe) {
+  const s = 12, c = document.createElement("canvas");
+  c.width = s; c.height = s;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = base; ctx.fillRect(0, 0, s, s);
+  ctx.strokeStyle = stripe; ctx.lineWidth = 3;
+  ctx.beginPath();
+  for (let i = -s; i < s * 2; i += 6) { ctx.moveTo(i, 0); ctx.lineTo(i + s, s); }
+  ctx.stroke();
+  return ctx.getImageData(0, 0, s, s);
+}
 function addCustomLayers() {
   const before = firstSymbolId();
 
@@ -797,7 +810,11 @@ function addCustomLayers() {
 
   // BlockView buildings — blue when they have listings
   if (!map.getSource("blockview")) map.addSource("blockview", { type: "geojson", data: buildingsGeoJSON() });
+  // farms render as a flat striped fill (bv-agri), not a solid 3D box
+  if (!map.hasImage("agri-stripe")) map.addImage("agri-stripe", stripeTile("#2FA65C", "#176B3B"), { pixelRatio: 2 });
+  if (!map.hasImage("agri-stripe-hi")) map.addImage("agri-stripe-hi", stripeTile("#7FD6A3", "#2FA65C"), { pixelRatio: 2 });
   map.addLayer({ id: "bv-buildings", type: "fill-extrusion", source: "blockview",
+    filter: ["!", ["boolean", ["get", "agri"], false]],
     paint: {
       // render half a metre above the stored (real) height so our roof clears
       // the real building's roof — coplanar caps otherwise z-fight (the striped
@@ -813,6 +830,13 @@ function addCustomLayers() {
         ["boolean", ["feature-state", "selected"], false], BLUE_HI,
         ["all", [">", ["get", "match"], 0], ["boolean", ["get", "agri"], false]], GREEN,
         [">", ["get", "match"], 0], BLUE, CITY],
+    } });
+  // agricultural land: a flat hatched (striped) parcel; lighter stripes when selected
+  map.addLayer({ id: "bv-agri", type: "fill", source: "blockview", minzoom: 12,
+    filter: ["all", [">", ["get", "match"], 0], ["boolean", ["get", "agri"], false]],
+    paint: {
+      "fill-pattern": ["case", ["boolean", ["feature-state", "selected"], false], "agri-stripe-hi", "agri-stripe"],
+      "fill-outline-color": "#176B3B",
     } });
   // Light pillar over the selected building. A thin translucent column: below the
   // roof it sits INSIDE the opaque building (hidden, so no z-fighting), above it
@@ -910,12 +934,12 @@ map.on("load", () => {
     if (hoverRaf) return;
     hoverRaf = requestAnimationFrame(() => {
       hoverRaf = 0;
-      const hit = map.queryRenderedFeatures(hoverPt, { layers: ["bv-buildings"] });
+      const hit = map.queryRenderedFeatures(hoverPt, { layers: ["bv-buildings", "bv-agri"] });
       map.getCanvas().style.cursor = hit.length ? "pointer" : "";
     });
   });
   map.on("click", (e) => {
-    const hit = map.queryRenderedFeatures(e.point, { layers: ["bv-buildings"] });
+    const hit = map.queryRenderedFeatures(e.point, { layers: ["bv-buildings", "bv-agri"] });
     if (hit.length) selectBuilding(hit[0].properties.bid);
     else deselect();
   });
