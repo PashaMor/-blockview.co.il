@@ -484,7 +484,7 @@
     const agri = $("p-category").value === "agricultural";
     picked.textContent = "📍 " + it.short + " — " +
       (agri ? T("address_area_ok", "יישוב / אזור נבחר")
-          : !it.hasNumber ? T("address_need_number", "⛔ חובה לבחור כתובת עם מספר בית. הכנסת מספר הבניין מאפשר למערכת להראות כל מה שמסביב לבניין במדויק.")
+          : !it.hasNumber ? T("address_need_number", "⛔ יש לבחור כתובת עם מספר בית. הכנסת מספר הבניין מאפשר למערכת להראות כל מה שמסביב לבניין במדויק.")
               : fp ? T("address_ok", "נמצא מתאר בניין אמיתי")
                    : T("address_nofp", "ללא מתאר מדויק, ימוקם לפי הכתובת"));
     showBuildingMatch(it, fp);
@@ -544,7 +544,7 @@
     if (!a) throw new Error($("p-category").value === "agricultural"
       ? T("pin_required", "יש לסמן את מיקום המשק על המפה לפני שליחה לאישור")
       : T("address_required", "נא לבחור את כתובת הנכס"));
-    if (!a.hasNumber && $("p-category").value !== "agricultural") throw new Error(T("address_need_number", "חובה לבחור כתובת עם מספר בית — לא ניתן לפרסם נכס ללא מספר בית"));
+    if (!a.hasNumber && $("p-category").value !== "agricultural") throw new Error(T("address_need_number", "יש לבחור כתובת עם מספר בית — לא ניתן לפרסם נכס ללא מספר בית"));
     const fp = state.footprint;
     // a farm's "address" is its גוש/חלקה (owner-typed), not a street; fall back to
     // the settlement name if they left it blank

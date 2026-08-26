@@ -1778,7 +1778,7 @@
       nb.footprint = fp;
       picked.textContent = "📍 " + it.short +
         (isAgri() ? " — יישוב / אזור נבחר"
-            : !it.hasNumber ? " — ⛔ חובה לבחור כתובת עם מספר בית. הכנסת מספר הבניין מאפשר למערכת להראות כל מה שמסביב לבניין במדויק."
+            : !it.hasNumber ? " — ⛔ יש לבחור כתובת עם מספר בית. הכנסת מספר הבניין מאפשר למערכת להראות כל מה שמסביב לבניין במדויק."
                 : fp ? " — נמצא מתאר בניין אמיתי"
                      : " — ללא מתאר מדויק, ימוקם לפי הכתובת");
       showAddrMatch(it, fp);
@@ -1807,7 +1807,7 @@
     }
     async function resolveBuilding() {
       if (!nb.picked) throw new Error("נא לבחור את כתובת הנכס");
-      if (!nb.picked.hasNumber && !isAgri()) throw new Error("חובה לבחור כתובת עם מספר בית — לא ניתן לפרסם נכס ללא מספר בית");
+      if (!nb.picked.hasNumber && !isAgri()) throw new Error("יש לבחור כתובת עם מספר בית — לא ניתן לפרסם נכס ללא מספר בית");
       const a = nb.picked, fp = nb.footprint;
       const { data, error } = await supa.rpc("ensure_building", {
         p_name: a.short,
